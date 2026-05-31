@@ -333,4 +333,12 @@ async def collect_periodic_reports(
 
 
 @router.get("/reports")
-asyn
+async def list_all_leader_reports(
+    leader_name: str | None = None,
+    report_type: str | None = None,
+    limit: int = 20,
+    db: AsyncSession = Depends(get_db),
+):
+    service = CEOControlService(db)
+    return await service.list_leader_reports(leader_name=leader_name, report_type=report_type, limit=limit)
+
