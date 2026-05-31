@@ -1,0 +1,1 @@
+"""Canonical Analysis package."""

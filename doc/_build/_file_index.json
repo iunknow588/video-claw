@@ -1,0 +1,119 @@
+{
+  "generated": "E:\\2026OPC大赛\\龙虾流程\\doc\\_build\\build_index.py",
+  "generated_at": "2026-05-29T19:26:41",
+  "total_files": 9,
+  "groups": {
+    "docs": "概观层",
+    "ref": "参考 · 研究 · 归档"
+  },
+  "files": [
+    {
+      "path": "AI视频自动生产线_开发计划.md",
+      "group": "docs",
+      "label": "AI视频自动生产线 — 开发计划",
+      "title": "AI视频自动生产线 — 开发计划",
+      "size": 20827,
+      "size_str": "20KB",
+      "version": null,
+      "date": null,
+      "star": false,
+      "desc": "AI视频自动生产线 — 开发计划"
+    },
+    {
+      "path": "AI视频自动生产线_开发计划_v2.md",
+      "group": "docs",
+      "label": "AI视频自动生产线 — 开发计划（完善版v2）",
+      "title": "AI视频自动生产线 — 开发计划（完善版v2）",
+      "size": 92658,
+      "size_str": "90KB",
+      "version": null,
+      "date": null,
+      "star": false,
+      "desc": "AI视频自动生产线 — 开发计划（完善版v2）"
+    },
+    {
+      "path": "check_list.md",
+      "group": "docs",
+      "label": "AI视频自动生产线 — 任务清单（Check List）",
+      "title": "AI视频自动生产线 — 任务清单（Check List）",
+      "size": 24809,
+      "size_str": "24KB",
+      "version": null,
+      "date": null,
+      "star": false,
+      "desc": "AI视频自动生产线 — 任务清单（Check List）"
+    },
+    {
+      "path": "skill_功能划分与接口草图.md",
+      "group": "docs",
+      "label": "Skill 功能划分与接口草图",
+      "title": "Skill 功能划分与接口草图",
+      "size": 7294,
+      "size_str": "7.1KB",
+      "version": null,
+      "date": null,
+      "star": false,
+      "desc": "Skill 功能划分与接口草图"
+    },
+    {
+      "path": "真实API联调准备清单.md",
+      "group": "docs",
+      "label": "真实 API 联调准备清单",
+      "title": "真实 API 联调准备清单",
+      "size": 4758,
+      "size_str": "4.6KB",
+      "version": null,
+      "date": null,
+      "star": false,
+      "desc": "真实 API 联调准备清单"
+    },
+    {
+      "path": "视频存储方案分析.md",
+      "group": "docs",
+      "label": "视频存储方案分析",
+      "title": "视频存储方案分析",
+      "size": 5503,
+      "size_str": "5.4KB",
+      "version": null,
+      "date": null,
+      "star": false,
+      "desc": "视频存储方案分析"
+    },
+    {
+      "path": "项目实现分析与操作说明.md",
+      "group": "docs",
+      "label": "项目实现分析与操作说明",
+      "title": "项目实现分析与操作说明",
+      "size": 5817,
+      "size_str": "5.7KB",
+      "version": null,
+      "date": null,
+      "star": false,
+      "desc": "项目实现分析与操作说明"
+    },
+    {
+      "path": "领域驱动自动工作流说明.md",
+      "group": "docs",
+      "label": "领域驱动自动工作流说明",
+      "title": "领域驱动自动工作流说明",
+      "size": 4594,
+      "size_str": "4.5KB",
+      "version": null,
+      "date": null,
+      "star": false,
+      "desc": "领域驱动自动工作流说明"
+    },
+    {
+      "path": "ref/技术评审_AI视频自动生产线_v3_2026-05-26.md",
+      "group": "ref",
+      "label": "AI视频自动生产线项目 — 综合技术评审报告（修订版）",
+      "title": "AI视频自动生产线项目 — 综合技术评审报告（修订版）",
+      "size": 12159,
+      "size_str": "12KB",
+      "version": null,
+      "date": null,
+      "star": false,
+      "desc": "AI视频自动生产线项目 — 综合技术评审报告（修订版）"
+    }
+  ]
+}

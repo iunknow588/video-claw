@@ -1,0 +1,573 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>娴佺▼浜や粯鍙?/ CAO 绠＄悊鍙?/title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f3ee;
+      --panel: #fffdf9;
+      --panel-soft: #faf6ef;
+      --line: #e4dacd;
+      --text: #1f2937;
+      --muted: #667085;
+      --accent: #0f766e;
+      --accent-soft: #def7f3;
+      --success: #166534;
+      --success-soft: #ecfdf3;
+      --warning: #9a6700;
+      --warning-soft: #fff7db;
+      --error: #b42318;
+      --error-soft: #fff1ef;
+      --dark: #111827;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: linear-gradient(180deg, #f6f3ed 0%, #ede7de 100%);
+      color: var(--text);
+    }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: minmax(0, 1.5fr) minmax(360px, 460px);
+      gap: 20px;
+      padding: 20px;
+    }
+
+    .surface {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    .chat-shell {
+      min-height: calc(100vh - 40px);
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+    }
+
+    .header,
+    .composer,
+    .rail {
+      padding: 18px 20px;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: end;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .title {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1.2;
+    }
+
+    .subtitle,
+    .hint,
+    .meta,
+    .empty {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .status-chip {
+      min-width: 180px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .messages {
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .message {
+      max-width: min(88%, 780px);
+      padding: 12px 14px;
+      border-radius: 8px;
+      white-space: pre-wrap;
+      line-height: 1.55;
+      font-size: 14px;
+      border: 1px solid transparent;
+    }
+
+    .message.user {
+      align-self: flex-end;
+      background: var(--dark);
+      color: #f9fafb;
+    }
+
+    .message.reply,
+    .message.result,
+    .message.report {
+      align-self: flex-start;
+      background: #fffaf0;
+      border-color: #eadfcf;
+    }
+
+    .message.status {
+      align-self: flex-start;
+      background: #f0faf8;
+      border-color: #c7ebe4;
+      color: #115e59;
+    }
+
+    .message.error {
+      align-self: flex-start;
+      background: var(--error-soft);
+      border-color: #f1c3bf;
+      color: var(--error);
+    }
+
+    .label {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .composer {
+      border-top: 1px solid var(--line);
+      display: grid;
+      gap: 12px;
+    }
+
+    .composer-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 108px;
+      gap: 12px;
+      align-items: end;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 88px;
+      resize: vertical;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px 14px;
+      background: #fffdfa;
+      color: inherit;
+      font: inherit;
+    }
+
+    button {
+      height: 44px;
+      border: 0;
+      border-radius: 8px;
+      background: var(--accent);
+      color: #ffffff;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.56;
+      cursor: wait;
+    }
+
+    .rail {
+      min-height: calc(100vh - 40px);
+      display: grid;
+      grid-auto-rows: min-content;
+      align-content: start;
+      gap: 16px;
+      overflow-y: auto;
+    }
+
+    .rail-block {
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel-soft);
+    }
+
+    .rail-title {
+      margin: 0 0 10px;
+      font-size: 15px;
+      line-height: 1.3;
+    }
+
+    .summary-grid,
+    .stage-grid,
+    .run-grid,
+    .trace-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .card,
+    .trace-item {
+      padding: 12px;
+      border: 1px solid #e7ddcf;
+      border-radius: 8px;
+      background: #ffffff;
+    }
+
+    .card strong,
+    .trace-item strong {
+      display: block;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
+    }
+
+    .card span,
+    .trace-item span {
+      display: block;
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+      overflow-wrap: anywhere;
+    }
+
+    .run-card {
+      cursor: pointer;
+    }
+
+    .run-card.active {
+      border-color: var(--accent);
+      box-shadow: inset 0 0 0 1px var(--accent);
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 8px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #f3efe8;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .pill.success { background: var(--success-soft); color: var(--success); }
+    .pill.warning { background: var(--warning-soft); color: var(--warning); }
+    .pill.error { background: var(--error-soft); color: var(--error); }
+    .pill.running { background: var(--accent-soft); color: var(--accent); }
+
+    @media (max-width: 1080px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+      .chat-shell,
+      .rail {
+        min-height: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <section class="surface chat-shell">
+      <header class="header">
+        <div>
+          <h1 class="title">娴佺▼浜や粯鍙?/ CAO 绠＄悊鍙?/h1>
+          <div class="subtitle">
+            CEO 闅愯韩杩愯锛孋AO 浠呭澶栧睍绀虹敓浜ч摼璺€佷氦浠樿繘搴︿笌缁撴灉銆傚璇濆叆鍙ｄ粛鐢卞浼犳笭閬撴帴鍗曘€?          </div>
+        </div>
+        <div class="status-chip" id="statusChip">姝ｅ湪鍔犺浇娴佺▼鐘舵€?..</div>
+      </header>
+
+      <main class="messages" id="messages">
+        <div class="message reply">
+          <span class="label">绯荤粺</span>
+          杩欓噷灞曠ず鐨勬槸浜や粯閾捐矾锛屼笉灞曠ず CEO 鑷韩鐨勬不鐞嗙姸鎬併€備綘鍙互鐩存帴涓嬭揪瑙嗛闇€姹傦紝绯荤粺浼氬疄鏃跺洖浼犲悇娴佺▼鑺傜偣鐘舵€併€?        </div>
+      </main>
+
+      <footer class="composer">
+        <div class="hint">
+          鍙洿鎺ヨ緭鍏モ€滃仛涓€鏉＄鎶€瑙嗛锛?0绉掆€濅箣绫荤殑浠诲姟锛涘澶栨帴寰呯敱 CMO 澶勭悊锛屾祦绋嬪憟鐜扮敱 CAO 鎵挎媴銆?        </div>
+        <div class="composer-row">
+          <label>
+            <span class="label">瀵瑰娲惧崟</span>
+            <textarea id="messageInput" placeholder="渚嬪锛氱粰榫欒櫨闂ㄥ簵杩愯惀鍋氫竴鏉℃姈闊宠棰戯紝30绉掋€?></textarea>
+          </label>
+          <button id="sendButton" type="button">鍙戦€?/button>
+        </div>
+      </footer>
+    </section>
+
+    <aside class="surface rail">
+      <section class="rail-block">
+        <h2 class="rail-title">娴佺▼蹇収</h2>
+        <div class="summary-grid" id="summaryGrid"></div>
+      </section>
+
+      <section class="rail-block">
+        <h2 class="rail-title">涓婚摼璺姸鎬?/h2>
+        <div class="stage-grid" id="stageGrid"></div>
+      </section>
+
+      <section class="rail-block">
+        <h2 class="rail-title">鏈€杩戜换鍔?/h2>
+        <div class="run-grid" id="runGrid"></div>
+      </section>
+
+      <section class="rail-block">
+        <h2 class="rail-title">閾捐矾鍥炴斁</h2>
+        <div class="trace-grid" id="traceGrid"></div>
+      </section>
+    </aside>
+  </div>
+
+  <script>
+    const messagesEl = document.getElementById("messages");
+    const summaryGridEl = document.getElementById("summaryGrid");
+    const stageGridEl = document.getElementById("stageGrid");
+    const runGridEl = document.getElementById("runGrid");
+    const traceGridEl = document.getElementById("traceGrid");
+    const statusChipEl = document.getElementById("statusChip");
+    const messageInputEl = document.getElementById("messageInput");
+    const sendButtonEl = document.getElementById("sendButton");
+
+    let currentRunId = null;
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function statusClass(status) {
+      if (["success", "completed", "passed", "approved"].includes(status)) return "success";
+      if (["failed", "error", "rejected"].includes(status)) return "error";
+      if (["running", "processing", "pending"].includes(status)) return "running";
+      return "warning";
+    }
+
+    function appendMessage(type, label, content) {
+      const node = document.createElement("div");
+      node.className = `message ${type}`;
+      node.innerHTML = `<span class="label">${escapeHtml(label)}</span>${escapeHtml(content)}`;
+      messagesEl.appendChild(node);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function renderSummary(status) {
+      const metrics = status.pipeline_metrics || {};
+      const items = [
+        ["绱浠诲姟", metrics.total_runs],
+        ["鎴愬姛鐜?, metrics.success_rate],
+        ["璐ㄦ閫氳繃鐜?, metrics.qa_pass_rate],
+        ["鍙氦浠樼巼", metrics.delivery_ready_rate],
+        ["杩涜涓?, metrics.active_runs],
+        ["骞冲潎 Token", metrics.avg_tokens],
+      ];
+      summaryGridEl.innerHTML = items.map(([name, value]) => `
+        <div class="card">
+          <strong>${escapeHtml(name)}</strong>
+          <span>${escapeHtml(value)}</span>
+        </div>
+      `).join("");
+      statusChipEl.textContent = status.console_subtitle || "CAO 姝ｅ湪瀵瑰灞曠ず娴佺▼鐘舵€併€?;
+    }
+
+    function renderStages(status) {
+      const stages = Array.isArray(status.stage_statuses) ? status.stage_statuses : [];
+      stageGridEl.innerHTML = stages.map((item) => `
+        <div class="card">
+          <strong>${escapeHtml(item.label)}</strong>
+          <span>${escapeHtml(item.name)}</span>
+          <div class="pill ${statusClass(item.status)}">${escapeHtml(item.status || "idle")}</div>
+        </div>
+      `).join("");
+    }
+
+    function renderRuns(runs) {
+      runGridEl.innerHTML = runs.map((run) => `
+        <div class="card run-card ${run.uuid === currentRunId ? "active" : ""}" data-run-id="${escapeHtml(run.uuid)}">
+          <strong>${escapeHtml(run.domain || "鏈懡鍚嶄换鍔?)}</strong>
+          <span>骞冲彴锛?{escapeHtml(run.platform || "-")}</span>
+          <span>鐘舵€侊細${escapeHtml(run.status || "-")}</span>
+          <span>璐ㄦ锛?{escapeHtml(run.qa_status || "-")}</span>
+          <div class="pill ${statusClass(run.status)}">${escapeHtml(run.uuid)}</div>
+        </div>
+      `).join("");
+
+      runGridEl.querySelectorAll(".run-card").forEach((node) => {
+        node.addEventListener("click", () => {
+          const runId = node.getAttribute("data-run-id");
+          if (runId) {
+            currentRunId = runId;
+            loadTrace(runId);
+            renderRuns(runs);
+          }
+        });
+      });
+    }
+
+    function renderTrace(data) {
+      const summary = data.summary || {};
+      const stageStatuses = Array.isArray(data.public_stage_statuses) ? data.public_stage_statuses : [];
+      const publicSteps = Array.isArray(data.public_steps) ? data.public_steps.slice(-8).reverse() : [];
+
+      const topCards = [
+        {
+          title: "杩愯 ID",
+          text: data.run?.uuid || "-"
+        },
+        {
+          title: "閾捐矾姝ラ",
+          text: summary.step_count ?? 0
+        },
+        {
+          title: "鎬?Token",
+          text: summary.total_tokens ?? 0
+        },
+        {
+          title: "鎬绘垚鏈?,
+          text: summary.total_cost ?? 0
+        }
+      ];
+
+      const stageCards = stageStatuses.map((item) => `
+        <div class="trace-item">
+          <strong>${escapeHtml(item.label)}</strong>
+          <span>${escapeHtml(item.status || "idle")}</span>
+        </div>
+      `).join("");
+
+      const stepCards = publicSteps.map((item) => `
+        <div class="trace-item">
+          <strong>${escapeHtml(item.stage_label)}</strong>
+          <span>${escapeHtml(item.status || "-")} / ${escapeHtml(item.event_type || "-")}</span>
+          <span>${escapeHtml(item.message || "鏃犺ˉ鍏呰鏄?)}</span>
+        </div>
+      `).join("");
+
+      traceGridEl.innerHTML = `
+        ${topCards.map((item) => `
+          <div class="trace-item">
+            <strong>${escapeHtml(item.title)}</strong>
+            <span>${escapeHtml(item.text)}</span>
+          </div>
+        `).join("")}
+        ${stageCards}
+        ${stepCards || `<div class="empty">鏆傛棤閾捐矾姝ラ鍙睍绀恒€?/div>`}
+      `;
+    }
+
+    async function loadPipelineStatus() {
+      const response = await fetch("/api/v1/cao/pipeline-status");
+      if (!response.ok) throw new Error("pipeline-status failed");
+      const data = await response.json();
+      renderSummary(data);
+      renderStages(data);
+      renderRuns(Array.isArray(data.recent_runs) ? data.recent_runs : []);
+      if (!currentRunId && Array.isArray(data.recent_runs) && data.recent_runs.length) {
+        currentRunId = data.recent_runs[0].uuid;
+        await loadTrace(currentRunId);
+      }
+    }
+
+    async function loadTrace(runId) {
+      const response = await fetch(`/api/v1/cao/runs/${runId}/trace`);
+      if (!response.ok) throw new Error("trace failed");
+      const data = await response.json();
+      renderTrace(data);
+    }
+
+    async function sendMessage() {
+      const message = messageInputEl.value.trim();
+      if (!message) return;
+
+      appendMessage("user", "浣?, message);
+      messageInputEl.value = "";
+      sendButtonEl.disabled = true;
+
+      try {
+        const response = await fetch("/api/v1/cmo/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message }),
+        });
+        if (!response.ok || !response.body) {
+          throw new Error("cmo chat failed");
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder("utf-8");
+        let buffer = "";
+
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || "";
+
+          for (const raw of lines) {
+            const line = raw.trim();
+            if (!line) continue;
+            const event = JSON.parse(line);
+
+            if (event.workflow_run_id) {
+              currentRunId = event.workflow_run_id;
+            }
+
+            if (event.type === "reply") {
+              appendMessage("reply", "CMO", event.message || "鏀跺埌銆?);
+            } else if (event.type === "status") {
+              const stage = event.stage || "娴佺▼";
+              appendMessage("status", stage, event.message || `${stage} 鐘舵€佹洿鏂癭);
+            } else if (event.type === "report") {
+              appendMessage("report", "鎶ュ憡", event.message || "宸茬敓鎴愭姤鍛娿€?);
+            } else if (event.type === "result") {
+              appendMessage("result", "浜や粯缁撴灉", event.message || "浠诲姟宸插畬鎴愩€?);
+              if (event.result?.workflow_run_id) currentRunId = event.result.workflow_run_id;
+            } else if (event.type === "error") {
+              appendMessage("error", "寮傚父", event.message || "娴佺▼鍑虹幇寮傚父銆?);
+            }
+          }
+        }
+
+        await loadPipelineStatus();
+        if (currentRunId) {
+          await loadTrace(currentRunId);
+        }
+      } catch (error) {
+        appendMessage("error", "绯荤粺", error instanceof Error ? error.message : "鍙戦€佸け璐?);
+      } finally {
+        sendButtonEl.disabled = false;
+      }
+    }
+
+    sendButtonEl.addEventListener("click", sendMessage);
+    messageInputEl.addEventListener("keydown", (event) => {
+      if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+        sendMessage();
+      }
+    });
+
+    loadPipelineStatus().catch((error) => {
+      appendMessage("error", "绯荤粺", error instanceof Error ? error.message : "鍒濆鍖栧け璐?);
+    });
+  </script>
+</body>
+</html>
+

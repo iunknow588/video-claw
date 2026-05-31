@@ -1,0 +1,11 @@
+{"event": "Database initialized", "logger": "app.db.session", "level": "info", "timestamp": "2026-05-31T05:53:45.080559Z"}
+INFO:     127.0.0.1:60771 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60803 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60804 - "GET /api/v1/workflows/skills HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60802 - "GET /api/v1/ceo/leaders/lead.cho HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60876 - "GET /ceo HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61421 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61794 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62010 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62178 - "GET /ceo HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:62189 - "GET /ceo HTTP/1.1" 500 Internal Server Error
