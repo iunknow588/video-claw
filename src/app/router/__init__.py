@@ -1,13 +1,13 @@
 from fastapi import APIRouter
 
-from departments.CEO.router.endpoints.analysis import router as analysis_router
-from departments.CEO.router.endpoints.cao import router as cao_router
-from departments.CEO.router.endpoints.cmo import router as cmo_router
-from departments.CEO.router.endpoints.hotspots import router as hotspots_router
-from departments.CEO.router.endpoints.operations import router as operations_router
-from departments.CEO.router.endpoints.promotion import router as promotion_router
-from departments.CEO.router.endpoints.scripts import router as scripts_router
-from departments.CEO.router.endpoints.videos import router as videos_router
+from app.router.endpoints.analysis import router as analysis_router
+from app.router.endpoints.cao import router as cao_router
+from app.router.endpoints.cmo import router as cmo_router
+from app.router.endpoints.hotspots import router as hotspots_router
+from app.router.endpoints.operations import router as operations_router
+from app.router.endpoints.promotion import router as promotion_router
+from app.router.endpoints.scripts import router as scripts_router
+from app.router.endpoints.videos import router as videos_router
 
 api_router = APIRouter()
 api_router.include_router(hotspots_router, prefix="/hotspots", tags=["hotspots"])

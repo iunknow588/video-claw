@@ -20,7 +20,6 @@ async def create_video_task(
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
 ):
-    """Create video generation task."""
     try:
         return await VideoApiUseCase(db).create_task(data, background_tasks)
     except LookupError as exc:
@@ -34,7 +33,6 @@ async def get_task_status(
     task_id: str,
     db: AsyncSession = Depends(get_db),
 ):
-    """Get video task status."""
     try:
         return await VideoApiUseCase(db).get_task_status(task_id)
     except LookupError as exc:
@@ -47,7 +45,6 @@ async def review_video_task(
     data: VideoReviewRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    """Review and approve or reject generated video."""
     try:
         return await VideoApiUseCase(db).review_task(
             task_id,
@@ -65,5 +62,4 @@ async def list_tasks(
     status: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
 ):
-    """List video tasks."""
     return await VideoApiUseCase(db).list_tasks(status=status)

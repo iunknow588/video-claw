@@ -22,10 +22,10 @@
 
 重点文件：
 
-- [src/app/CTO/services/ai_clients/__init__.py](</E:/2026OPC大赛/龙虾流程/src/app/CTO/services/ai_clients/__init__.py>)
-- [src/app/CCO/services/content_creation/__init__.py](</E:/2026OPC大赛/龙虾流程/src/app/CCO/services/content_creation/__init__.py>)
-- [src/app/COO/services/script_management/__init__.py](</E:/2026OPC大赛/龙虾流程/src/app/COO/services/script_management/__init__.py>)
-- [src/app/COO/services/video_production/__init__.py](</E:/2026OPC大赛/龙虾流程/src/app/COO/services/video_production/__init__.py>)
+- [src/departments/CTO/services/ai_clients/__init__.py](</E:/2026OPC大赛/龙虾流程/src/departments/CTO/services/ai_clients/__init__.py>)
+- [src/departments/CCO/services/content_creation/__init__.py](</E:/2026OPC大赛/龙虾流程/src/departments/CCO/services/content_creation/__init__.py>)
+- [src/departments/COO/services/script_management/__init__.py](</E:/2026OPC大赛/龙虾流程/src/departments/COO/services/script_management/__init__.py>)
+- [src/departments/COO/services/video_production/__init__.py](</E:/2026OPC大赛/龙虾流程/src/departments/COO/services/video_production/__init__.py>)
 - [src/alembic/versions/20260527_0001_initial_mvp_schema.py](E:\2026OPC大赛\龙虾流程\src\alembic\versions\20260527_0001_initial_mvp_schema.py)
 
 ## 3. 拿到 Key 后先做什么

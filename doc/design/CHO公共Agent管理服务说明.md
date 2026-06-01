@@ -45,7 +45,7 @@ CHO services 承担实际的部门编排职责：
 ## 3. 目录结构
 
 ```text
-app/CHO/
+departments/CHO/
   agent/
   leader/
   skills/

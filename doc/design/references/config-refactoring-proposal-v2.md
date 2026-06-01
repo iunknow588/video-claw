@@ -6,7 +6,7 @@
 
 ```
 config.yaml                          # 结构化配置（良好）
-app/CEO/core/config/__init__.py      # Pydantic Settings（良好）
+departments/CEO/core/config/__init__.py      # Pydantic Settings（良好）
 ├── 但：所有配置在一个大 Settings 类中
 ├── 但：环境变量与代码耦合
 └── 但：无统一验证机制

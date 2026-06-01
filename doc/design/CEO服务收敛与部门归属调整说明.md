@@ -10,7 +10,7 @@
 
 ## 2. CEO 应该保留什么
 
-`app/CEO/services/` 只保留三类核心能力：
+`departments/CEO/services/` 只保留三类核心能力：
 
 - `control/`
 - `control_plane/`

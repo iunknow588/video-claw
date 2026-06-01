@@ -17,7 +17,6 @@ async def create_analysis(
     data: AnalysisCreate,
     db: AsyncSession = Depends(get_db),
 ):
-    """Create AI analysis for a hotspot."""
     try:
         return await AnalysisApiUseCase(db).create_analysis(data)
     except LookupError as exc:
@@ -29,7 +28,6 @@ async def get_analysis_by_hotspot(
     hotspot_id: str,
     db: AsyncSession = Depends(get_db),
 ):
-    """Get analysis by hotspot ID."""
     try:
         return await AnalysisApiUseCase(db).get_analysis_by_hotspot(hotspot_id)
     except LookupError as exc:

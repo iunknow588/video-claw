@@ -9,12 +9,12 @@
 
 当前持久化相关职责主要集中在：
 
-- `src/app/CIO/db/session/`
-- `src/app/CIO/models/`
-- `src/app/CIO/services/data_access/`
-- `src/app/CIO/services/workflow_runs/`
-- `src/app/CIO/services/workflow_steps/`
-- `src/app/CIO/services/leader_reports/`
+- `src/departments/CIO/db/session/`
+- `src/departments/CIO/models/`
+- `src/departments/CIO/services/data_access/`
+- `src/departments/CIO/services/workflow_runs/`
+- `src/departments/CIO/services/workflow_steps/`
+- `src/departments/CIO/services/leader_reports/`
 
 其中核心模型包括但不限于：
 
@@ -33,9 +33,9 @@
 
 ## 3. 启动时会做什么
 
-应用启动时，`CEO/app.py` 会进入 lifespan，并调用：
+应用启动时，`src/app/app.py` 会进入 lifespan，并调用：
 
-- `src/app/CIO/db/session/__init__.py` 中的 `ensure_database_ready()`
+- `src/departments/CIO/db/session/__init__.py` 中的 `ensure_database_ready()`
 
 当前行为是：
 
@@ -105,8 +105,8 @@ python -m alembic -c alembic.ini upgrade head
 
 Leader 周期性报告和 CEO 主动查询结果也已经进入 `CIO` 的持久化边界，主要通过：
 
-- `src/app/CIO/models/leader_report/`
-- `src/app/CIO/services/leader_reports/`
+- `src/departments/CIO/models/leader_report/`
+- `src/departments/CIO/services/leader_reports/`
 
 这说明报告中心虽然服务于 `CEO` 治理，但记录和查询能力仍由 `CIO` 承接。
 

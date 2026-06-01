@@ -7,7 +7,7 @@
 
 当前代码的核心特征：
 
-- API 统一从 `CEO/router` 暴露
+- API 统一从中立装配层 `app/router` 暴露
 - 业务实现按部门落在各自的 `services/use_cases`、`services`、`skills`
 - 配置已拆分为 `departments / infrastructure / governance`
 - 运行期产物统一收敛到仓库根目录 `runtime/`
@@ -88,7 +88,7 @@ app/
 
 ### 4.1 API 入口层
 
-- 统一入口：`src/app/CEO/router/`
+- 统一入口：`src/app/router/`
 - 已暴露的主要路由分组：
   - `hotspots`
   - `analysis`
@@ -143,15 +143,15 @@ app/
 
 `CIO` 是基础设施与数据中台，主要目录包括：
 
-- `src/app/CIO/db/`：数据库 session
-- `src/app/CIO/models/`：核心数据模型
-- `src/app/CIO/services/data_access/`：Repository
-- `src/app/CIO/services/database_runtime/`：数据库运行时
-- `src/app/CIO/services/redis_runtime/`：Redis 运行时
-- `src/app/CIO/services/storage/`：媒体资产与视频存储
-- `src/app/CIO/services/runtime_assets/`：仓库根目录 `runtime/` 路径解析
-- `src/app/CIO/services/observability/`：日志、指标、追踪聚合
-- `src/app/CIO/services/leader_reports/`：Leader 报告记录与查询
+- `src/departments/CIO/db/`：数据库 session
+- `src/departments/CIO/models/`：核心数据模型
+- `src/departments/CIO/services/data_access/`：Repository
+- `src/departments/CIO/services/database_runtime/`：数据库运行时
+- `src/departments/CIO/services/redis_runtime/`：Redis 运行时
+- `src/departments/CIO/services/storage/`：媒体资产与视频存储
+- `src/departments/CIO/services/runtime_assets/`：仓库根目录 `runtime/` 路径解析
+- `src/departments/CIO/services/observability/`：日志、指标、追踪聚合
+- `src/departments/CIO/services/leader_reports/`：Leader 报告记录与查询
 
 ## 5. 配置结构
 

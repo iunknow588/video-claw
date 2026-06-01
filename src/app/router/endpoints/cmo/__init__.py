@@ -16,7 +16,6 @@ async def chat_with_cmo(
     data: ChatMessageRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    """Stream CMO events for the external communication channel."""
     return StreamingResponse(
         ChatStreamUseCase(db).stream_user_message(data.message),
         media_type="application/x-ndjson",

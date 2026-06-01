@@ -26,13 +26,13 @@
 
 ### 3.1 持久化与查询
 
-- `src/app/CIO/models/leader_report/`
-- `src/app/CIO/services/leader_reports/`
+- `src/departments/CIO/models/leader_report/`
+- `src/departments/CIO/services/leader_reports/`
 
 ### 3.2 CEO 内部治理与控制面
 
-- `src/app/CEO/services/control/`
-- `src/app/CEO/services/control_plane/`
+- `src/departments/CEO/services/control/`
+- `src/departments/CEO/services/control_plane/`
 
 ### 3.3 CAO 外部治理网关
 

@@ -19,7 +19,6 @@ async def create_hotspot(
     data: HotspotCreate,
     db: AsyncSession = Depends(get_db),
 ):
-    """Create a new hotspot item."""
     try:
         return await HotspotApiUseCase(db).create_hotspot(data)
     except ValueError as exc:
@@ -32,7 +31,6 @@ async def list_hotspots(
     limit: int = Query(50, ge=1, le=200),
     db: AsyncSession = Depends(get_db),
 ):
-    """List hotspot items."""
     return await HotspotApiUseCase(db).list_hotspots(platform=platform, limit=limit)
 
 
@@ -43,7 +41,6 @@ async def search_hotspots(
     limit: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
 ):
-    """Search hotspots by keyword."""
     return await HotspotApiUseCase(db).search_hotspots(
         keyword=keyword,
         platform=platform,
@@ -56,7 +53,6 @@ async def fetch_hotspots(
     data: HotspotFetchRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    """Fetch and persist hotspot items for a given platform and keyword."""
     try:
         return await HotspotApiUseCase(db).fetch_hotspots(data)
     except ValueError as exc:

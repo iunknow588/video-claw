@@ -19,7 +19,6 @@ async def create_script(
     data: ScriptCreate,
     db: AsyncSession = Depends(get_db),
 ):
-    """Generate new script from analysis."""
     try:
         return await ScriptApiUseCase(db).create_script(data)
     except LookupError as exc:
@@ -31,7 +30,6 @@ async def list_scripts(
     status: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
 ):
-    """List scripts."""
     return await ScriptApiUseCase(db).list_scripts(status=status)
 
 
@@ -41,7 +39,6 @@ async def review_script(
     data: ScriptReviewRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    """Review and approve or reject script."""
     try:
         return await ScriptApiUseCase(db).review_script(
             script_id,

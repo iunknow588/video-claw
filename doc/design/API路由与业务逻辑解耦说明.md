@@ -43,8 +43,8 @@
 ## 4. 目标 API 结构
 
 ```text
-app/
-  CEO/
+src/
+  app/
     app.py
     router/
       endpoints/
@@ -57,26 +57,27 @@ app/
         scripts/
         videos/
 
-  CAO/services/use_cases/
-    governance_gateway.py
-    workflow_gateway.py
-    public_console.py
+  departments/
+    CAO/services/use_cases/
+      governance_gateway.py
+      workflow_gateway.py
+      public_console.py
 
-  CMO/services/use_cases/
-    chat_stream.py
+    CMO/services/use_cases/
+      chat_stream.py
 
-  CIO/services/use_cases/
-    operations_query.py
+    CIO/services/use_cases/
+      operations_query.py
 
-  CEO/services/
-    control/
-    control_plane/
-    orchestration/
+    CEO/services/
+      control/
+      control_plane/
+      orchestration/
 ```
 
 说明：
 
-- `CEO/router` 当前只是应用装配层中的统一挂载点，不再代表 CEO 对外承接业务。
+- `src/app/router/` 是中立装配层，不属于任何部门。
 - 端点的语义归属以 URL 前缀和 use case 所在部门为准。
 
 ## 5. 路由到用例映射
@@ -160,7 +161,7 @@ app/
 
 路由层的正确结构不是“CEO 统一对外”，而是：
 
-- 应用装配可以集中
+- 应用装配中立集中
 - 对外职责必须分流
 - 行政入口归 `CAO`
 - 对话入口归 `CMO`

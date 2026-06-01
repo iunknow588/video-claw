@@ -45,7 +45,7 @@
 ## 3. 新结构
 
 ```text
-app/CEO/skills/registry/
+departments/CEO/skills/registry/
   └── SkillRegistry
 
 app/<Department>/skills/

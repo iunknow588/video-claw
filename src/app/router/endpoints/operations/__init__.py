@@ -23,7 +23,6 @@ router = APIRouter()
 async def get_operations_summary(
     db: AsyncSession = Depends(get_db),
 ):
-    """Return MVP-level counts, status breakdown, and cost summary."""
     return await OperationsQueryUseCase(db).build_summary()
 
 
@@ -33,7 +32,6 @@ async def list_reviews(
     limit: int = Query(50, ge=1, le=200),
     db: AsyncSession = Depends(get_db),
 ):
-    """List review records for scripts and videos."""
     return await OperationsQueryUseCase(db).list_reviews(item_type=item_type, limit=limit)
 
 
@@ -43,7 +41,6 @@ async def list_costs(
     limit: int = Query(50, ge=1, le=200),
     db: AsyncSession = Depends(get_db),
 ):
-    """List cost records across analysis, script, and video stages."""
     return await OperationsQueryUseCase(db).list_costs(source_type=source_type, limit=limit)
 
 
@@ -51,5 +48,4 @@ async def list_costs(
 async def get_storage_status(
     db: AsyncSession = Depends(get_db),
 ):
-    """Return the active video storage backend and sanitized config status."""
     return OperationsQueryUseCase(db).get_storage_status()
