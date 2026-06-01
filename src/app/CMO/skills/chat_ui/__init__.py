@@ -126,7 +126,7 @@ class ChatUISkill(BaseSkill):
         if self._is_company_status_query(message):
             return {
                 "intent": "company_status",
-                "reply_message": "收到，我来汇总 CEO 视角的生产系统状态。",
+                "reply_message": "收到，我来汇总当前生产治理总览。",
             }
 
         if self._is_workflow_snapshot_query(message):
@@ -138,25 +138,25 @@ class ChatUISkill(BaseSkill):
         if self._is_leader_list_query(message):
             return {
                 "intent": "leader_list",
-                "reply_message": "收到，我来列出当前归属 CEO 管辖的一级 Leader。",
+                "reply_message": "收到，我来列出当前一级 Leader 与归属部门。",
             }
 
         if self._is_enable_evolution_query(message):
             return {
                 "intent": "enable_evolution",
-                "reply_message": "收到，我来为 CEO 打开自主进化开关。",
+                "reply_message": "收到，我来打开治理演进开关。",
             }
 
         if self._is_disable_evolution_query(message):
             return {
                 "intent": "disable_evolution",
-                "reply_message": "收到，我来关闭 CEO 的自主进化。",
+                "reply_message": "收到，我来关闭治理演进开关。",
             }
 
         if self._is_evolution_cycle_query(message):
             return {
                 "intent": "evolution_cycle",
-                "reply_message": "收到，我来手动触发一轮 CEO 进化闭环。",
+                "reply_message": "收到，我来手动触发一轮治理演进闭环。",
             }
 
         if self._looks_like_workflow_command(message):

@@ -1,4 +1,4 @@
-﻿"""Compatibility promotion endpoint alias for the canonical CMO API."""
+"""Promotion-branded endpoint alias for the canonical CMO API."""
 
 from app.CEO.router.endpoints.cmo import router
 

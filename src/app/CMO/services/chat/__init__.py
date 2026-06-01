@@ -7,13 +7,15 @@ from typing import Any
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.CMO.skills import ChatUISkill, ProgressUISkill, ReportUISkill
 from app.CEO.services.control import CEOControlService
-from app.COO.services.use_cases.script_to_publish import ScriptToPublishUseCase
+from app.CEO.skills.runtime import SkillRuntimeManager
 from app.CIO.schemas.video import DomainWorkflowRequest
 from app.CIO.services.workflow_runs import WorkflowRunService
 from app.CIO.services.workflow_steps import WorkflowStepLogService
-from app.CEO.skills.runtime import SkillRuntimeManager
+from app.CMO.skills.chat_ui import ChatUISkill
+from app.CMO.skills.progress_ui import ProgressUISkill
+from app.CMO.skills.report_ui import ReportUISkill
+from app.COO.services.use_cases.script_to_publish import ScriptToPublishUseCase
 
 PromotionEventCallback = Callable[[dict[str, Any]], Awaitable[None] | None]
 
@@ -132,7 +134,7 @@ class CMOService:
         if intent == "leader_list":
             await self._emit_formatted_reply(parsed.get("reply_message", ""), event_callback)
             leaders = await self.ceo_control_service.list_leaders()
-            message = "当前归属 CEO 管辖的一级 Leader：\n" + "\n".join(
+            message = "当前一级 Leader 与归属部门：\n" + "\n".join(
                 f"{item['display_name']} | {item['name']} | 成功率 {item.get('metrics', {}).get('success_rate', 0.0) * 100:.1f}%"
                 for item in leaders["leaders"]
             )
@@ -207,7 +209,6 @@ class CMOService:
         await self._emit(event_callback, reply_event)
 
     async def _invoke_skill(self, skill: Any, payload: dict[str, Any]) -> dict[str, Any]:
-        skill_name = getattr(skill, "skill_name", None) or getattr(skill, "name", None) or skill.__class__.__name__
         invocation = await self.skill_runtime.invoke(
             skill,
             payload,

@@ -2,104 +2,134 @@
 
 ## 1. 调整目标
 
-本次调整的目标不是简单搬目录，而是把 `app/CEO/services` 恢复到“只做治理与编排”的清晰边界。
+本次调整要把 CEO 恢复成真正的治理内核，而不是“既治理、又接 API、又对外展示”的混合角色。
 
-收敛后的原则如下：
+收敛后的总原则只有一句话：
 
-- `CEO` 只保留公司级治理、控制平面、主流程编排
-- `CMO` 负责所有用户沟通与对话入口
-- `CIO` 负责内部运行数据、报告持久化、运营汇总与查询
-- `COO` 作为上游部门调用主流程时的生产入口
+`CEO 负责决策，其他部门负责对外执行。`
 
-## 2. 调整前的问题
+## 2. CEO 应该保留什么
 
-`app/CEO/services` 之前包含：
+`app/CEO/services/` 只保留三类核心能力：
 
-- `chat`
-- `control`
-- `control_plane`
-- `leader_reports`
-- `operations`
-- `orchestration`
-- `workflow`
+- `control/`
+- `control_plane/`
+- `orchestration/`
 
-其中有四类问题：
-
-1. `chat` 实际只是把消息转发给 `CMO`
-2. `leader_reports` 承担的是报告持久化，不是 CEO 独有业务
-3. `operations` 本质是内部运行指标聚合，更接近 CIO 的信息中枢
-4. `workflow` 只是工作流入口 facade，与 `orchestration` 分开后形成重复层次
-
-## 3. 调整后的归属
-
-### 3.1 CEO 保留
-
-`app/CEO/services` 现在只保留三块：
+对应含义：
 
 - `control`
+  公司级治理查询、Leader 管理、演进命令、报告治理
+
 - `control_plane`
+  组织结构、治理规则、Leader 注册表、主链路定义
+
 - `orchestration`
+  工作流装配、Pipeline 编排、执行记录协同
 
-说明：
+这些能力都属于“后台治理内核”，可以被别的部门调用，但不应该直接暴露给用户。
 
-- `control` 负责 CEO 的治理查询、状态汇总、命令下发
-- `control_plane` 负责组织结构、Leader 配置、治理规则
-- `orchestration` 负责主流程装配、执行、记录，以及工作流 facade
+## 3. CEO 不应该再保留什么
 
-### 3.2 CMO 承接 chat
+下面这些能力不应再由 CEO 直接对外承接：
 
-对话服务的规范入口调整为：
+- 对话入口
+- 公开控制台
+- 工作流提交入口
+- 公开治理查询路径
+- 面向用户的页面别名
 
-- `app/CMO/services/chat`
+也就是说，下面这些表达都是错误结构：
 
-说明：
+- `/api/ceo/chat`
+- `/api/ceo/company-status`
+- `/api/ceo/workflow`
+- `/api/ceo/leaders/*`
+- `/api/ceo/reports/*`
+- `/ceo`
 
-- 用户消息解释
-- 进度事件包装
-- 报告格式化
-- CEO 聊天路由只是调用 CMO，不再在 CEO 下保留对话服务壳层
+它们会让 CEO 从“治理者”退化成“前台接待员”。
 
-### 3.3 CIO 承接 leader_reports 与 operations
+## 4. 正确的承接方式
 
-内部汇总与记录服务统一归入：
+### 4.1 CMO 承接对话入口
 
-- `app/CIO/services/leader_reports`
-- `app/CIO/services/operations`
+对话、进度播报、结果汇报统一由 `CMO` 暴露：
 
-说明：
+- `/api/cmo/chat`
+- `/api/promotion/chat`
 
-- `leader_reports` 负责 Leader 报告的持久化与查询
-- 报告内容的生成仍然属于各个 Leader 自身
-- `operations` 负责热点、分析、脚本、视频、评审、成本等跨流程统计
-- CEO 只消费这些结果，不再拥有这些数据聚合实现
+### 4.2 CAO 承接公开流程与治理入口
 
-### 3.4 orchestration 吸收 workflow facade
+工作流提交、公开控制台、治理查询统一由 `CAO` 暴露：
 
-工作流入口 facade 合并到：
+- `/api/cao/pipeline-status`
+- `/api/cao/runs/*`
+- `/api/cao/workflows/*`
+- `/api/cao/governance/*`
+- `/cao`
 
-- `app/CEO/services/orchestration/domain_workflow.py`
+### 4.3 CIO 承接内部运行查询
 
-说明：
+运行摘要、成本、审核、存储、日志、事件、追踪统一由 `CIO` 承接。
 
-- 不再单独保留 `app/CEO/services/workflow`
-- 工作流入口与装配、执行、记录放在同一编排域中，结构更一致
+## 5. 服务调用关系
 
-## 4. 当前结构结论
+正确调用链路如下：
 
-当前结构更符合下面这条判断规则：
+```text
+用户 -> CAO / CMO / CIO -> use_case -> CEO internal service -> control_plane / orchestration
+```
 
-- 看到 `CEO/services`，就知道这里是治理与编排
-- 看到 `CMO/services/chat`，就知道这里是用户沟通入口
-- 看到 `CIO/services/operations`，就知道这里是内部运行指标中心
-- 看到 `CIO/services/leader_reports`，就知道这里是治理报告的记录与查询中心
+这条链路说明：
 
-这比“所有公司级能力都塞进 CEO”更容易理解，也更方便后续扩展。
+- CEO 仍然是核心大脑
+- 但 CEO 不直接出现在用户视角
+- 前台部门只做代理与呈现，不篡改治理职责
 
-## 5. 本次顺手修正
+## 6. 为什么不新增 COO 或其他部门承接公开入口
 
-在迁移 `operations` 时，一并修正了一个指标计算问题：
+不新增的原因如下：
 
-- `budget_usage_ratio` 之前会把 `cost_breakdown.total` 重复累计一次
-- 现在改为直接使用 `cost_breakdown.total`
+- `COO` 的职责是生产执行，不是行政入口
+- `CIO` 的职责是内部数据与基础设施，不是用户接入
+- `CAO` 天然适合做行政网关与公开控制台
+- `CMO` 天然适合做人机沟通入口
 
-这样 CFO 与 CEO 看到的预算占用比例与实际总成本保持一致。
+因此不需要再新增 `COO`、`CSO`、`CCO` 之外的平级新部门。
+
+## 7. 对当前代码结构的约束
+
+今后看到下面的目录时，应该有固定预期：
+
+- `CEO/services/control`
+  后台治理查询与命令
+
+- `CEO/services/control_plane`
+  规则、组织、配置
+
+- `CEO/services/orchestration`
+  主流程编排与运行协作
+
+- `CAO/services/use_cases`
+  对外流程和治理网关
+
+- `CMO/services/use_cases`
+  对话式入口
+
+- `CIO/services/use_cases`
+  内部运行查询
+
+只要某个“用户能直接访问的接口”又回到了 `CEO` 的公开路由前缀下，就说明边界被破坏了。
+
+## 8. 结论
+
+CEO 的正确定位不是“站在第一线”，而是“躲在队列后方做治理与演进”。
+
+本次收敛的判断标准很简单：
+
+- CEO 是否仍在公开 URL 中出现
+- CEO 是否仍在直接服务用户页面
+- CEO 是否仍在承接聊天或公开入口
+
+如果答案是“是”，就还没有收敛完成。

@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.CIO.models.script import Script
 from app.CIO.schemas.video import ScriptCreate
-from app.CIO.services.data_access import AnalysisRepository
+from app.CIO.services.data_access.analysis_repository import AnalysisRepository
 from app.COO.services.script_management import ScriptService
 
 

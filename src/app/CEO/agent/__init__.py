@@ -1,5 +1,5 @@
 from app.CEO.control import CEOControlService, control_plane
-from app.CEO.skills import CEOWorkflowSkill
+from app.CEO.skills.workflow import CEOWorkflowSkill
 
 
 class CEOAgent:

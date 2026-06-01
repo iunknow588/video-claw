@@ -8,7 +8,7 @@ from typing import Any, Dict
 from app.CEO.core.logging import get_logger
 from app.CIO.models.analysis import AnalysisReport
 from app.CIO.models.hotspot import HotspotItem
-from app.CIO.services.data_access import AnalysisRepository
+from app.CIO.services.data_access.analysis_repository import AnalysisRepository
 from app.CQO.services.audit import AuditService
 from app.CTO.services.ai_clients import (
     AIProviderError,

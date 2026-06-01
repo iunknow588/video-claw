@@ -209,58 +209,58 @@ class DomainWorkflowRequest(BaseModel):
     auto_generate_video: bool = False
 
 
-class CEOChatRequest(BaseModel):
+class ChatMessageRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=2000)
 
 
-class CEOLeaderCreateRequest(BaseModel):
+class GovernanceLeaderCreateRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     config: Dict[str, Any] = Field(default_factory=dict)
 
 
-class CEOLeaderUpdateRequest(BaseModel):
+class GovernanceLeaderUpdateRequest(BaseModel):
     config: Dict[str, Any] = Field(default_factory=dict)
 
 
-class CEORollbackRequest(BaseModel):
+class GovernanceRollbackRequest(BaseModel):
     version: int = Field(..., ge=1)
 
 
-class CEOWorkflowUpdateRequest(BaseModel):
+class GovernanceWorkflowUpdateRequest(BaseModel):
     graph_definition: Dict[str, Any]
 
 
-class CEOWorkflowEdgeRequest(BaseModel):
+class GovernanceWorkflowEdgeRequest(BaseModel):
     from_leader: str
     to_leader: str
 
 
-class CEOConditionalEdgeRequest(BaseModel):
+class GovernanceConditionalEdgeRequest(BaseModel):
     from_leader: str
     router_func: str
     mapping: Dict[str, str]
 
 
-class CEOOptimizeCommandRequest(BaseModel):
+class GovernanceOptimizeCommandRequest(BaseModel):
     target_metric: str
     goal_value: Any
     note: Optional[str] = None
 
 
-class CEOLeaderProposalRequest(BaseModel):
+class GovernanceLeaderProposalRequest(BaseModel):
     proposal: Dict[str, Any]
 
 
-class CEOBudgetRequest(BaseModel):
+class GovernanceBudgetRequest(BaseModel):
     token_limit: int = Field(..., ge=1)
 
 
-class CEOResourceAdjustRequest(BaseModel):
+class GovernanceResourceAdjustRequest(BaseModel):
     resource_type: str
     amount: Any
 
 
-class CEOReportCollectRequest(BaseModel):
+class GovernanceReportCollectRequest(BaseModel):
     cadence: str = Field(default="daily", min_length=1, max_length=30)
 
 

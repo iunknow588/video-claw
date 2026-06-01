@@ -20,9 +20,13 @@ from app.CEO.skills.runtime import SkillRuntimeManager
 from app.CFO.services.finance import FinanceService
 from app.CIO.models.analysis import AnalysisReport
 from app.CIO.models.hotspot import HotspotItem
-from app.CIO.services.data_access import HotspotRepository
-from app.CIO.services.event_bus import EventBus, EventPublisher, EventStore
-from app.CIO.services.observability import LogAggregator, MetricsReporter, TraceCollector
+from app.CIO.services.data_access.hotspot_repository import HotspotRepository
+from app.CIO.services.event_bus import EventBus
+from app.CIO.services.event_bus.event_publisher import EventPublisher
+from app.CIO.services.event_bus.event_store import EventStore
+from app.CIO.services.observability.log_aggregator import LogAggregator
+from app.CIO.services.observability.metrics_reporter import MetricsReporter
+from app.CIO.services.observability.trace_collector import TraceCollector
 from app.CIO.services.workflow_runs import WorkflowRunService
 from app.CIO.services.workflow_steps import WorkflowStepLogService
 from app.COO.services.script_management import ScriptService

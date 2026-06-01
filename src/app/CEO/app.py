@@ -62,10 +62,6 @@ def create_application() -> FastAPI:
     async def cao_console():
         return HTMLResponse(cao_console_html)
 
-    @application.get("/ceo", include_in_schema=False)
-    async def cao_console_compat_alias():
-        return HTMLResponse(cao_console_html)
-
     @application.get("/health")
     async def health_check():
         return {"status": "healthy", "version": application_runtime.version}

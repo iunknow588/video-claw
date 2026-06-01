@@ -8,7 +8,7 @@ from fastapi.encoders import jsonable_encoder
 
 from app.CEO.services.control_plane import control_plane
 from app.CIO.models.step_log import WorkflowStepLog
-from app.CIO.services.data_access import WorkflowRepository
+from app.CIO.services.data_access.workflow_repository import WorkflowRepository
 
 
 class WorkflowStepLogService:

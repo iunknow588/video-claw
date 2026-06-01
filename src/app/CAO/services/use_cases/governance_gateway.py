@@ -5,8 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.CEO.services.control import CEOControlService
 
 
-class CEOControlApiUseCase:
-    """API-facing governance use case owned by CEO."""
+class GovernanceGatewayUseCase:
+    """CAO-owned governance gateway backed by the internal CEO control service."""
 
     def __init__(self, session: AsyncSession):
         self.service = CEOControlService(session)

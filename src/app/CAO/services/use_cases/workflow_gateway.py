@@ -11,8 +11,8 @@ from app.CIO.services.workflow_runs import WorkflowRunService
 from app.CIO.services.workflow_steps import WorkflowStepLogService
 
 
-class WorkflowApiUseCase:
-    """API-facing workflow use case owned by CEO."""
+class WorkflowGatewayUseCase:
+    """CAO-owned public workflow gateway backed by the internal workflow engine."""
 
     def __init__(self, session: AsyncSession):
         self.domain_workflow_service = DomainWorkflowService(session)

@@ -1,75 +1,121 @@
-﻿# CIO 鎸佷箙鍖栧垵濮嬪寲璇存槑
+# CIO 持久化初始化说明
 
-## 1. 褰撳墠鎸佷箙鍖栬寖鍥?
-涓烘妸 CIO 浠庘€滆繘绋嬪唴淇℃伅缂撳瓨鈥濆崌绾т负鈥滃彲杩芥函鐨勪俊鎭簳搴р€濓紝褰撳墠绯荤粺宸茬粡钀藉簱浜嗕笁绫绘牳蹇冩暟鎹細
+## 1. 目标
 
-- `artifact_records`
-- `information_events`
-- `knowledge_assets`
+`CIO` 现在已经不是简单的“内存态信息缓存层”，而是整个系统的数据与持久化中台。  
+这份文档说明当前持久化初始化由谁负责、初始化到什么程度、哪些能力已经归 `CIO` 管理。
 
-瀵瑰簲妯″瀷鏂囦欢锛?
-- `src/app/models/artifact.py`
-- `src/app/models/information_event.py`
-- `src/app/models/knowledge_asset.py`
+## 2. 当前持久化职责
 
-姝ゅ锛屼笌娌荤悊鐩稿叧鐨?`leader_reports` 涔熷凡缁忔寔涔呭寲锛屼絾瀹冨睘浜?CEO 鎶ュ憡涓績锛屼笉灞炰簬 CIO 鏍稿績浠撳簱琛ㄦ湰韬€?
-## 2. 鍒濆鍖栬矾寰?
-褰撳墠椤圭洰杩樻病鏈夌嫭绔嬭縼绉绘鏋讹紝浠嶉噰鐢ㄨ交閲忓垵濮嬪寲鏂瑰紡锛?
-- `src/main.py`
-- `src/app/db/session.py`
+当前持久化相关职责主要集中在：
 
-鍚姩杩囩▼濡備笅锛?
-1. FastAPI 搴旂敤鍚姩
-2. 瑙﹀彂 `startup_event`
-3. 璋冪敤 `init_db()`
-4. `init_db()` 閫氳繃 `Base.metadata.create_all()` 鍒涘缓缂哄け琛?
-杩欐剰鍛崇潃锛?
-- 鏂扮幆澧冮娆″惎鍔ㄦ椂锛屼細鑷姩琛ラ綈 CIO 鐩稿叧琛?- 娴嬭瘯鐜涓殑鏁版嵁搴撲篃浼氳嚜鍔ㄥ垵濮嬪寲
+- `src/app/CIO/db/session/`
+- `src/app/CIO/models/`
+- `src/app/CIO/services/data_access/`
+- `src/app/CIO/services/workflow_runs/`
+- `src/app/CIO/services/workflow_steps/`
+- `src/app/CIO/services/leader_reports/`
 
-## 3. 褰撳墠瀹炵幇鏄惁鍑嗙‘
+其中核心模型包括但不限于：
 
-鏍规嵁鐜版湁浠ｇ爜锛岃繖浠借鏄庡湪澶ф柟鍚戜笂鏄噯纭殑锛屼絾闇€瑕佽ˉ鍏呬袱鐐癸細
+- `analysis`
+- `artifact`
+- `cost`
+- `hotspot`
+- `information_event`
+- `knowledge_asset`
+- `leader_report`
+- `review`
+- `script`
+- `step_log`
+- `video`
+- `workflow`
 
-1. CIO 宸蹭笉鏄函鍐呭瓨浠撳簱锛屾枃妗ｅ繀椤绘槑纭繖涓€鐐广€?2. 褰撳墠闄や簡 CIO 涓夊紶鏍稿績琛ㄥ锛屾不鐞嗗眰杩樻柊澧炰簡 `leader_reports`锛屽畠涓?CEO 鎶ュ憡鏈哄埗鐩稿叧锛屽垵濮嬪寲璺緞鐩稿悓銆?
-## 4. 榛樿鐭ヨ瘑璧勪骇
+## 3. 启动时会做什么
 
-`knowledge_assets` 閲囩敤鎳掑垵濮嬪寲鏂瑰紡銆?
-棣栨璁块棶 CIO 鐭ヨ瘑搴撴椂锛屽鏋滄暟鎹簱涓琛ㄤ负绌猴紝浼氳嚜鍔ㄥ啓鍏ラ粯璁よ祫浜э紝涓昏鍖呮嫭锛?
-- 鐖嗘妗堜緥
-- 妯℃澘
-- 骞冲彴鎶曟斁鎸囧崡
+应用启动时，`CEO/app.py` 会进入 lifespan，并调用：
 
-榛樿鏁版嵁瀹氫箟浣嶇疆锛?
-- `src/app/services/cio.py`
+- `src/app/CIO/db/session/__init__.py` 中的 `ensure_database_ready()`
 
-## 5. 浣跨敤涓殑闄愬埗
+当前行为是：
 
-褰撳墠 `create_all()` 鏂规閫傚悎蹇€熸帹杩涳紝浣嗘湁鏄庢樉杈圭晫锛?
-1. 瀹冨彧鑳藉垱寤轰笉瀛樺湪鐨勮〃
-2. 瀹冧笉浼氳嚜鍔ㄤ慨鏀瑰凡鏈夎〃缁撴瀯
-3. 濡傛灉鍚庣画瀛楁鍙樺寲棰戠箒锛屼粎闈?`create_all()` 浼氳秺鏉ヨ秺闅剧淮鎶?
-鎵€浠ュ畠閫傚悎浣滀负褰撳墠闃舵鐨勫惎鍔ㄦ柟妗堬紝浣嗕笉閫傚悎浣滀负闀挎湡杩佺Щ鏂规銆?
-## 6. 寤鸿楠岃瘉鏂瑰紡
+1. 构造数据库 engine
+2. 检查数据库连通性
+3. 确认运行期可以正常访问数据库
 
-鍦ㄥ紑鍙戠幆澧冧腑锛屽彲浠ユ墜鍔ㄦ墽琛屼竴娆℃樉寮忓垵濮嬪寲妫€鏌ワ細
+注意：
+
+- 应用启动不会自动建表
+- 应用启动不会自动执行 Alembic 迁移
+- schema 变更统一通过 `alembic.ini + src/alembic/` 管理
+
+## 4. 迁移入口
+
+当前迁移入口位于仓库根目录：
+
+- `alembic.ini`
+- `src/alembic/env.py`
+- `src/alembic/versions/`
+
+标准执行方式：
 
 ```powershell
-cd E:\2026OPC澶ц禌\榫欒櫨娴佺▼\src
-.\.venv\Scripts\python.exe -c "import asyncio; from app.db.session import init_db; asyncio.run(init_db())"
+python -m alembic -c alembic.ini upgrade head
 ```
 
-闅忓悗鍙鏌ワ細
+这意味着当前的持久化初始化是“两阶段”的：
 
-- `/api/ceo/company-status`
-- `/api/cmo/chat`
-- `/api/workflows/runs`
+1. 先跑 Alembic，确保结构到位
+2. 再启动应用，确保连接可用
 
-濡傛灉杩欎簺鎺ュ彛姝ｅ父杩斿洖锛岄€氬父璇存槑鏁版嵁搴撳垵濮嬪寲閾捐矾鏄彲鐢ㄧ殑銆?
-## 7. 涓嬩竴姝ュ缓璁?
-涓嬩竴闃舵鏈€鍊煎緱琛ョ殑鏄寮忚縼绉讳綋绯伙細
+## 5. CIO 持久化边界
 
-1. 寮曞叆 Alembic
-2. 涓?`artifact_records`銆乣information_events`銆乣knowledge_assets`銆乣leader_reports` 寤虹珛杩佺Щ鑴氭湰
-3. 鍚庣画琛ㄧ粨鏋勫彉鏇村叏閮ㄨ蛋 migration锛岃€屼笉鍐嶄緷璧?`create_all()`
+### 5.1 CIO 自己直接拥有
 
+- 数据库 session
+- SQLAlchemy 模型
+- repository 层
+- workflow run / step log 记录
+- leader report 记录与查询
+- 知识资产、分析结果、热点、脚本、视频等核心数据访问
 
+### 5.2 其他部门如何使用
+
+其他部门不应直接把持久化逻辑散落在自己的 API 或 skill 中，而是：
+
+- 通过 `CIO/models`
+- 通过 `CIO/services/data_access`
+- 或通过 `CIO/services/*` 中的聚合服务
+
+这也是当前“CIO 统一数据层”的落地方式。
+
+## 6. 与工作流的关系
+
+工作流相关持久化已经分成两层：
+
+- `workflow_runs`
+  负责工作流整体运行记录
+
+- `workflow_steps`
+  负责步骤日志、阶段性 trace 和明细事件
+
+这样 `CEO` 可以专注编排，`CIO` 专注记录与查询。
+
+## 7. 与报告机制的关系
+
+Leader 周期性报告和 CEO 主动查询结果也已经进入 `CIO` 的持久化边界，主要通过：
+
+- `src/app/CIO/models/leader_report/`
+- `src/app/CIO/services/leader_reports/`
+
+这说明报告中心虽然服务于 `CEO` 治理，但记录和查询能力仍由 `CIO` 承接。
+
+## 8. 结论
+
+当前持久化初始化的正确理解是：
+
+- 结构初始化：Alembic 负责
+- 连接检查：应用启动时负责
+- 数据边界：CIO 统一承接
+
+也就是说，`CIO` 已经是系统真正的数据底座，而不是临时性的信息缓存层。

@@ -6,7 +6,7 @@
 
 联调目录：
 
-- `E:\2026OPC大赛\龙虾流程\src`
+- `E:\2026OPC大赛\龙虾流程`
 
 ## 2. 当前代码已经准备好的内容
 
@@ -22,10 +22,10 @@
 
 重点文件：
 
-- [src/app/services/ai_clients.py](E:\2026OPC大赛\龙虾流程\src\app\services\ai_clients.py)
-- [src/app/services/analysis.py](E:\2026OPC大赛\龙虾流程\src\app\services\analysis.py)
-- [src/app/services/script.py](E:\2026OPC大赛\龙虾流程\src\app\services\script.py)
-- [src/app/services/video.py](E:\2026OPC大赛\龙虾流程\src\app\services\video.py)
+- [src/app/CTO/services/ai_clients/__init__.py](</E:/2026OPC大赛/龙虾流程/src/app/CTO/services/ai_clients/__init__.py>)
+- [src/app/CCO/services/content_creation/__init__.py](</E:/2026OPC大赛/龙虾流程/src/app/CCO/services/content_creation/__init__.py>)
+- [src/app/COO/services/script_management/__init__.py](</E:/2026OPC大赛/龙虾流程/src/app/COO/services/script_management/__init__.py>)
+- [src/app/COO/services/video_production/__init__.py](</E:/2026OPC大赛/龙虾流程/src/app/COO/services/video_production/__init__.py>)
 - [src/alembic/versions/20260527_0001_initial_mvp_schema.py](E:\2026OPC大赛\龙虾流程\src\alembic\versions\20260527_0001_initial_mvp_schema.py)
 
 ## 3. 拿到 Key 后先做什么
@@ -75,8 +75,8 @@ MEDIA_URL_PREFIX=/media
 运行：
 
 ```powershell
-cd E:\2026OPC大赛\龙虾流程\src
-.\.venv\Scripts\python.exe scripts\preflight_check.py
+cd E:\2026OPC大赛\龙虾流程
+.\.venv\Scripts\python.exe src\scripts\preflight_check.py
 ```
 
 用途：
@@ -90,7 +90,7 @@ cd E:\2026OPC大赛\龙虾流程\src
 运行：
 
 ```powershell
-.\.venv\Scripts\python.exe scripts\smoke_real_ai.py
+.\.venv\Scripts\python.exe src\scripts\smoke_real_ai.py
 ```
 
 这个脚本会直接走服务层，依次触发：
@@ -121,7 +121,7 @@ cd E:\2026OPC大赛\龙虾流程\src
 运行：
 
 ```powershell
-.\.venv\Scripts\python.exe -m alembic upgrade head
+.\.venv\Scripts\python.exe -m alembic -c alembic.ini upgrade head
 ```
 
 正常说明：
@@ -141,7 +141,7 @@ docker-compose up -d db redis
 启动服务：
 
 ```powershell
-uvicorn main:app --reload
+python -m uvicorn main:app --app-dir src --reload
 ```
 
 打开：
@@ -203,7 +203,7 @@ uvicorn main:app --reload
 
 1. `preflight_check.py`
 2. `smoke_real_ai.py`
-3. `alembic upgrade head`
-4. `uvicorn main:app --reload`
+3. `python -m alembic -c alembic.ini upgrade head`
+4. `python -m uvicorn main:app --app-dir src --reload`
 5. Swagger 主链路联调
 

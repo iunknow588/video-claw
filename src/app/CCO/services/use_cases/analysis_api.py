@@ -5,7 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.CCO.services.content_creation import AIAnalysisService
 from app.CIO.models.analysis import AnalysisReport
 from app.CIO.schemas.video import AnalysisCreate
-from app.CIO.services.data_access import AnalysisRepository, HotspotRepository
+from app.CIO.services.data_access.analysis_repository import AnalysisRepository
+from app.CIO.services.data_access.hotspot_repository import HotspotRepository
 
 
 class AnalysisApiUseCase:

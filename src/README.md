@@ -1,64 +1,238 @@
-﻿# AI Video Auto Production Line - MVP Backend
+# AI Video Auto Production Line
 
 ## 1. 项目定位
 
-当前代码库已经不是单纯的接口骨架，而是一个可联调、可测试的 MVP 后端原型，覆盖了以下主流程：
+当前仓库已经不是早期的单体 MVP 骨架，而是一个按部门职责拆分的多角色视频生产系统。  
+系统以 `CEO` 为统一治理与编排入口，通过 `CFO -> CSO -> CCO -> CTO -> COO -> CQO -> CAO` 的主链路完成从选题到交付的流程，并由 `CIO / CHO / CMO` 提供运行支撑、公共能力和展示入口。
 
-1. 热点采集
-2. AI 分析
-3. 脚本生成
-4. 脚本审核
-5. 视频任务创建
-6. 视频结果存储
-7. 视频审核
-8. 运营统计、审核记录、成本记录查询
+当前代码的核心特征：
 
-当前仍属于 MVP 阶段，DeepSeek / GLM / Seedance 真实接口还没有完全接通，部分实现仍为占位逻辑。
+- API 统一从 `CEO/router` 暴露
+- 业务实现按部门落在各自的 `services/use_cases`、`services`、`skills`
+- 配置已拆分为 `departments / infrastructure / governance`
+- 运行期产物统一收敛到仓库根目录 `runtime/`
+- 数据访问、运行日志、媒体资产、工作流记录等基础能力集中到 `CIO`
 
-## 2. 技术栈
+## 2. 当前系统结构
 
-- FastAPI
-- SQLAlchemy Async
-- MySQL 8.0
-- Redis / Celery
-- pytest / pytest-asyncio / aiosqlite
+### 2.1 主流程
 
-## 3. 本地启动
+默认主流程可以理解为：
 
-进入目录：
+```text
+CFO -> CSO -> CCO -> CTO -> COO -> CQO -> CAO
+```
+
+各环节职责：
+
+- `CFO`：预算闸门、成本估算、余额校验、扣费
+- `CSO`：热点采集、检索、候选整理
+- `CCO`：内容分析、热点拆解、分析结果沉淀
+- `CTO`：提示词体系、标题候选、生产前技术校验
+- `COO`：脚本生成、视频生产、字幕/配音/渲染编排
+- `CQO`：质检、交付前检查、返工建议
+- `CAO`：发布交付、平台适配、回调与交付记录
+
+### 2.2 治理与支撑
+
+- `CEO`：统一 API 入口、工作流编排、控制平面、Leader 治理、报告收集
+- `CIO`：数据库、Redis、存储、运行期资产、观测、报告持久化、运营查询
+- `CHO`：公共 Agent 注册、能力目录、健康状态
+- `CMO`：对话入口、进度/报告展示、对外沟通界面
+
+## 3. 仓库目录
+
+当前仓库按“源码 / 配置 / 运行期资产 / 设计文档”分区：
+
+```text
+repo/
+|-- Dockerfile
+|-- docker-compose.yml
+|-- alembic.ini
+|-- pytest.ini
+|-- runtime/                   # 运行期产物
+|   |-- logs/
+|   `-- media/
+|-- doc/
+|   `-- design/                # 设计说明与重构文档
+`-- src/
+    |-- app/                   # 业务源码
+    |-- config/                # 分域配置
+    |-- alembic/               # 数据迁移脚本
+    |-- scripts/               # 联调/预检脚本
+    |-- tests/                 # 测试
+    |-- main.py                # 启动入口
+    `-- requirements.txt
+```
+
+### 3.1 `src/app` 当前顶层模块
+
+```text
+app/
+|-- CEO/
+|-- CIO/
+|-- CFO/
+|-- CHO/
+|-- CMO/
+|-- CAO/
+|-- COO/
+|-- CQO/
+|-- CTO/
+|-- CSO/
+`-- CCO/
+```
+
+这 11 个目录就是当前系统真实使用的部门边界。
+
+## 4. 源码分层
+
+### 4.1 API 入口层
+
+- 统一入口：`src/app/CEO/router/`
+- 已暴露的主要路由分组：
+  - `hotspots`
+  - `analysis`
+  - `scripts`
+  - `videos`
+  - `operations`
+  - `workflows`
+  - `cmo`
+  - `promotion`
+  - `cao`
+  - `ceo`
+
+这里负责参数接收、响应返回和路由挂载，不承担底层持久化与复杂业务编排。
+
+### 4.2 用例层
+
+当前主要 use case 已按部门归位：
+
+- `CEO/services/use_cases/`
+  - `workflow_api.py`
+  - `ceo_control_api.py`
+- `CIO/services/use_cases/`
+  - `operations_query.py`
+- `CAO/services/use_cases/`
+  - `public_console.py`
+  - `publish_delivery.py`
+- `CCO/services/use_cases/`
+  - `analysis_api.py`
+  - `content_analysis.py`
+- `COO/services/use_cases/`
+  - `script_api.py`
+  - `video_api.py`
+  - `script_to_publish.py`
+  - `video_production.py`
+- `CQO/services/use_cases/`
+  - `quality_gate.py`
+- `CFO/services/use_cases/`
+  - `finance_gate.py`
+
+### 4.3 编排层
+
+工作流编排归 `CEO/services/orchestration/`，其中：
+
+- `domain_workflow.py`：工作流 facade
+- `assembly/`：装配部门能力
+- `engine/`：执行引擎
+- `recorder/`：执行记录
+- `domains/`：按阶段拆分的 pipeline
+- `pipeline.py`：统一 pipeline 输入输出协议
+
+### 4.4 数据与基础设施层
+
+`CIO` 是基础设施与数据中台，主要目录包括：
+
+- `src/app/CIO/db/`：数据库 session
+- `src/app/CIO/models/`：核心数据模型
+- `src/app/CIO/services/data_access/`：Repository
+- `src/app/CIO/services/database_runtime/`：数据库运行时
+- `src/app/CIO/services/redis_runtime/`：Redis 运行时
+- `src/app/CIO/services/storage/`：媒体资产与视频存储
+- `src/app/CIO/services/runtime_assets/`：仓库根目录 `runtime/` 路径解析
+- `src/app/CIO/services/observability/`：日志、指标、追踪聚合
+- `src/app/CIO/services/leader_reports/`：Leader 报告记录与查询
+
+## 5. 配置结构
+
+配置目录不再是单一大文件，而是三类分域：
+
+```text
+src/config/
+|-- departments/
+|   |-- CFO/finance.yaml
+|   |-- COO/production.yaml
+|   `-- CSO/hotspot.yaml
+|-- infrastructure/
+|   |-- ai_providers.yaml
+|   |-- database.yaml
+|   |-- redis.yaml
+|   `-- storage.yaml
+`-- governance/
+    |-- application.yaml
+    |-- departments.yaml
+    |-- leaders.yaml
+    |-- permissions.yaml
+    `-- workflow.yaml
+```
+
+职责划分：
+
+- `departments/`：部门业务配置
+- `infrastructure/`：CIO 基础设施配置
+- `governance/`：CEO 治理与编排配置
+
+## 6. 运行期资产
+
+运行期文件统一放在仓库根目录 `runtime/`，不再混在 `src/` 中：
+
+```text
+runtime/
+|-- logs/
+`-- media/
+    |-- audio/
+    |-- subtitles/
+    |-- renders/
+    `-- videos/
+```
+
+当前默认路径：
+
+- 日志文件：`runtime/logs/app.log`
+- 本地媒体根目录：`runtime/media`
+- 本地视频访问前缀：`/media/videos/...`
+
+## 7. 本地启动
+
+从仓库根目录执行：
 
 ```powershell
 cd E:\2026OPC大赛\龙虾流程
-```
-
-创建虚拟环境并安装依赖：
-
-```powershell
 python -m venv .venv
 .\.venv\Scripts\activate
 pip install -r src/requirements.txt
 ```
 
-准备 `.env`：
+准备环境变量时，至少确认：
 
 ```env
-DEBUG=true
 DATABASE_URL=mysql+aiomysql://root:password@127.0.0.1:3306/ai_video_prod?charset=utf8mb4
-DEEPSEEK_API_KEY=
-GLM_API_KEY=
-SEEDANCE_API_KEY=
-AI_USE_PLACEHOLDER_WHEN_UNCONFIGURED=true
-
 VIDEO_STORAGE_BACKEND=local
 MEDIA_ROOT=runtime/media
 MEDIA_URL_PREFIX=/media
-MEDIA_BASE_URL=
+AI_USE_PLACEHOLDER_WHEN_UNCONFIGURED=true
 ```
 
-启动基础服务：
+启动依赖服务：
 
 ```powershell
 docker-compose up -d db redis
+```
+
+执行迁移：
+
+```powershell
+python -m alembic -c alembic.ini upgrade head
 ```
 
 启动应用：
@@ -67,218 +241,19 @@ docker-compose up -d db redis
 python -m uvicorn main:app --app-dir src --reload
 ```
 
-调试入口：
+访问入口：
 
-- Swagger: `http://127.0.0.1:8000/docs`
-- Health: `http://127.0.0.1:8000/health`
-
-## 4. 视频存储后端
-
-当前支持四类视频存储：
-
-- `local`
-- `github_release`
-- `ipfs`
-- `s3_compatible`
-
-### 4.1 推荐顺序
-
-开发 / 比赛演示阶段推荐：
-
-1. `local`
-2. 如需公网外链小样片，可选 `github_release`
-
-正式部署推荐：
-
-1. `s3_compatible`
-2. 配合 CDN
-
-不建议把 `ipfs` 或 `github_release` 当成主视频库。
-
-### 4.2 local
-
-```env
-VIDEO_STORAGE_BACKEND=local
-MEDIA_ROOT=runtime/media
-MEDIA_URL_PREFIX=/media
-MEDIA_BASE_URL=
-```
+- Swagger：`http://127.0.0.1:8000/docs`
+- Health：`http://127.0.0.1:8000/health`
+- CAO 控制台：`http://127.0.0.1:8000/cao`
 
 说明：
 
-- 文件保存在仓库根目录的 `runtime/media/videos`
-- FastAPI 已自动挂载 `/media/...`
-- 最适合本地调试和比赛演示
+- 应用启动时会检查数据库连通性
+- 应用不会自动执行 Alembic 迁移
+- 本地媒体文件会自动挂载到 `/media`
 
-### 4.3 GitHub Release
-
-```env
-VIDEO_STORAGE_BACKEND=github_release
-GITHUB_STORAGE_OWNER=
-GITHUB_STORAGE_REPO=
-GITHUB_STORAGE_TOKEN=
-GITHUB_STORAGE_RELEASE_TAG=video-assets
-```
-
-说明：
-
-- 适合少量演示素材
-- 不适合高频写入、批量审核视频、生命周期管理
-
-### 4.4 IPFS
-
-```env
-VIDEO_STORAGE_BACKEND=ipfs
-IPFS_API_URL=http://127.0.0.1:5001
-IPFS_GATEWAY_URL=https://ipfs.io/ipfs
-IPFS_PIN_ON_ADD=true
-```
-
-说明：
-
-- 技术上可接入
-- 想稳定访问，需要 pinning 或自建节点
-- 更适合展示型或分发型场景，不适合当前项目作为主存储
-
-### 4.5 S3 兼容对象存储
-
-适用于 MinIO、AWS S3、Cloudflare R2、阿里云 OSS 的 S3 兼容模式、腾讯云 COS 的 S3 兼容模式等。
-
-```env
-VIDEO_STORAGE_BACKEND=s3_compatible
-S3_ENDPOINT_URL=
-S3_ACCESS_KEY_ID=
-S3_SECRET_ACCESS_KEY=
-S3_BUCKET=
-S3_REGION=
-S3_OBJECT_PREFIX=videos
-S3_PUBLIC_BASE_URL=
-```
-
-说明：
-
-- `S3_ENDPOINT_URL` 可为空，留给 AWS S3 默认地址
-- `S3_PUBLIC_BASE_URL` 建议配置成 CDN 或公开访问域名
-- 未配置 `S3_PUBLIC_BASE_URL` 时，代码会按常见 S3 URL 规则回填访问地址
-
-## 5. AI 接口接入骨架
-
-当前已经接入真实 AI 客户端骨架：
-
-- DeepSeek: `/chat/completions`
-- GLM: `/chat/completions`
-- Seedance: `/videos/generations`
-
-说明：
-
-- 已支持超时、基础重试、错误捕获
-- 如果未配置 API Key，默认自动回退到占位结果，方便本地联调
-- 如需强制真实调用，可将 `AI_USE_PLACEHOLDER_WHEN_UNCONFIGURED=false`
-
-建议环境变量：
-
-```env
-DEEPSEEK_API_KEY=
-DEEPSEEK_BASE_URL=https://api.deepseek.com/v1
-DEEPSEEK_MODEL=deepseek-v4
-
-GLM_API_KEY=
-GLM_BASE_URL=https://open.bigmodel.cn/api/paas/v4
-GLM_MODEL=glm-5.1
-
-SEEDANCE_API_KEY=
-SEEDANCE_BASE_URL=https://api.seedance.ai/v1
-SEEDANCE_MODEL=seedance-2.0
-
-AI_HTTP_TIMEOUT=60
-AI_MAX_RETRIES=2
-AI_USE_PLACEHOLDER_WHEN_UNCONFIGURED=true
-```
-
-## 6. Alembic 数据迁移
-
-已初始化：
-
-- `alembic.ini`
-- `src/alembic/env.py`
-- `src/alembic/versions/20260527_0001_initial_mvp_schema.py`
-- `src/alembic/versions/20260529_0002_workflow_runs.py`
-- `src/alembic/versions/20260529_0003_step_logs.py`
-
-执行迁移：
-
-```powershell
-python -m alembic -c alembic.ini upgrade head
-```
-
-应用启动不会自动建表；请先执行迁移，再启动服务。
-
-生成新迁移：
-
-```powershell
-python -m alembic -c alembic.ini revision -m "your change"
-```
-
-## 7. 主要接口
-
-### 热点
-
-- `POST /api/hotspots`
-- `GET /api/hotspots`
-- `GET /api/hotspots/search`
-- `POST /api/hotspots/fetch`
-
-### 分析
-
-- `POST /api/analysis`
-- `GET /api/analysis/hotspot/{hotspot_id}`
-
-### 脚本
-
-- `POST /api/scripts`
-- `GET /api/scripts`
-- `POST /api/scripts/review/{script_id}`
-
-### 视频
-
-- `POST /api/videos`
-- `GET /api/videos`
-- `GET /api/videos/task/{task_id}`
-- `POST /api/videos/review/{task_id}`
-
-### 运营与存储
-
-- `GET /api/operations/summary`
-- `GET /api/operations/reviews`
-- `GET /api/operations/costs`
-- `GET /api/operations/storage`
-
-其中 `GET /api/operations/storage` 用于查看当前启用的存储后端和脱敏后的配置状态。
-
-### 工作流
-
-- `POST /api/workflows/domain-auto-run`
-- `GET /api/workflows/runs`
-
-## 8. 推荐演示顺序
-
-1. 调用 `POST /api/hotspots/fetch`
-2. 调用 `POST /api/analysis`
-3. 调用 `POST /api/scripts`
-4. 调用 `POST /api/scripts/review/{script_id}`
-5. 调用 `POST /api/videos`
-6. 调用 `POST /api/videos/review/{task_id}`
-7. 调用 `GET /api/operations/summary`
-8. 调用 `GET /api/operations/reviews`
-9. 调用 `GET /api/operations/costs`
-10. 调用 `GET /api/operations/storage`
-
-如需走领域驱动自动链路，可直接调用：
-
-11. `POST /api/workflows/domain-auto-run`
-12. `GET /api/workflows/runs`
-
-## 9. 测试
+## 8. 测试与脚本
 
 运行测试：
 
@@ -286,41 +261,53 @@ python -m alembic -c alembic.ini revision -m "your change"
 python -m pytest -c pytest.ini src/tests -q
 ```
 
-当前补充的测试重点包括：
+辅助脚本目录：
 
-- 热点搜索与占位采集
-- 分析 -> 脚本 -> 视频主流程
-- 审核记录与成本记录
-- 本地视频存储
-- S3 兼容存储工厂选择与配置描述
-- API 层主流程联调
-- 存储状态接口
-- 领域工作流与运行记录查询
+- `src/scripts/preflight_check.py`：启动前配置检查
+- `src/scripts/api_workflow_smoke.py`：API 工作流冒烟
+- `src/scripts/smoke_real_ai.py`：真实 AI 接口联调冒烟
 
-## 10. 当前仍未完成的部分
+## 9. 设计文档索引
 
-- 真实 AI 平台 API 接入
-- Celery 异步任务真正落地
-- 发布模块
-- RBAC 权限控制
-- 前端审核台
-- Alembic 迁移脚本
+设计文档已经沉淀在 `doc/design/`，建议按下面顺序阅读：
 
-## 11. 目录结构
+### 总体结构
 
-```text
-repo/
-|-- Dockerfile
-|-- docker-compose.yml
-|-- alembic.ini
-|-- pytest.ini
-|-- runtime/
-|   |-- logs/          # 运行日志
-|   `-- media/         # 运行期媒体资产
-`-- src/
-    |-- app/
-    |-- config/
-    |-- tests/
-    `-- main.py
-```
+- `doc/design/README.md`
+- `doc/design/体系结构与流程划分总说明.md`
+- `doc/design/系统模块与技能结构说明.md`
+- `doc/design/代码重构落地清单.md`
 
+### 入口、编排与治理
+
+- `doc/design/API路由与业务逻辑解耦说明.md`
+- `doc/design/CEO服务收敛与部门归属调整说明.md`
+- `doc/design/Pipeline接口标准化说明.md`
+- `doc/design/CQO质检回退策略说明.md`
+- `doc/design/Leader汇报与CEO查询机制.md`
+
+### CIO 与基础设施
+
+- `doc/design/基础设施运行时说明.md`
+- `doc/design/运行期资产目录说明.md`
+- `doc/design/CIO数据层统一说明.md`
+- `doc/design/统一事件与日志体系说明.md`
+- `doc/design/Runtime去平铺化说明.md`
+- `doc/design/配置与依赖管理集中化说明.md`
+- `doc/design/依赖构建集中化说明.md`
+
+### 专项文档
+
+- `doc/design/COO服务职责拆分说明.md`
+- `doc/design/CHO公共Agent管理服务说明.md`
+- `doc/design/财务预算运行时说明.md`
+
+## 10. 当前 README 的边界
+
+这份 README 负责回答三个问题：
+
+1. 仓库现在长什么样
+2. 系统按什么职责划分
+3. 从哪里启动、配置、测试
+
+更细的重构动机、部门边界推导、历史方案对比，统一留在 `doc/design/` 与 `doc/design/references/` 中维护。

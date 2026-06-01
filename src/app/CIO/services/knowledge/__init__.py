@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.CIO.services.data_access import ArtifactRepository, KnowledgeRepository
+from app.CIO.services.data_access.artifact_repository import ArtifactRepository
+from app.CIO.services.data_access.knowledge_repository import KnowledgeRepository
 from app.CIO.services.workflow_steps import WorkflowStepLogService
 
 DEFAULT_KNOWLEDGE_BASE: dict[str, list[dict[str, Any]]] = {

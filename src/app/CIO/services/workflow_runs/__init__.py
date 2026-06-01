@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from app.CIO.models.workflow import WorkflowRun
-from app.CIO.services.data_access import WorkflowRepository
+from app.CIO.services.data_access.workflow_repository import WorkflowRepository
 
 
 class WorkflowRunService:

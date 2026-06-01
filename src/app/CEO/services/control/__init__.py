@@ -8,10 +8,10 @@ from fastapi.encoders import jsonable_encoder
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.CEO.leaders.organization import LEADER_STAGE_LABELS_CN
-from app.CEO.skills import CEOWorkflowSkill
+from app.CEO.skills.workflow import CEOWorkflowSkill
 from app.CEO.services.control_plane import control_plane
-from app.CIO.services.knowledge import CIOInformationService
 from app.CFO.services.finance import FinanceService
+from app.CIO.services.knowledge import CIOInformationService
 from app.CIO.services.leader_reports import LeaderReportService
 from app.CIO.services.operations import OperationsService
 from app.CIO.services.workflow_runs import WorkflowRunService

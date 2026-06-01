@@ -7,7 +7,7 @@ from typing import List, Optional
 from app.CEO.core.logging import get_logger
 from app.CIO.models.hotspot import HotspotItem
 from app.CIO.schemas.video import HotspotCreate, HotspotFetchRequest
-from app.CIO.services.data_access import HotspotRepository
+from app.CIO.services.data_access.hotspot_repository import HotspotRepository
 from app.CSO.services.hotspot_providers import get_hotspot_provider
 
 logger = get_logger(__name__)

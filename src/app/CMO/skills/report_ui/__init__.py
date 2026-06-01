@@ -146,7 +146,7 @@ class ReportUISkill(BaseSkill):
         information_metrics = status.get("information_metrics") or {}
         weakest = status.get("weakest_leader")
         message = (
-            "CEO 生产系统总览 / CEO governance overview:\n"
+            "生产治理总览 / Governance overview:\n"
             f"Total runs: {run_metrics.get('total_runs', 0)}\n"
             f"Overall success rate: {self._percent(run_metrics.get('success_rate', 0.0))}\n"
             f"Average duration: {round(float(run_metrics.get('avg_duration_ms', 0.0) or 0.0), 2)} ms\n"
@@ -168,7 +168,7 @@ class ReportUISkill(BaseSkill):
                 f"{information_metrics.get('artifact_count', 0)} / {information_metrics.get('log_record_count', 0)}"
             )
         if status.get("non_workflow_leaders"):
-            message += "\nCEO-managed support departments: " + ", ".join(
+            message += "\nManaged support departments: " + ", ".join(
                 self._stage_label(str(item)) for item in status.get("non_workflow_leaders") or []
             )
         title_registry = status.get("org_title_registry") or {}
@@ -192,7 +192,7 @@ class ReportUISkill(BaseSkill):
     def _format_workflow_snapshot(self, workflow: dict[str, Any]) -> dict[str, Any]:
         route = workflow.get("main_route") or []
         message = (
-            "Current CEO workflow:\n"
+            "Current workflow graph:\n"
             f"Version: {workflow.get('version', 1)}\n"
             f"Dispatch mode: {workflow.get('dispatch_mode', 'graph')}\n"
             f"Main route: {' -> '.join(self._stage_label(item) for item in route) or 'not configured'}\n"
@@ -229,7 +229,7 @@ class ReportUISkill(BaseSkill):
             )
         if management_scope:
             message += (
-                f"\nCEO managed: {'yes' if management_scope.get('direct_ceo_managed') else 'no'}"
+                f"\nDirect governance: {'yes' if management_scope.get('direct_ceo_managed') else 'no'}"
                 f"\nIn production main route: {'yes' if management_scope.get('in_main_workflow_route') else 'no'}"
                 f"\nUser-facing department: {'yes' if management_scope.get('user_facing') else 'no'}"
             )
@@ -243,7 +243,7 @@ class ReportUISkill(BaseSkill):
 
     def _format_optimize_command(self, command: dict[str, Any]) -> dict[str, Any]:
         message = (
-            f"CEO issued an optimize command to {command.get('leader_display_name', command.get('leader_name'))}:\n"
+            f"Governance optimize command issued to {command.get('leader_display_name', command.get('leader_name'))}:\n"
             f"Target metric: {command.get('target_metric')}\n"
             f"Goal value: {command.get('goal_value')}\n"
             f"Status: {command.get('status')}"
@@ -261,7 +261,7 @@ class ReportUISkill(BaseSkill):
     def _format_evolution_report(self, evolution: dict[str, Any]) -> dict[str, Any]:
         commands = evolution.get("issued_commands") or evolution.get("company_status", {}).get("issued_commands") or []
         message = (
-            "CEO evolution cycle completed:\n"
+            "Governance evolution cycle completed:\n"
             f"Evolution: {'enabled' if evolution.get('evolution_enabled') else 'disabled'}\n"
             f"New commands: {len(commands)}\n"
             f"Message: {evolution.get('message') or 'The observe-analyze-decide loop completed.'}"
