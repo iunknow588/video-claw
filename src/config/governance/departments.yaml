@@ -1,0 +1,13 @@
+owners:
+  ceo_application: "CEO"
+  ceo_leaders: "CEO"
+  ceo_permissions: "CEO"
+  ceo_departments: "CEO"
+  ceo_workflow: "CEO"
+  cio_database: "CIO"
+  cio_redis: "CIO"
+  cio_ai_providers: "CIO"
+  cio_storage: "CIO"
+  cfo_finance: "CFO"
+  coo_production: "COO"
+  cso_hotspot: "CSO"

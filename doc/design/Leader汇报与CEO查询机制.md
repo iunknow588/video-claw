@@ -1,4 +1,4 @@
-# Leader 汇报与 CEO 查询机制
+﻿# Leader 汇报与 CEO 查询机制
 
 ## 1. 机制目标
 
@@ -55,27 +55,27 @@
 
 ### 3.1 主动收集所有 Leader 的周期性报告
 
-- `POST /api/v1/ceo/reports/collect`
+- `POST /api/ceo/reports/collect`
 
 作用：按 cadence 批量生成并保存当前所有直辖 Leader 的周期报告。
 
 ### 3.2 查询报告列表
 
-- `GET /api/v1/ceo/reports`
+- `GET /api/ceo/reports`
 
 支持按 Leader、报告类型和数量限制查询。
 
 ### 3.3 查询某个 Leader 的历史报告
 
-- `GET /api/v1/ceo/leaders/{leader_name}/reports`
+- `GET /api/ceo/leaders/{leader_name}/reports`
 
 ### 3.4 查询某个 Leader 的最新报告
 
-- `GET /api/v1/ceo/leaders/{leader_name}/reports/latest`
+- `GET /api/ceo/leaders/{leader_name}/reports/latest`
 
 ### 3.5 主动要求某个 Leader 提交报告
 
-- `POST /api/v1/ceo/leaders/{leader_name}/request-report`
+- `POST /api/ceo/leaders/{leader_name}/request-report`
 
 当前实现会同步创建一份 `requested` 类型报告，并落库保存。
 
@@ -113,3 +113,4 @@ Leader 按周期提交报告，CEO 通过报告中心观察整体趋势。
 1. 为 `leader_reports` 增加已审阅、已确认状态
 2. 把报告频率做成更明确的策略配置
 3. 让 CIO 报告进一步接入真实测试执行结果，而不只是汇总指标
+

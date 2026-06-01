@@ -3,9 +3,16 @@ from app.CTO.skills import PromptPackageSkill, PromptValidationSkill, PromptVers
 
 
 class CTOAgent:
-    """Canonical CTO agent facade: planning leader plus managed technical planning skills."""
+    """Canonical CTO agent facade: planning leader plus prompt and validation skills."""
 
     leader_class = PlanningLeader
-    managed_skill_classes = (PromptPackageSkill, TitleCandidateSkill, PromptValidationSkill, PromptVersionSkill)
-    department_domain = "technology_planning"
+    managed_skill_classes = (
+        PromptPackageSkill,
+        TitleCandidateSkill,
+        PromptValidationSkill,
+        PromptVersionSkill,
+    )
+    department_domain = "planning"
 
+
+__all__ = ["CTOAgent"]

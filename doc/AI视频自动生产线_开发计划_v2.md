@@ -1,4 +1,4 @@
-# AI视频自动生产线 — 开发计划（完善版v2）
+﻿# AI视频自动生产线 — 开发计划（完善版v2）
 
 **版本：** v2.0  
 **日期：** 2026年5月26日  
@@ -252,21 +252,21 @@
 
 | 接口 | 方法 | 说明 | 请求体 | 响应体 |
 |------|------|------|--------|--------|
-| /api/v1/hotspot/fetch | POST | 手动触发热点采集 | `{platform, category, limit}` | `{task_id, status}` |
-| /api/v1/hotspot/list | GET | 获取热点列表 | `Query: platform, date, page` | `{items, total}` |
-| /api/v1/analysis/{id} | POST | 执行AI分析 | `{hotspot_id, analysis_type}` | `{task_id, status}` |
-| /api/v1/analysis/report/{id} | GET | 获取分析报告 | - | `{report_content, created_at}` |
-| /api/v1/script/generate | POST | 生成脚本 | `{analysis_id, content_type, topic}` | `{script_id, content}` |
-| /api/v1/script/review | POST | 审核脚本 | `{script_id, status, comment}` | `{next_step}` |
-| /api/v1/video/generate | POST | 生成视频 | `{script_id, style, size}` | `{task_id, status}` |
-| /api/v1/video/status/{id} | GET | 查询视频状态 | - | `{status, progress, url}` |
-| /api/v1/video/review | POST | 审核视频 | `{video_id, status, comment}` | `{next_step}` |
-| /api/v1/publish/submit | POST | 提交发布 | `{video_id, platforms, schedule}` | `{publish_task_id}` |
-| /api/v1/publish/status/{id} | GET | 查询发布状态 | - | `{status, platform_urls}` |
-| /api/v1/cost/realtime | GET | 实时成本 | - | `{today, month, breakdown}` |
-| /api/v1/cost/report | GET | 成本报表 | `Query: start_date, end_date` | `{daily_costs, total}` |
-| /api/v1/content/library | GET | 内容库 | `Query: type, tag, page` | `{items, total}` |
-| /api/v1/dashboard/metrics | GET | 仪表盘数据 | - | `{production, cost, quality}` |
+| /api/hotspot/fetch | POST | 手动触发热点采集 | `{platform, category, limit}` | `{task_id, status}` |
+| /api/hotspot/list | GET | 获取热点列表 | `Query: platform, date, page` | `{items, total}` |
+| /api/analysis/{id} | POST | 执行AI分析 | `{hotspot_id, analysis_type}` | `{task_id, status}` |
+| /api/analysis/report/{id} | GET | 获取分析报告 | - | `{report_content, created_at}` |
+| /api/script/generate | POST | 生成脚本 | `{analysis_id, content_type, topic}` | `{script_id, content}` |
+| /api/script/review | POST | 审核脚本 | `{script_id, status, comment}` | `{next_step}` |
+| /api/video/generate | POST | 生成视频 | `{script_id, style, size}` | `{task_id, status}` |
+| /api/video/status/{id} | GET | 查询视频状态 | - | `{status, progress, url}` |
+| /api/video/review | POST | 审核视频 | `{video_id, status, comment}` | `{next_step}` |
+| /api/publish/submit | POST | 提交发布 | `{video_id, platforms, schedule}` | `{publish_task_id}` |
+| /api/publish/status/{id} | GET | 查询发布状态 | - | `{status, platform_urls}` |
+| /api/cost/realtime | GET | 实时成本 | - | `{today, month, breakdown}` |
+| /api/cost/report | GET | 成本报表 | `Query: start_date, end_date` | `{daily_costs, total}` |
+| /api/content/library | GET | 内容库 | `Query: type, tag, page` | `{items, total}` |
+| /api/dashboard/metrics | GET | 仪表盘数据 | - | `{production, cost, quality}` |
 
 #### 2.4.2 WebSocket接口
 
@@ -2080,3 +2080,4 @@ CREATE TABLE alert_records (
 **审核：** [待填写]  
 **批准：** [待填写]  
 **日期：** 2026年5月26日
+

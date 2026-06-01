@@ -1,2 +1,0 @@
-"""CEO skill package."""
-

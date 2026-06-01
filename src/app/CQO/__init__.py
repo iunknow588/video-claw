@@ -1,1 +1,0 @@
-"""Canonical CQO package."""

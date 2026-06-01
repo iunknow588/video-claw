@@ -1,4 +1,4 @@
-# AI Video Auto Production Line - MVP Backend
+﻿# AI Video Auto Production Line - MVP Backend
 
 ## 1. 项目定位
 
@@ -28,7 +28,7 @@
 进入目录：
 
 ```powershell
-cd E:\2026OPC大赛\龙虾流程\src
+cd E:\2026OPC大赛\龙虾流程
 ```
 
 创建虚拟环境并安装依赖：
@@ -36,7 +36,7 @@ cd E:\2026OPC大赛\龙虾流程\src
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\activate
-pip install -r requirements.txt
+pip install -r src/requirements.txt
 ```
 
 准备 `.env`：
@@ -50,7 +50,7 @@ SEEDANCE_API_KEY=
 AI_USE_PLACEHOLDER_WHEN_UNCONFIGURED=true
 
 VIDEO_STORAGE_BACKEND=local
-MEDIA_ROOT=media
+MEDIA_ROOT=runtime/media
 MEDIA_URL_PREFIX=/media
 MEDIA_BASE_URL=
 ```
@@ -64,7 +64,7 @@ docker-compose up -d db redis
 启动应用：
 
 ```powershell
-uvicorn main:app --reload
+python -m uvicorn main:app --app-dir src --reload
 ```
 
 调试入口：
@@ -99,14 +99,14 @@ uvicorn main:app --reload
 
 ```env
 VIDEO_STORAGE_BACKEND=local
-MEDIA_ROOT=media
+MEDIA_ROOT=runtime/media
 MEDIA_URL_PREFIX=/media
 MEDIA_BASE_URL=
 ```
 
 说明：
 
-- 文件保存在 `src/media/videos`
+- 文件保存在仓库根目录的 `runtime/media/videos`
 - FastAPI 已自动挂载 `/media/...`
 - 最适合本地调试和比赛演示
 
@@ -200,86 +200,90 @@ AI_USE_PLACEHOLDER_WHEN_UNCONFIGURED=true
 已初始化：
 
 - `alembic.ini`
-- `alembic/env.py`
-- `alembic/versions/20260527_0001_initial_mvp_schema.py`
+- `src/alembic/env.py`
+- `src/alembic/versions/20260527_0001_initial_mvp_schema.py`
+- `src/alembic/versions/20260529_0002_workflow_runs.py`
+- `src/alembic/versions/20260529_0003_step_logs.py`
 
 执行迁移：
 
 ```powershell
-alembic upgrade head
+python -m alembic -c alembic.ini upgrade head
 ```
+
+应用启动不会自动建表；请先执行迁移，再启动服务。
 
 生成新迁移：
 
 ```powershell
-alembic revision -m "your change"
+python -m alembic -c alembic.ini revision -m "your change"
 ```
 
 ## 7. 主要接口
 
 ### 热点
 
-- `POST /api/v1/hotspots`
-- `GET /api/v1/hotspots`
-- `GET /api/v1/hotspots/search`
-- `POST /api/v1/hotspots/fetch`
+- `POST /api/hotspots`
+- `GET /api/hotspots`
+- `GET /api/hotspots/search`
+- `POST /api/hotspots/fetch`
 
 ### 分析
 
-- `POST /api/v1/analysis`
-- `GET /api/v1/analysis/hotspot/{hotspot_id}`
+- `POST /api/analysis`
+- `GET /api/analysis/hotspot/{hotspot_id}`
 
 ### 脚本
 
-- `POST /api/v1/scripts`
-- `GET /api/v1/scripts`
-- `POST /api/v1/scripts/review/{script_id}`
+- `POST /api/scripts`
+- `GET /api/scripts`
+- `POST /api/scripts/review/{script_id}`
 
 ### 视频
 
-- `POST /api/v1/videos`
-- `GET /api/v1/videos`
-- `GET /api/v1/videos/task/{task_id}`
-- `POST /api/v1/videos/review/{task_id}`
+- `POST /api/videos`
+- `GET /api/videos`
+- `GET /api/videos/task/{task_id}`
+- `POST /api/videos/review/{task_id}`
 
 ### 运营与存储
 
-- `GET /api/v1/operations/summary`
-- `GET /api/v1/operations/reviews`
-- `GET /api/v1/operations/costs`
-- `GET /api/v1/operations/storage`
+- `GET /api/operations/summary`
+- `GET /api/operations/reviews`
+- `GET /api/operations/costs`
+- `GET /api/operations/storage`
 
-其中 `GET /api/v1/operations/storage` 用于查看当前启用的存储后端和脱敏后的配置状态。
+其中 `GET /api/operations/storage` 用于查看当前启用的存储后端和脱敏后的配置状态。
 
 ### 工作流
 
-- `POST /api/v1/workflows/domain-auto-run`
-- `GET /api/v1/workflows/runs`
+- `POST /api/workflows/domain-auto-run`
+- `GET /api/workflows/runs`
 
 ## 8. 推荐演示顺序
 
-1. 调用 `POST /api/v1/hotspots/fetch`
-2. 调用 `POST /api/v1/analysis`
-3. 调用 `POST /api/v1/scripts`
-4. 调用 `POST /api/v1/scripts/review/{script_id}`
-5. 调用 `POST /api/v1/videos`
-6. 调用 `POST /api/v1/videos/review/{task_id}`
-7. 调用 `GET /api/v1/operations/summary`
-8. 调用 `GET /api/v1/operations/reviews`
-9. 调用 `GET /api/v1/operations/costs`
-10. 调用 `GET /api/v1/operations/storage`
+1. 调用 `POST /api/hotspots/fetch`
+2. 调用 `POST /api/analysis`
+3. 调用 `POST /api/scripts`
+4. 调用 `POST /api/scripts/review/{script_id}`
+5. 调用 `POST /api/videos`
+6. 调用 `POST /api/videos/review/{task_id}`
+7. 调用 `GET /api/operations/summary`
+8. 调用 `GET /api/operations/reviews`
+9. 调用 `GET /api/operations/costs`
+10. 调用 `GET /api/operations/storage`
 
 如需走领域驱动自动链路，可直接调用：
 
-11. `POST /api/v1/workflows/domain-auto-run`
-12. `GET /api/v1/workflows/runs`
+11. `POST /api/workflows/domain-auto-run`
+12. `GET /api/workflows/runs`
 
 ## 9. 测试
 
 运行测试：
 
 ```powershell
-python -m pytest tests -q
+python -m pytest -c pytest.ini src/tests -q
 ```
 
 当前补充的测试重点包括：
@@ -305,19 +309,18 @@ python -m pytest tests -q
 ## 11. 目录结构
 
 ```text
-src/
-|-- app/
-|   |-- api/v1/endpoints/
-|   |-- core/
-|   |-- db/
-|   |-- models/
-|   |-- schemas/
-|   |-- services/
-|   `-- tasks/
-|-- media/
-|-- tests/
-|-- main.py
-|-- requirements.txt
+repo/
 |-- Dockerfile
-`-- docker-compose.yml
+|-- docker-compose.yml
+|-- alembic.ini
+|-- pytest.ini
+|-- runtime/
+|   |-- logs/          # 运行日志
+|   `-- media/         # 运行期媒体资产
+`-- src/
+    |-- app/
+    |-- config/
+    |-- tests/
+    `-- main.py
 ```
+

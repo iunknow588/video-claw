@@ -27,3 +27,17 @@ doc/_build/
 # Local runtime leftovers
 *.log
 *.tmp
+*.db-journal
+runtime/logs/*
+!runtime/logs/.gitkeep
+runtime/media/audio/*
+!runtime/media/audio/.gitkeep
+runtime/media/renders/*
+!runtime/media/renders/.gitkeep
+runtime/media/subtitles/*
+!runtime/media/subtitles/.gitkeep
+runtime/media/videos/*
+!runtime/media/videos/.gitkeep
+src/preview.db
+src/ceo_console_preview*.db
+src/ceo_ui*.db*

@@ -1,5 +1,13 @@
-"""CAO employee skill: publish_execute."""
+from __future__ import annotations
 
-from app.skills.lead.publish.publish_execute import PublishExecuteSkill
 
-__all__ = ["PublishExecuteSkill"]
+class PublishExecuteSkill:
+    skill_name = "lead.publish.publish_execute"
+
+    def run(self, input_bundle: dict) -> dict:
+        publish_result = input_bundle.get("publish_result", {})
+        return {
+            "publish_result": publish_result,
+            "execution_status": publish_result.get("status", "unknown"),
+            "execution_bundle": input_bundle,
+        }

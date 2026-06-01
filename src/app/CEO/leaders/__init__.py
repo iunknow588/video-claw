@@ -1,11 +1,11 @@
-from app.leaders.departments import (
+from app.CEO.leaders.base import BaseLeader, ManagedLeader
+from app.CEO.leaders.departments import (
     AnalysisLeader,
     CAOLeader,
     CMOLeader,
     FinanceLeader,
     HumanOpsLeader,
     InformationLeader,
-    LEADER_CLASS_MAP,
     PlanningLeader,
     ProductionLeader,
     PromotionLeader,
@@ -16,18 +16,19 @@ from app.leaders.departments import (
 )
 
 __all__ = [
-    "AnalysisLeader",
+    "BaseLeader",
+    "ManagedLeader",
     "CAOLeader",
     "CMOLeader",
     "FinanceLeader",
     "HumanOpsLeader",
     "InformationLeader",
+    "ResearchLeader",
+    "AnalysisLeader",
     "PlanningLeader",
     "ProductionLeader",
-    "PromotionLeader",
-    "PublishLeader",
     "QALeader",
-    "ResearchLeader",
-    "LEADER_CLASS_MAP",
+    "PublishLeader",
+    "PromotionLeader",
     "build_department_leader",
 ]

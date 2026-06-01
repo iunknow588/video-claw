@@ -1,0 +1,7 @@
+default_resolution: "1080p"
+default_fps: 30
+max_video_duration: 300
+ffmpeg_preset: "medium"
+audio_bitrate: "192k"
+video_bitrate: "5000k"
+max_file_size: 524288000

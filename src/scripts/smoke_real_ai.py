@@ -18,12 +18,12 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 import app.models  # noqa: F401
-from app.core.config import settings
-from app.models.base import Base
-from app.models.hotspot import HotspotItem
-from app.services.analysis import AIAnalysisService
-from app.services.script import ScriptService
-from app.services.video import VideoService
+from app.CEO.core.config import settings
+from app.CIO.models.base import Base
+from app.CIO.models.hotspot import HotspotItem
+from app.CCO.services.content_creation import AIAnalysisService
+from app.COO.services.script_management import ScriptService
+from app.COO.services.video_production import VideoService
 
 
 async def main() -> int:

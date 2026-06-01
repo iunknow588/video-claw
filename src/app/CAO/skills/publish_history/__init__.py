@@ -1,5 +1,12 @@
-"""CAO employee skill: publish_history."""
+from __future__ import annotations
 
-from app.skills.lead.publish.publish_history import PublishHistorySkill
 
-__all__ = ["PublishHistorySkill"]
+class PublishHistorySkill:
+    skill_name = "lead.publish.publish_history"
+
+    def run(self, input_bundle: dict) -> dict:
+        return {
+            "history_status": "recorded",
+            "history_ref": input_bundle.get("callback_ref"),
+            "history_bundle": input_bundle,
+        }

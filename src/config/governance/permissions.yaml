@@ -1,0 +1,41 @@
+domain_permissions:
+  ceo_application:
+    - CEO
+  ceo_leaders:
+    - CEO
+  ceo_workflow:
+    - CEO
+  ceo_departments:
+    - CEO
+  cfo_finance:
+    - CFO
+    - CEO
+  coo_production:
+    - COO
+    - CTO
+    - CEO
+  cso_hotspot:
+    - CSO
+    - CEO
+  cio_database:
+    - CIO
+    - CEO
+  cio_redis:
+    - CIO
+    - CEO
+  cio_ai_providers:
+    - CIO
+    - CTO
+    - CEO
+  cio_storage:
+    - CIO
+    - COO
+    - CEO
+
+dynamic_keys:
+  - "ceo_application.app.debug"
+  - "ceo_application.logging.level"
+  - "cfo_finance.daily_budget"
+  - "cfo_finance.warning_threshold"
+  - "coo_production.default_resolution"
+  - "cio_storage.video_backend"

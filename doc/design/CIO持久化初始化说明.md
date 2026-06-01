@@ -60,9 +60,9 @@ cd E:\2026OPC澶ц禌\榫欒櫨娴佺▼\src
 
 闅忓悗鍙鏌ワ細
 
-- `/api/v1/ceo/company-status`
-- `/api/v1/cmo/chat`
-- `/api/v1/workflows/runs`
+- `/api/ceo/company-status`
+- `/api/cmo/chat`
+- `/api/workflows/runs`
 
 濡傛灉杩欎簺鎺ュ彛姝ｅ父杩斿洖锛岄€氬父璇存槑鏁版嵁搴撳垵濮嬪寲閾捐矾鏄彲鐢ㄧ殑銆?
 ## 7. 涓嬩竴姝ュ缓璁?
@@ -71,4 +71,5 @@ cd E:\2026OPC澶ц禌\榫欒櫨娴佺▼\src
 1. 寮曞叆 Alembic
 2. 涓?`artifact_records`銆乣information_events`銆乣knowledge_assets`銆乣leader_reports` 寤虹珛杩佺Щ鑴氭湰
 3. 鍚庣画琛ㄧ粨鏋勫彉鏇村叏閮ㄨ蛋 migration锛岃€屼笉鍐嶄緷璧?`create_all()`
+
 

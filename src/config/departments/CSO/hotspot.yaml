@@ -1,0 +1,19 @@
+schedule:
+  - "0 0 * * *"
+  - "0 12 * * *"
+platforms:
+  - "douyin"
+  - "xiaohongshu"
+  - "bilibili"
+categories:
+  - "knowledge"
+  - "emotion"
+  - "product"
+  - "entertainment"
+limits:
+  default: 10
+  max: 50
+filters:
+  min_view_count: 10000
+  min_like_count: 1000
+retention_days: 30

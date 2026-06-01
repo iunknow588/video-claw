@@ -1,0 +1,32 @@
+version: 1
+dispatch_mode: "graph"
+main_route:
+  - "lead.cfo"
+  - "lead.research"
+  - "lead.analysis"
+  - "lead.research_development"
+  - "lead.production"
+  - "lead.qa"
+  - "lead.publish"
+edges:
+  - from: "lead.cfo"
+    to: "lead.research"
+  - from: "lead.research"
+    to: "lead.analysis"
+  - from: "lead.analysis"
+    to: "lead.research_development"
+  - from: "lead.research_development"
+    to: "lead.production"
+  - from: "lead.production"
+    to: "lead.qa"
+conditional_edges:
+  - from: "lead.qa"
+    router_func: "qa_gate"
+    strategy: "balanced"
+    mapping:
+      passed: "lead.publish"
+      retry_production: "lead.production"
+      retry_research_development: "lead.research_development"
+parallel_groups: []
+qa_rework:
+  max_attempts: 1

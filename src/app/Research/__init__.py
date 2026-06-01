@@ -1,1 +1,0 @@
-"""Canonical Research package."""

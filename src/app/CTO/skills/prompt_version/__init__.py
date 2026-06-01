@@ -1,5 +1,9 @@
-"""CTO employee skill: prompt_version."""
+from __future__ import annotations
 
-from app.skills.lead.research_development.prompt_version import PromptVersionSkill
 
-__all__ = ["PromptVersionSkill"]
+class PromptVersionSkill:
+    skill_name = "lead.research_development.prompt_version"
+
+    def run(self, input_bundle: dict) -> dict:
+        return {"version": 1, "prompt_bundle": input_bundle}
+

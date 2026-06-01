@@ -1,5 +1,5 @@
 from app.CMO.leader import CMOLeader
-from app.CMO.service import CMOService
+from app.CMO.services.chat import CMOService
 from app.CMO.skills import ChatUISkill, ProgressUISkill, ReportUISkill
 
 

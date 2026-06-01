@@ -1,3 +1,3 @@
-from app.leaders.departments import FinanceLeader
+﻿from app.CEO.leaders.departments import FinanceLeader
 
 __all__ = ["FinanceLeader"]

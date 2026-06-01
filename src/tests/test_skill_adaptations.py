@@ -2,25 +2,25 @@ from pathlib import Path
 
 import pytest
 
-from app.services.material_reference import MaterialReferenceService
-from app.services.render_execution import RenderExecutionService
-from app.services.storage import build_placeholder_video_bytes
-from app.services.subtitle_composer import SubtitleComposerService
-from app.services.video_composition import VideoCompositionService
-from app.services.voiceover import VoiceoverService
-from app.Analysis.agent import AnalysisAgent
+from app.CSO.services.material_reference import MaterialReferenceService
+from app.COO.services.composition import RenderExecutionService
+from app.CIO.services.storage import build_placeholder_video_bytes
+from app.COO.services.asset_management import SubtitleComposerService
+from app.COO.services.asset_management import VoiceoverService
+from app.COO.services.composition import VideoCompositionService
 from app.CHO.agent import CHOAgent
-from app.Production.agent import ProductionAgent
-from app.Research.agent import ResearchAgent
+from app.CHO.services import CHOService
+from app.CCO.agent import AnalysisAgent
+from app.COO.agent import ProductionAgent
+from app.CSO.agent import ResearchAgent
 from app.CQO.skills import DeliveryAssetCheckSkill, RenderOutputCheckSkill
-from app.skills.catalog import ensure_builtin_skills_registered
-from app.skills.registry import registry
+from app.CEO.skills.registry import ensure_builtin_skills_registered, registry
 
 
 def test_subtitle_composer_creates_srt_file(tmp_path, monkeypatch):
-    from app.core.config import settings
+    from app.CEO.core.config import settings
 
-    monkeypatch.setattr(settings, "MEDIA_ROOT", str(tmp_path))
+    monkeypatch.setattr(settings.storage, "media_root", str(tmp_path))
     service = SubtitleComposerService()
 
     result = service.compose(
@@ -44,9 +44,9 @@ def test_subtitle_composer_creates_srt_file(tmp_path, monkeypatch):
 
 
 def test_material_reference_service_builds_candidates_and_scene_map(tmp_path, monkeypatch):
-    from app.core.config import settings
+    from app.CEO.core.config import settings
 
-    monkeypatch.setattr(settings, "MEDIA_ROOT", str(tmp_path))
+    monkeypatch.setattr(settings.storage, "media_root", str(tmp_path))
     service = MaterialReferenceService()
 
     result = service.plan(
@@ -67,9 +67,9 @@ def test_material_reference_service_builds_candidates_and_scene_map(tmp_path, mo
 
 
 def test_voiceover_service_creates_audio_and_ssml(tmp_path, monkeypatch):
-    from app.core.config import settings
+    from app.CEO.core.config import settings
 
-    monkeypatch.setattr(settings, "MEDIA_ROOT", str(tmp_path))
+    monkeypatch.setattr(settings.storage, "media_root", str(tmp_path))
     service = VoiceoverService()
 
     result = service.generate(
@@ -174,8 +174,8 @@ def test_placeholder_video_bytes_uses_ffmpeg_path_when_available(monkeypatch):
         output_path.write_bytes(expected)
         return None
 
-    monkeypatch.setattr("app.services.storage.shutil.which", lambda name: "ffmpeg" if name == "ffmpeg" else None)
-    monkeypatch.setattr("app.services.storage.subprocess.run", fake_run)
+    monkeypatch.setattr("app.CIO.services.storage.shutil.which", lambda name: "ffmpeg" if name == "ffmpeg" else None)
+    monkeypatch.setattr("app.CIO.services.storage.subprocess.run", fake_run)
 
     result = build_placeholder_video_bytes("task-ffmpeg")
 
@@ -184,10 +184,10 @@ def test_placeholder_video_bytes_uses_ffmpeg_path_when_available(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_render_execution_service_builds_preview_asset(tmp_path, monkeypatch):
-    from app.core.config import settings
+    from app.CEO.core.config import settings
 
-    monkeypatch.setattr(settings, "MEDIA_ROOT", str(tmp_path))
-    monkeypatch.setattr(settings, "MEDIA_URL_PREFIX", "/media")
+    monkeypatch.setattr(settings.storage, "media_root", str(tmp_path))
+    monkeypatch.setattr(settings.storage, "media_url_prefix", "/media")
     service = RenderExecutionService()
 
     result = await service.execute(
@@ -226,7 +226,7 @@ async def test_render_execution_service_builds_preview_asset(tmp_path, monkeypat
 
 
 def test_render_output_check_passes_for_local_asset(tmp_path, monkeypatch):
-    from app.core.config import settings
+    from app.CEO.core.config import settings
 
     media_root = tmp_path / "media"
     video_dir = media_root / "videos"
@@ -236,8 +236,8 @@ def test_render_output_check_passes_for_local_asset(tmp_path, monkeypatch):
     manifest_path = tmp_path / "render.json"
     manifest_path.write_text("{}", encoding="utf-8")
 
-    monkeypatch.setattr(settings, "MEDIA_ROOT", str(media_root))
-    monkeypatch.setattr(settings, "MEDIA_URL_PREFIX", "/media")
+    monkeypatch.setattr(settings.storage, "media_root", str(media_root))
+    monkeypatch.setattr(settings.storage, "media_url_prefix", "/media")
 
     result = RenderOutputCheckSkill().execute(
         {
@@ -292,3 +292,43 @@ def test_canonical_department_packages_expose_agents_and_skill_groups():
     assert "MaterialSearchSkill" in research_skill_names
     assert "AnalysisPersistSkill" in analysis_skill_names
     assert "RenderExecuteSkill" in production_skill_names
+
+
+def test_cho_service_exposes_department_level_agent_governance_use_cases():
+    service = CHOService()
+
+    roster = service.list_public_agents()
+    assert roster["count"] >= 1
+    assert any(item["agent_name"] == "CMOAgent" for item in roster["public_agents"])
+
+    provisioned = service.provision_agent(
+        {
+            "agent_name": "DemoAgent",
+            "entrypoint": "app.demo.agent.DemoAgent",
+            "domain": "demo",
+            "scope": "shared_support",
+            "owner_leader": "lead.cho",
+            "capabilities": ["demo_capability"],
+        }
+    )
+    assert provisioned["agent_name"] == "DemoAgent"
+
+    profile = service.update_capabilities("DemoAgent", ["demo_capability", "reporting"])
+    assert profile["capabilities"] == ["demo_capability", "reporting"]
+
+    described = service.describe_agent("DemoAgent")
+    assert described["found"] is True
+    assert described["capability_profile"]["integration_type"] == "demo"
+
+    health = service.check_health()
+    demo_health = next(item for item in health["health_items"] if item["agent_name"] == "DemoAgent")
+    assert demo_health["availability"] == "ready"
+    assert demo_health["governance_status"] == "managed"
+
+    service.decommission_agent("DemoAgent")
+    decommissioned = service.agent_management.get_public_agent("DemoAgent")
+    assert decommissioned["lifecycle_status"] == "decommissioned"
+
+
+def test_cho_agent_exposes_service_layer():
+    assert CHOAgent.service_class is CHOService

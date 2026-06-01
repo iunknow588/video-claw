@@ -1,0 +1,14 @@
+.git
+.gitignore
+.venv
+.pytest_cache
+.vscode
+runtime/logs
+runtime/media
+src/.venv
+src/.pytest_cache
+src/__pycache__
+src/*.db
+src/*.db-journal
+src/logs
+src/media

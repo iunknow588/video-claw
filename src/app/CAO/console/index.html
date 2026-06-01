@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>娴佺▼浜や粯鍙?/ CAO 绠＄悊鍙?/title>
+  <title>流程交付台 / CAO 管理台</title>
   <style>
     :root {
       color-scheme: light;
-      --bg: #f5f3ee;
+      --bg: #f4f1ea;
       --panel: #fffdf9;
-      --panel-soft: #faf6ef;
-      --line: #e4dacd;
+      --panel-soft: #faf7f1;
+      --line: #e4dccf;
       --text: #1f2937;
       --muted: #667085;
       --accent: #0f766e;
@@ -29,16 +29,16 @@
     body {
       margin: 0;
       font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-      background: linear-gradient(180deg, #f6f3ed 0%, #ede7de 100%);
+      background: linear-gradient(180deg, #f7f4ee 0%, #ede7dc 100%);
       color: var(--text);
     }
 
     .app {
       min-height: 100vh;
       display: grid;
-      grid-template-columns: minmax(0, 1.5fr) minmax(360px, 460px);
-      gap: 20px;
-      padding: 20px;
+      grid-template-columns: minmax(0, 1.25fr) minmax(360px, 460px);
+      gap: 18px;
+      padding: 18px;
     }
 
     .surface {
@@ -47,8 +47,8 @@
       border-radius: 8px;
     }
 
-    .chat-shell {
-      min-height: calc(100vh - 40px);
+    .shell {
+      min-height: calc(100vh - 36px);
       display: grid;
       grid-template-rows: auto minmax(0, 1fr) auto;
     }
@@ -74,8 +74,8 @@
     }
 
     .subtitle,
-    .hint,
     .meta,
+    .hint,
     .empty {
       color: var(--muted);
       font-size: 14px;
@@ -83,7 +83,7 @@
     }
 
     .status-chip {
-      min-width: 180px;
+      min-width: 200px;
       padding: 10px 12px;
       border-radius: 8px;
       background: var(--accent-soft);
@@ -101,7 +101,7 @@
     }
 
     .message {
-      max-width: min(88%, 780px);
+      max-width: min(88%, 760px);
       padding: 12px 14px;
       border-radius: 8px;
       white-space: pre-wrap;
@@ -138,6 +138,12 @@
       color: var(--error);
     }
 
+    .composer {
+      border-top: 1px solid var(--line);
+      display: grid;
+      gap: 12px;
+    }
+
     .label {
       display: block;
       margin-bottom: 6px;
@@ -145,15 +151,9 @@
       font-size: 12px;
     }
 
-    .composer {
-      border-top: 1px solid var(--line);
-      display: grid;
-      gap: 12px;
-    }
-
     .composer-row {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 108px;
+      grid-template-columns: minmax(0, 1fr) 120px;
       gap: 12px;
       align-items: end;
     }
@@ -175,7 +175,7 @@
       border: 0;
       border-radius: 8px;
       background: var(--accent);
-      color: #ffffff;
+      color: #fff;
       font: inherit;
       cursor: pointer;
     }
@@ -186,7 +186,7 @@
     }
 
     .rail {
-      min-height: calc(100vh - 40px);
+      min-height: calc(100vh - 36px);
       display: grid;
       grid-auto-rows: min-content;
       align-content: start;
@@ -208,7 +208,6 @@
     }
 
     .summary-grid,
-    .stage-grid,
     .run-grid,
     .trace-grid {
       display: grid;
@@ -221,7 +220,7 @@
       padding: 12px;
       border: 1px solid #e7ddcf;
       border-radius: 8px;
-      background: #ffffff;
+      background: #fff;
     }
 
     .card strong,
@@ -262,16 +261,12 @@
       font-size: 12px;
     }
 
-    .pill.success { background: var(--success-soft); color: var(--success); }
-    .pill.warning { background: var(--warning-soft); color: var(--warning); }
-    .pill.error { background: var(--error-soft); color: var(--error); }
-    .pill.running { background: var(--accent-soft); color: var(--accent); }
-
-    @media (max-width: 1080px) {
+    @media (max-width: 1024px) {
       .app {
         grid-template-columns: 1fr;
       }
-      .chat-shell,
+
+      .shell,
       .rail {
         min-height: auto;
       }
@@ -279,293 +274,239 @@
   </style>
 </head>
 <body>
-  <div class="app">
-    <section class="surface chat-shell">
+  <main class="app">
+    <section class="surface shell">
       <header class="header">
         <div>
-          <h1 class="title">娴佺▼浜や粯鍙?/ CAO 绠＄悊鍙?/h1>
-          <div class="subtitle">
-            CEO 闅愯韩杩愯锛孋AO 浠呭澶栧睍绀虹敓浜ч摼璺€佷氦浠樿繘搴︿笌缁撴灉銆傚璇濆叆鍙ｄ粛鐢卞浼犳笭閬撴帴鍗曘€?          </div>
+          <h1 class="title">流程交付台 / CAO 管理台</h1>
+          <div class="subtitle">CEO 隐身运行，CAO 负责对外交付。</div>
         </div>
-        <div class="status-chip" id="statusChip">姝ｅ湪鍔犺浇娴佺▼鐘舵€?..</div>
+        <div class="status-chip" id="statusChip">正在等待状态刷新</div>
       </header>
 
-      <main class="messages" id="messages">
-        <div class="message reply">
-          <span class="label">绯荤粺</span>
-          杩欓噷灞曠ず鐨勬槸浜や粯閾捐矾锛屼笉灞曠ず CEO 鑷韩鐨勬不鐞嗙姸鎬併€備綘鍙互鐩存帴涓嬭揪瑙嗛闇€姹傦紝绯荤粺浼氬疄鏃跺洖浼犲悇娴佺▼鑺傜偣鐘舵€併€?        </div>
-      </main>
+      <div class="messages" id="messageList">
+        <div class="message status">已连接控制台，页面会自动读取 /api/cao/pipeline-status。</div>
+      </div>
 
       <footer class="composer">
-        <div class="hint">
-          鍙洿鎺ヨ緭鍏モ€滃仛涓€鏉＄鎶€瑙嗛锛?0绉掆€濅箣绫荤殑浠诲姟锛涘澶栨帴寰呯敱 CMO 澶勭悊锛屾祦绋嬪憟鐜扮敱 CAO 鎵挎媴銆?        </div>
-        <div class="composer-row">
-          <label>
-            <span class="label">瀵瑰娲惧崟</span>
-            <textarea id="messageInput" placeholder="渚嬪锛氱粰榫欒櫨闂ㄥ簵杩愯惀鍋氫竴鏉℃姈闊宠棰戯紝30绉掋€?></textarea>
-          </label>
-          <button id="sendButton" type="button">鍙戦€?/button>
+        <div>
+          <label class="label" for="messageInput">消息输入</label>
+          <div class="composer-row">
+            <textarea id="messageInput" placeholder="输入要发送给 CMO 的消息。"></textarea>
+            <button id="sendButton" type="button">发送</button>
+          </div>
         </div>
+        <div class="meta">接口：/api/cmo/chat /api/cao/pipeline-status /api/cao/runs/</div>
       </footer>
     </section>
 
-    <aside class="surface rail">
+    <aside class="rail">
       <section class="rail-block">
-        <h2 class="rail-title">娴佺▼蹇収</h2>
-        <div class="summary-grid" id="summaryGrid"></div>
+        <h2 class="rail-title">主链路状态</h2>
+        <div class="summary-grid" id="summaryGrid">
+          <div class="card"><strong>等待刷新</strong><span>加载 /api/cao/pipeline-status 中。</span></div>
+        </div>
       </section>
 
       <section class="rail-block">
-        <h2 class="rail-title">涓婚摼璺姸鎬?/h2>
-        <div class="stage-grid" id="stageGrid"></div>
+        <h2 class="rail-title">最近任务</h2>
+        <div class="run-grid" id="runGrid">
+          <div class="card"><strong>暂无任务</strong><span>接口返回后会展示最近运行。</span></div>
+        </div>
       </section>
 
       <section class="rail-block">
-        <h2 class="rail-title">鏈€杩戜换鍔?/h2>
-        <div class="run-grid" id="runGrid"></div>
-      </section>
-
-      <section class="rail-block">
-        <h2 class="rail-title">閾捐矾鍥炴斁</h2>
-        <div class="trace-grid" id="traceGrid"></div>
+        <h2 class="rail-title">链路回放</h2>
+        <div class="trace-grid" id="traceGrid">
+          <div class="empty">点击最近任务中的条目即可查看回放。</div>
+        </div>
       </section>
     </aside>
-  </div>
+  </main>
 
   <script>
-    const messagesEl = document.getElementById("messages");
-    const summaryGridEl = document.getElementById("summaryGrid");
-    const stageGridEl = document.getElementById("stageGrid");
-    const runGridEl = document.getElementById("runGrid");
-    const traceGridEl = document.getElementById("traceGrid");
-    const statusChipEl = document.getElementById("statusChip");
-    const messageInputEl = document.getElementById("messageInput");
-    const sendButtonEl = document.getElementById("sendButton");
+    const messageList = document.getElementById("messageList");
+    const messageInput = document.getElementById("messageInput");
+    const sendButton = document.getElementById("sendButton");
+    const statusChip = document.getElementById("statusChip");
+    const summaryGrid = document.getElementById("summaryGrid");
+    const runGrid = document.getElementById("runGrid");
+    const traceGrid = document.getElementById("traceGrid");
 
-    let currentRunId = null;
+    const escapeHtml = (value) =>
+      String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
 
-    function escapeHtml(value) {
-      return String(value ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/\"/g, "&quot;")
-        .replace(/'/g, "&#39;");
-    }
-
-    function statusClass(status) {
-      if (["success", "completed", "passed", "approved"].includes(status)) return "success";
-      if (["failed", "error", "rejected"].includes(status)) return "error";
-      if (["running", "processing", "pending"].includes(status)) return "running";
-      return "warning";
-    }
-
-    function appendMessage(type, label, content) {
+    function appendMessage(kind, title, text) {
       const node = document.createElement("div");
-      node.className = `message ${type}`;
-      node.innerHTML = `<span class="label">${escapeHtml(label)}</span>${escapeHtml(content)}`;
-      messagesEl.appendChild(node);
-      messagesEl.scrollTop = messagesEl.scrollHeight;
+      node.className = `message ${kind}`;
+      node.innerHTML = `<strong>${escapeHtml(title)}</strong><div>${escapeHtml(text)}</div>`;
+      messageList.appendChild(node);
+      messageList.scrollTop = messageList.scrollHeight;
+      return node;
     }
 
     function renderSummary(status) {
       const metrics = status.pipeline_metrics || {};
       const items = [
-        ["绱浠诲姟", metrics.total_runs],
-        ["鎴愬姛鐜?, metrics.success_rate],
-        ["璐ㄦ閫氳繃鐜?, metrics.qa_pass_rate],
-        ["鍙氦浠樼巼", metrics.delivery_ready_rate],
-        ["杩涜涓?, metrics.active_runs],
-        ["骞冲潎 Token", metrics.avg_tokens],
+        ["总任务数", metrics.total_runs],
+        ["成功率", metrics.success_rate],
+        ["质检通过率", metrics.qa_pass_rate],
+        ["交付就绪率", metrics.delivery_ready_rate],
+        ["活跃任务", metrics.active_runs],
+        ["平均 Token", metrics.avg_tokens],
       ];
-      summaryGridEl.innerHTML = items.map(([name, value]) => `
-        <div class="card">
-          <strong>${escapeHtml(name)}</strong>
-          <span>${escapeHtml(value)}</span>
-        </div>
-      `).join("");
-      statusChipEl.textContent = status.console_subtitle || "CAO 姝ｅ湪瀵瑰灞曠ず娴佺▼鐘舵€併€?;
+
+      summaryGrid.innerHTML = items
+        .map(([label, value]) => `
+          <div class="card">
+            <strong>${escapeHtml(label)}</strong>
+            <span>${escapeHtml(value ?? "-")}</span>
+          </div>
+        `)
+        .join("");
     }
 
-    function renderStages(status) {
-      const stages = Array.isArray(status.stage_statuses) ? status.stage_statuses : [];
-      stageGridEl.innerHTML = stages.map((item) => `
-        <div class="card">
-          <strong>${escapeHtml(item.label)}</strong>
-          <span>${escapeHtml(item.name)}</span>
-          <div class="pill ${statusClass(item.status)}">${escapeHtml(item.status || "idle")}</div>
-        </div>
-      `).join("");
-    }
+    function renderRuns(status) {
+      const runs = status.recent_runs || [];
+      if (!runs.length) {
+        runGrid.innerHTML = '<div class="empty">暂无最近任务。</div>';
+        return;
+      }
 
-    function renderRuns(runs) {
-      runGridEl.innerHTML = runs.map((run) => `
-        <div class="card run-card ${run.uuid === currentRunId ? "active" : ""}" data-run-id="${escapeHtml(run.uuid)}">
-          <strong>${escapeHtml(run.domain || "鏈懡鍚嶄换鍔?)}</strong>
-          <span>骞冲彴锛?{escapeHtml(run.platform || "-")}</span>
-          <span>鐘舵€侊細${escapeHtml(run.status || "-")}</span>
-          <span>璐ㄦ锛?{escapeHtml(run.qa_status || "-")}</span>
-          <div class="pill ${statusClass(run.status)}">${escapeHtml(run.uuid)}</div>
-        </div>
-      `).join("");
+      runGrid.innerHTML = runs
+        .map((run, index) => `
+          <div class="card run-card ${index === 0 ? "active" : ""}" data-run-id="${escapeHtml(run.uuid || "")}">
+            <strong>${escapeHtml(run.domain || "未命名任务")}</strong>
+            <span>平台：${escapeHtml(run.platform || "-")}</span>
+            <span>状态：${escapeHtml(run.status || "-")}</span>
+            <span>质检：${escapeHtml(run.qa_status || "-")}</span>
+            <div class="pill">${escapeHtml(run.workflow_type || "domain_auto_run")}</div>
+          </div>
+        `)
+        .join("");
 
-      runGridEl.querySelectorAll(".run-card").forEach((node) => {
-        node.addEventListener("click", () => {
-          const runId = node.getAttribute("data-run-id");
-          if (runId) {
-            currentRunId = runId;
-            loadTrace(runId);
-            renderRuns(runs);
-          }
+      Array.from(runGrid.querySelectorAll(".run-card")).forEach((card) => {
+        card.addEventListener("click", () => {
+          Array.from(runGrid.querySelectorAll(".run-card")).forEach((item) => item.classList.remove("active"));
+          card.classList.add("active");
+          loadTrace(card.dataset.runId);
         });
       });
-    }
 
-    function renderTrace(data) {
-      const summary = data.summary || {};
-      const stageStatuses = Array.isArray(data.public_stage_statuses) ? data.public_stage_statuses : [];
-      const publicSteps = Array.isArray(data.public_steps) ? data.public_steps.slice(-8).reverse() : [];
-
-      const topCards = [
-        {
-          title: "杩愯 ID",
-          text: data.run?.uuid || "-"
-        },
-        {
-          title: "閾捐矾姝ラ",
-          text: summary.step_count ?? 0
-        },
-        {
-          title: "鎬?Token",
-          text: summary.total_tokens ?? 0
-        },
-        {
-          title: "鎬绘垚鏈?,
-          text: summary.total_cost ?? 0
-        }
-      ];
-
-      const stageCards = stageStatuses.map((item) => `
-        <div class="trace-item">
-          <strong>${escapeHtml(item.label)}</strong>
-          <span>${escapeHtml(item.status || "idle")}</span>
-        </div>
-      `).join("");
-
-      const stepCards = publicSteps.map((item) => `
-        <div class="trace-item">
-          <strong>${escapeHtml(item.stage_label)}</strong>
-          <span>${escapeHtml(item.status || "-")} / ${escapeHtml(item.event_type || "-")}</span>
-          <span>${escapeHtml(item.message || "鏃犺ˉ鍏呰鏄?)}</span>
-        </div>
-      `).join("");
-
-      traceGridEl.innerHTML = `
-        ${topCards.map((item) => `
-          <div class="trace-item">
-            <strong>${escapeHtml(item.title)}</strong>
-            <span>${escapeHtml(item.text)}</span>
-          </div>
-        `).join("")}
-        ${stageCards}
-        ${stepCards || `<div class="empty">鏆傛棤閾捐矾姝ラ鍙睍绀恒€?/div>`}
-      `;
-    }
-
-    async function loadPipelineStatus() {
-      const response = await fetch("/api/v1/cao/pipeline-status");
-      if (!response.ok) throw new Error("pipeline-status failed");
-      const data = await response.json();
-      renderSummary(data);
-      renderStages(data);
-      renderRuns(Array.isArray(data.recent_runs) ? data.recent_runs : []);
-      if (!currentRunId && Array.isArray(data.recent_runs) && data.recent_runs.length) {
-        currentRunId = data.recent_runs[0].uuid;
-        await loadTrace(currentRunId);
+      const first = runs[0];
+      if (first && first.uuid) {
+        loadTrace(first.uuid);
       }
     }
 
-    async function loadTrace(runId) {
-      const response = await fetch(`/api/v1/cao/runs/${runId}/trace`);
-      if (!response.ok) throw new Error("trace failed");
-      const data = await response.json();
-      renderTrace(data);
+    function renderTrace(trace) {
+      const steps = trace.steps || [];
+      if (!steps.length) {
+        traceGrid.innerHTML = '<div class="empty">暂无回放记录。</div>';
+        return;
+      }
+
+      traceGrid.innerHTML = steps
+        .map((step) => `
+          <div class="trace-item">
+            <strong>${escapeHtml(step.stage || step.name || "步骤")}</strong>
+            <span>${escapeHtml(step.status || "-")} / ${escapeHtml(step.message || "")}</span>
+          </div>
+        `)
+        .join("");
+    }
+
+    async function loadStatus() {
+      const response = await fetch("/api/cao/pipeline-status");
+      const status = await response.json();
+      statusChip.textContent = status.console_subtitle || "CAO 管理台已就绪";
+      renderSummary(status);
+      renderRuns(status);
+    }
+
+    async function loadTrace(workflowRunId) {
+      if (!workflowRunId) return;
+      const response = await fetch(`/api/cao/runs/${encodeURIComponent(workflowRunId)}/trace`);
+      if (!response.ok) {
+        traceGrid.innerHTML = '<div class="empty">链路回放加载失败。</div>';
+        return;
+      }
+      const trace = await response.json();
+      renderTrace(trace);
     }
 
     async function sendMessage() {
-      const message = messageInputEl.value.trim();
+      const message = messageInput.value.trim();
       if (!message) return;
-
-      appendMessage("user", "浣?, message);
-      messageInputEl.value = "";
-      sendButtonEl.disabled = true;
+      sendButton.disabled = true;
+      appendMessage("user", "你", message);
+      messageInput.value = "";
 
       try {
-        const response = await fetch("/api/v1/cmo/chat", {
+        const response = await fetch("/api/cmo/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ message }),
         });
+
         if (!response.ok || !response.body) {
-          throw new Error("cmo chat failed");
+          appendMessage("error", "CMO", "消息发送失败。");
+          return;
         }
 
         const reader = response.body.getReader();
-        const decoder = new TextDecoder("utf-8");
+        const decoder = new TextDecoder();
         let buffer = "";
-
         while (true) {
           const { value, done } = await reader.read();
           if (done) break;
           buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split("\n");
+          const lines = buffer.split(/\r?\n/);
           buffer = lines.pop() || "";
-
-          for (const raw of lines) {
-            const line = raw.trim();
-            if (!line) continue;
-            const event = JSON.parse(line);
-
-            if (event.workflow_run_id) {
-              currentRunId = event.workflow_run_id;
-            }
-
-            if (event.type === "reply") {
-              appendMessage("reply", "CMO", event.message || "鏀跺埌銆?);
-            } else if (event.type === "status") {
-              const stage = event.stage || "娴佺▼";
-              appendMessage("status", stage, event.message || `${stage} 鐘舵€佹洿鏂癭);
-            } else if (event.type === "report") {
-              appendMessage("report", "鎶ュ憡", event.message || "宸茬敓鎴愭姤鍛娿€?);
-            } else if (event.type === "result") {
-              appendMessage("result", "浜や粯缁撴灉", event.message || "浠诲姟宸插畬鎴愩€?);
-              if (event.result?.workflow_run_id) currentRunId = event.result.workflow_run_id;
-            } else if (event.type === "error") {
-              appendMessage("error", "寮傚父", event.message || "娴佺▼鍑虹幇寮傚父銆?);
+          for (const line of lines) {
+            if (!line.trim()) continue;
+            try {
+              const event = JSON.parse(line);
+              if (event.type === "reply") {
+                appendMessage("reply", "CMO", event.message || "已收到。");
+              } else if (event.type === "status") {
+                const stage = event.stage || "流程";
+                appendMessage("status", stage, event.message || `${stage} 已更新。`);
+              } else if (event.type === "report") {
+                appendMessage("report", "报告", event.message || "收到报告。");
+              } else if (event.type === "result") {
+                appendMessage("result", "结果", event.message || "收到结果。");
+              } else if (event.type === "error") {
+                appendMessage("error", "错误", event.message || "发生错误。");
+              }
+            } catch {
+              appendMessage("reply", "CMO", line);
             }
           }
         }
-
-        await loadPipelineStatus();
-        if (currentRunId) {
-          await loadTrace(currentRunId);
-        }
       } catch (error) {
-        appendMessage("error", "绯荤粺", error instanceof Error ? error.message : "鍙戦€佸け璐?);
+        appendMessage("error", "错误", error instanceof Error ? error.message : "发送失败。");
       } finally {
-        sendButtonEl.disabled = false;
+        sendButton.disabled = false;
       }
     }
 
-    sendButtonEl.addEventListener("click", sendMessage);
-    messageInputEl.addEventListener("keydown", (event) => {
-      if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+    sendButton.addEventListener("click", sendMessage);
+    messageInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+        event.preventDefault();
         sendMessage();
       }
     });
 
-    loadPipelineStatus().catch((error) => {
-      appendMessage("error", "绯荤粺", error instanceof Error ? error.message : "鍒濆鍖栧け璐?);
+    loadStatus().catch((error) => {
+      statusChip.textContent = "CAO 管理台加载失败";
+      appendMessage("error", "错误", error instanceof Error ? error.message : "状态加载失败。");
     });
   </script>
 </body>

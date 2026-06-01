@@ -1,0 +1,19 @@
+deepseek:
+  api_key: "${DEEPSEEK_API_KEY}"
+  base_url: "https://api.deepseek.com/v1"
+  model: "deepseek-v4"
+
+glm:
+  api_key: "${GLM_API_KEY}"
+  base_url: "https://open.bigmodel.cn/api/paas/v4"
+  model: "glm-5.1"
+
+seedance:
+  api_key: "${SEEDANCE_API_KEY}"
+  base_url: "https://api.seedance.ai/v1"
+  model: "seedance-2.0"
+
+runtime:
+  http_timeout: 60.0
+  max_retries: 2
+  use_placeholder_when_unconfigured: true

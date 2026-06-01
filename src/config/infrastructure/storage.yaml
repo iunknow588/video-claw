@@ -1,0 +1,24 @@
+video_backend: "local"
+media_root: "runtime/media"
+media_url_prefix: "/media"
+media_base_url: null
+
+github:
+  owner: "${GITHUB_STORAGE_OWNER}"
+  repo: "${GITHUB_STORAGE_REPO}"
+  token: "${GITHUB_STORAGE_TOKEN}"
+  release_tag: "video-assets"
+
+ipfs:
+  api_url: "http://127.0.0.1:5001"
+  gateway_url: "https://ipfs.io/ipfs"
+  pin_on_add: true
+
+s3_compatible:
+  endpoint_url: "${S3_ENDPOINT_URL}"
+  access_key_id: "${S3_ACCESS_KEY_ID}"
+  secret_access_key: "${S3_SECRET_ACCESS_KEY}"
+  bucket: "${S3_BUCKET}"
+  region: "${S3_REGION}"
+  object_prefix: "videos"
+  public_base_url: "${S3_PUBLIC_BASE_URL}"

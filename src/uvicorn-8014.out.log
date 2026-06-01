@@ -1,6 +1,0 @@
-{"event": "Database initialized", "logger": "app.db.session", "level": "info", "timestamp": "2026-05-30T14:25:00.242779Z"}
-INFO:     127.0.0.1:60231 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:60269 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:60304 - "GET /openapi.json HTTP/1.1" 200 OK
-INFO:     127.0.0.1:60305 - "POST /api/v1/promotion/chat HTTP/1.1" 200 OK
-INFO:     127.0.0.1:60332 - "GET /api/v1/workflows/skills HTTP/1.1" 200 OK

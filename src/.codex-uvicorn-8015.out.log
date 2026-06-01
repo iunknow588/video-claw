@@ -1,8 +1,0 @@
-{"event": "Database initialized", "logger": "app.db.session", "level": "info", "timestamp": "2026-05-31T04:43:07.456964Z"}
-INFO:     127.0.0.1:56436 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:56455 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:59450 - "GET /health HTTP/1.1" 200 OK
-INFO:     127.0.0.1:59449 - "GET /ceo HTTP/1.1" 200 OK
-INFO:     127.0.0.1:60630 - "GET /api/v1/ceo/leaders/lead.cho HTTP/1.1" 404 Not Found
-INFO:     127.0.0.1:60631 - "GET /api/v1/workflows/skills HTTP/1.1" 200 OK
-INFO:     127.0.0.1:60632 - "GET /health HTTP/1.1" 200 OK

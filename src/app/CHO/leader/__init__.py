@@ -1,3 +1,3 @@
-from app.leaders.departments import HumanOpsLeader
+﻿from app.CEO.leaders.departments import HumanOpsLeader
 
 __all__ = ["HumanOpsLeader"]

@@ -1,4 +1,4 @@
-"""
+﻿"""
 Smoke test against a running local API server.
 """
 
@@ -30,7 +30,7 @@ def main() -> int:
 
     hotspots = request_json(
         "POST",
-        "/api/v1/hotspots/fetch",
+        "/api/hotspots/fetch",
         json={"platform": "douyin", "keyword": "lobster", "count": 1},
     )
     hotspot_id = hotspots[0]["uuid"]
@@ -38,7 +38,7 @@ def main() -> int:
 
     analysis = request_json(
         "POST",
-        "/api/v1/analysis",
+        "/api/analysis",
         json={"hotspot_id": hotspot_id, "analysis_type": "comprehensive"},
     )
     analysis_id = analysis["uuid"]
@@ -46,7 +46,7 @@ def main() -> int:
 
     script = request_json(
         "POST",
-        "/api/v1/scripts",
+        "/api/scripts",
         json={
             "analysis_id": analysis_id,
             "content_type": "knowledge",
@@ -60,14 +60,14 @@ def main() -> int:
 
     approved_script = request_json(
         "POST",
-        f"/api/v1/scripts/review/{script_id}",
+        f"/api/scripts/review/{script_id}",
         json={"approved": True, "feedback": "live smoke ok"},
     )
     print(f"[script review] status={approved_script['status']}")
 
     video_task = request_json(
         "POST",
-        "/api/v1/videos",
+        "/api/videos",
         json={"script_id": script_id, "style": "realistic", "size": "1080x1920"},
     )
     task_id = video_task["uuid"]
@@ -76,15 +76,15 @@ def main() -> int:
     task_status = None
     for _ in range(10):
         time.sleep(1)
-        task_status = request_json("GET", f"/api/v1/videos/task/{task_id}")
+        task_status = request_json("GET", f"/api/videos/task/{task_id}")
         print(f"[video poll] status={task_status['status']}")
         if task_status["status"] in {"completed", "approved", "rejected", "failed"}:
             break
 
-    storage = request_json("GET", "/api/v1/operations/storage")
+    storage = request_json("GET", "/api/operations/storage")
     print(f"[storage] backend={storage['backend']} configured={storage['configured']}")
 
-    summary = request_json("GET", "/api/v1/operations/summary")
+    summary = request_json("GET", "/api/operations/summary")
     print(f"[summary] counts={summary['counts']}")
 
     print("\nLive API workflow smoke test finished.")
@@ -93,3 +93,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

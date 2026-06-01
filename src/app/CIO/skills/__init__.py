@@ -1,7 +1,34 @@
-from app.CIO.skills.knowledge_base import KnowledgeBaseSkill
-from app.CIO.skills.log import CIOLogSkill
-from app.CIO.skills.query_log import QueryLogSkill
-from app.CIO.skills.retrieve import RetrieveSkill
-from app.CIO.skills.store import StoreSkill
+from __future__ import annotations
 
-__all__ = ["KnowledgeBaseSkill", "CIOLogSkill", "QueryLogSkill", "RetrieveSkill", "StoreSkill"]
+from importlib import import_module
+
+__all__ = [
+    "ConfigReadSkill",
+    "ConfigTransformSkill",
+    "ConfigValidateSkill",
+    "KnowledgeBaseSkill",
+    "CIOLogSkill",
+    "LogWorkflowSkill",
+    "QueryLogSkill",
+    "RetrieveSkill",
+    "StoreSkill",
+]
+
+_EXPORTS = {
+    "ConfigReadSkill": "app.CIO.skills.config_read",
+    "ConfigTransformSkill": "app.CIO.skills.config_transform",
+    "ConfigValidateSkill": "app.CIO.skills.config_validate",
+    "KnowledgeBaseSkill": "app.CIO.skills.knowledge_base",
+    "CIOLogSkill": "app.CIO.skills.log",
+    "LogWorkflowSkill": "app.CIO.skills.workflow_log",
+    "QueryLogSkill": "app.CIO.skills.query_log",
+    "RetrieveSkill": "app.CIO.skills.retrieve",
+    "StoreSkill": "app.CIO.skills.store",
+}
+
+
+def __getattr__(name: str):
+    if name not in _EXPORTS:
+        raise AttributeError(name)
+    module = import_module(_EXPORTS[name])
+    return getattr(module, name)

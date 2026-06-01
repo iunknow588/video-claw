@@ -1,4 +1,4 @@
-# 真实 API 联调准备清单
+﻿# 真实 API 联调准备清单
 
 ## 1. 目标
 
@@ -64,7 +64,7 @@ AI_USE_PLACEHOLDER_WHEN_UNCONFIGURED=false
 
 ```env
 VIDEO_STORAGE_BACKEND=local
-MEDIA_ROOT=media
+MEDIA_ROOT=runtime/media
 MEDIA_URL_PREFIX=/media
 ```
 
@@ -152,22 +152,22 @@ uvicorn main:app --reload
 
 按这个顺序调：
 
-1. `POST /api/v1/hotspots/fetch`
-2. `POST /api/v1/analysis`
-3. `POST /api/v1/scripts`
-4. `POST /api/v1/scripts/review/{script_id}`
-5. `POST /api/v1/videos`
-6. `GET /api/v1/videos/task/{task_id}`
-7. `GET /api/v1/operations/summary`
-8. `GET /api/v1/operations/storage`
+1. `POST /api/hotspots/fetch`
+2. `POST /api/analysis`
+3. `POST /api/scripts`
+4. `POST /api/scripts/review/{script_id}`
+5. `POST /api/videos`
+6. `GET /api/videos/task/{task_id}`
+7. `GET /api/operations/summary`
+8. `GET /api/operations/storage`
 
 ## 9. 哪些步骤会真实调用第三方
 
 当 `AI_USE_PLACEHOLDER_WHEN_UNCONFIGURED=false` 且 key 已配置时：
 
-- `POST /api/v1/analysis` 会真实调用 DeepSeek
-- `POST /api/v1/scripts` 会真实调用 GLM
-- `POST /api/v1/videos` 后台处理会真实调用 Seedance
+- `POST /api/analysis` 会真实调用 DeepSeek
+- `POST /api/scripts` 会真实调用 GLM
+- `POST /api/videos` 后台处理会真实调用 Seedance
 
 ## 10. 当前最可能出现的适配点
 
@@ -206,3 +206,4 @@ uvicorn main:app --reload
 3. `alembic upgrade head`
 4. `uvicorn main:app --reload`
 5. Swagger 主链路联调
+

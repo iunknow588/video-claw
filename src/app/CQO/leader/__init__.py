@@ -1,3 +1,3 @@
-from app.leaders.departments import QALeader
+﻿from app.CEO.leaders.departments import QALeader
 
 __all__ = ["QALeader"]
