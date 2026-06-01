@@ -255,7 +255,7 @@ class CFOConfigAgent:
         return await self.manager.load_config(
             path=self.config_path,
             schema_type="finance",
-            model_class="app.CFO.config.schema.FinanceConfig"
+            model_class="departments.CFO.config.schema.FinanceConfig"
         )
     
     async def update_budget(self, new_budget: Decimal, operator: str):
@@ -305,7 +305,7 @@ class COOConfigAgent:
         return await self.manager.load_config(
             path=self.config_path,
             schema_type="production",
-            model_class="app.COO.config.schema.ProductionConfig"
+            model_class="departments.COO.config.schema.ProductionConfig"
         )
 ```
 

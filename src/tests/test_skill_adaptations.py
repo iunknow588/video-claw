@@ -2,23 +2,23 @@ from pathlib import Path
 
 import pytest
 
-from app.CSO.services.material_reference import MaterialReferenceService
-from app.COO.services.composition import RenderExecutionService
-from app.CIO.services.storage import build_placeholder_video_bytes
-from app.COO.services.asset_management import SubtitleComposerService
-from app.COO.services.asset_management import VoiceoverService
-from app.COO.services.composition import VideoCompositionService
-from app.CHO.agent import CHOAgent
-from app.CHO.services import CHOService
-from app.CCO.agent import AnalysisAgent
-from app.COO.agent import ProductionAgent
-from app.CSO.agent import ResearchAgent
-from app.CQO.skills import DeliveryAssetCheckSkill, RenderOutputCheckSkill
-from app.CEO.skills.registry import ensure_builtin_skills_registered, registry
+from departments.CSO.services.material_reference import MaterialReferenceService
+from departments.COO.services.composition import RenderExecutionService
+from departments.CIO.services.storage import build_placeholder_video_bytes
+from departments.COO.services.asset_management import SubtitleComposerService
+from departments.COO.services.asset_management import VoiceoverService
+from departments.COO.services.composition import VideoCompositionService
+from departments.CHO.agent import CHOAgent
+from departments.CHO.services import CHOService
+from departments.CCO.agent import AnalysisAgent
+from departments.COO.agent import ProductionAgent
+from departments.CSO.agent import ResearchAgent
+from departments.CQO.skills import DeliveryAssetCheckSkill, RenderOutputCheckSkill
+from departments.CEO.skills.registry import ensure_builtin_skills_registered, registry
 
 
 def test_subtitle_composer_creates_srt_file(tmp_path, monkeypatch):
-    from app.CEO.core.config import settings
+    from departments.CEO.core.config import settings
 
     monkeypatch.setattr(settings.storage, "media_root", str(tmp_path))
     service = SubtitleComposerService()
@@ -44,7 +44,7 @@ def test_subtitle_composer_creates_srt_file(tmp_path, monkeypatch):
 
 
 def test_material_reference_service_builds_candidates_and_scene_map(tmp_path, monkeypatch):
-    from app.CEO.core.config import settings
+    from departments.CEO.core.config import settings
 
     monkeypatch.setattr(settings.storage, "media_root", str(tmp_path))
     service = MaterialReferenceService()
@@ -67,7 +67,7 @@ def test_material_reference_service_builds_candidates_and_scene_map(tmp_path, mo
 
 
 def test_voiceover_service_creates_audio_and_ssml(tmp_path, monkeypatch):
-    from app.CEO.core.config import settings
+    from departments.CEO.core.config import settings
 
     monkeypatch.setattr(settings.storage, "media_root", str(tmp_path))
     service = VoiceoverService()
@@ -174,8 +174,8 @@ def test_placeholder_video_bytes_uses_ffmpeg_path_when_available(monkeypatch):
         output_path.write_bytes(expected)
         return None
 
-    monkeypatch.setattr("app.CIO.services.storage.shutil.which", lambda name: "ffmpeg" if name == "ffmpeg" else None)
-    monkeypatch.setattr("app.CIO.services.storage.subprocess.run", fake_run)
+    monkeypatch.setattr("departments.CIO.services.storage.shutil.which", lambda name: "ffmpeg" if name == "ffmpeg" else None)
+    monkeypatch.setattr("departments.CIO.services.storage.subprocess.run", fake_run)
 
     result = build_placeholder_video_bytes("task-ffmpeg")
 
@@ -184,7 +184,7 @@ def test_placeholder_video_bytes_uses_ffmpeg_path_when_available(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_render_execution_service_builds_preview_asset(tmp_path, monkeypatch):
-    from app.CEO.core.config import settings
+    from departments.CEO.core.config import settings
 
     monkeypatch.setattr(settings.storage, "media_root", str(tmp_path))
     monkeypatch.setattr(settings.storage, "media_url_prefix", "/media")
@@ -226,7 +226,7 @@ async def test_render_execution_service_builds_preview_asset(tmp_path, monkeypat
 
 
 def test_render_output_check_passes_for_local_asset(tmp_path, monkeypatch):
-    from app.CEO.core.config import settings
+    from departments.CEO.core.config import settings
 
     media_root = tmp_path / "media"
     video_dir = media_root / "videos"

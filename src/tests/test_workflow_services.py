@@ -2,45 +2,45 @@ from types import SimpleNamespace
 
 import pytest
 
-from app.CEO.core.config import settings
-from app.CEO.services.control_plane import control_plane
-from app.CEO.services.orchestration import PipelineContext, PipelineResult
-from app.CEO.services.orchestration.assembly import WorkflowAssembly
-from app.CEO.services.orchestration.domains.analysis_pipeline import AnalysisPipeline
-from app.CEO.services.orchestration.domains.finance_gate import FinanceGate
-from app.CEO.services.orchestration.domains.production_pipeline import ProductionPipeline
-from app.CEO.services.orchestration.domains.publish_pipeline import PublishPipeline
-from app.CEO.services.orchestration.domains.qa_pipeline import QAPipeline
-from app.CEO.services.orchestration.domains.rd_pipeline import RDPipeline
-from app.CEO.services.orchestration.domains.research_pipeline import ResearchPipeline
-from app.CEO.services.orchestration.engine import WorkflowExecutionEngine
-from app.CEO.services.orchestration.recorder import WorkflowRecorder
-from app.CEO.services.orchestration.reroute import QARerouteService, QARerouteStrategy
-from app.CEO.skills.base import BaseSkill
-from app.CEO.skills.runtime import SkillRuntimeManager
-from app.CEO.leaders.departments import LEADER_CLASS_MAP, build_department_leader
-from app.CIO.models.artifact import ArtifactRecord
-from app.CIO.models.analysis import AnalysisReport
-from app.CIO.models.cost import CostRecord
-from app.CIO.models.hotspot import HotspotItem
-from app.CIO.models.information_event import InformationEvent
-from app.CIO.models.review import ReviewRecord
-from app.CIO.models.script import Script
-from app.CIO.models.step_log import WorkflowStepLog
-from app.CTO.services.ai_clients import (
+from departments.CEO.core.config import settings
+from departments.CEO.services.control_plane import control_plane
+from departments.CEO.services.orchestration import PipelineContext, PipelineResult
+from departments.CEO.services.orchestration.assembly import WorkflowAssembly
+from departments.CEO.services.orchestration.domains.analysis_pipeline import AnalysisPipeline
+from departments.CEO.services.orchestration.domains.finance_gate import FinanceGate
+from departments.CEO.services.orchestration.domains.production_pipeline import ProductionPipeline
+from departments.CEO.services.orchestration.domains.publish_pipeline import PublishPipeline
+from departments.CEO.services.orchestration.domains.qa_pipeline import QAPipeline
+from departments.CEO.services.orchestration.domains.rd_pipeline import RDPipeline
+from departments.CEO.services.orchestration.domains.research_pipeline import ResearchPipeline
+from departments.CEO.services.orchestration.engine import WorkflowExecutionEngine
+from departments.CEO.services.orchestration.recorder import WorkflowRecorder
+from departments.CEO.services.orchestration.reroute import QARerouteService, QARerouteStrategy
+from departments.CEO.skills.base import BaseSkill
+from departments.CEO.skills.runtime import SkillRuntimeManager
+from departments.CEO.leaders.departments import LEADER_CLASS_MAP, build_department_leader
+from departments.CIO.models.artifact import ArtifactRecord
+from departments.CIO.models.analysis import AnalysisReport
+from departments.CIO.models.cost import CostRecord
+from departments.CIO.models.hotspot import HotspotItem
+from departments.CIO.models.information_event import InformationEvent
+from departments.CIO.models.review import ReviewRecord
+from departments.CIO.models.script import Script
+from departments.CIO.models.step_log import WorkflowStepLog
+from departments.CTO.services.ai_clients import (
     AIProviderResult,
     TokenUsage,
     build_glm_client,
     get_ai_provider_config,
     should_use_placeholder,
 )
-from app.CCO.services.content_creation import AIAnalysisService
-from app.CIO.services.knowledge import CIOInformationService
-from app.CSO.services.hotspot import HotspotService
-from app.CFO.services.finance import FinanceService
-from app.COO.services.script_management import ScriptService
-from app.CIO.services.operations import OperationsService
-from app.CIO.services.storage import (
+from departments.CCO.services.content_creation import AIAnalysisService
+from departments.CIO.services.knowledge import CIOInformationService
+from departments.CSO.services.hotspot import HotspotService
+from departments.CFO.services.finance import FinanceService
+from departments.COO.services.script_management import ScriptService
+from departments.CIO.services.operations import OperationsService
+from departments.CIO.services.storage import (
     LocalVideoStorage,
     S3CompatibleVideoStorage,
     asset_exists,
@@ -48,8 +48,8 @@ from app.CIO.services.storage import (
     get_video_storage,
     get_storage_runtime,
 )
-from app.COO.services.video_production import VideoService
-from app.CIO.schemas.video import DomainWorkflowRequest, HotspotCreate
+from departments.COO.services.video_production import VideoService
+from departments.CIO.schemas.video import DomainWorkflowRequest, HotspotCreate
 
 
 @pytest.mark.asyncio

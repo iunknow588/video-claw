@@ -2,8 +2,8 @@
 
 import uvicorn
 
-from app.CEO.app import app
-from app.CEO.services.application_runtime import get_application_runtime
+from app.app import app
+from departments.CEO.services.application_runtime import get_application_runtime
 
 
 if __name__ == "__main__":

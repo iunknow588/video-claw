@@ -2,7 +2,7 @@
 
 import pytest
 
-from app.CEO.core.config import settings
+from departments.CEO.core.config import settings
 
 
 @pytest.mark.asyncio

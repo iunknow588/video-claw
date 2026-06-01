@@ -3,13 +3,13 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from app.CEO.core.config import settings
-from app.CEO.services.application_runtime import get_application_runtime
-from app.CEO.services.control_plane import control_plane
-from app.CFO.services.finance_runtime import get_finance_runtime
-from app.CIO.services.config_platform import ConfigDiscovery, ConfigManager
-from app.CIO.services.database_runtime import get_database_runtime
-from app.CIO.services.redis_runtime import get_redis_runtime
+from departments.CEO.core.config import settings
+from departments.CEO.services.application_runtime import get_application_runtime
+from departments.CEO.services.control_plane import control_plane
+from departments.CFO.services.finance_runtime import get_finance_runtime
+from departments.CIO.services.config_platform import ConfigDiscovery, ConfigManager
+from departments.CIO.services.database_runtime import get_database_runtime
+from departments.CIO.services.redis_runtime import get_redis_runtime
 
 
 def test_split_config_domains_are_discoverable():
@@ -55,7 +55,7 @@ def test_config_manager_resolves_env_placeholders(tmp_path: Path, monkeypatch):
     manager = ConfigManager(discovery=ConfigDiscovery(base_path=config_root))
     database_config = manager.load_config(
         domain="cio_database",
-        model_class="app.CIO.config.schema.DatabaseConfig",
+        model_class="departments.CIO.config.schema.DatabaseConfig",
     )
 
     assert database_config.url == "sqlite+aiosqlite:///tmp/test.db"
@@ -82,7 +82,7 @@ def test_reload_domain_picks_up_updated_config(tmp_path: Path):
     manager = ConfigManager(discovery=ConfigDiscovery(base_path=config_root))
     first = manager.load_config(
         domain="cio_database",
-        model_class="app.CIO.config.schema.DatabaseConfig",
+        model_class="departments.CIO.config.schema.DatabaseConfig",
     )
     first_version = manager.version("cio_database")
 
@@ -100,7 +100,7 @@ def test_reload_domain_picks_up_updated_config(tmp_path: Path):
     )
     second = manager.reload_domain(
         domain="cio_database",
-        model_class="app.CIO.config.schema.DatabaseConfig",
+        model_class="departments.CIO.config.schema.DatabaseConfig",
     )
 
     assert first.url == "sqlite+aiosqlite:///tmp/first.db"
@@ -130,7 +130,7 @@ def test_config_manager_invalidates_cache_when_content_changes_without_mtime_cha
     manager = ConfigManager(discovery=ConfigDiscovery(base_path=config_root))
     first = manager.load_config(
         domain="cio_database",
-        model_class="app.CIO.config.schema.DatabaseConfig",
+        model_class="departments.CIO.config.schema.DatabaseConfig",
     )
     first_stat = config_file.stat()
 
@@ -150,7 +150,7 @@ def test_config_manager_invalidates_cache_when_content_changes_without_mtime_cha
 
     second = manager.load_config(
         domain="cio_database",
-        model_class="app.CIO.config.schema.DatabaseConfig",
+        model_class="departments.CIO.config.schema.DatabaseConfig",
     )
 
     assert first.url == "sqlite+aiosqlite:///tmp/alpha.db"

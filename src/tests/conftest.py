@@ -10,9 +10,9 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-import app.CIO.models  # noqa: F401
-from app.CIO.db.session import get_db
-from app.CIO.models.base import Base
+import departments.CIO.models  # noqa: F401
+from departments.CIO.db.session import get_db
+from departments.CIO.models.base import Base
 from main import app
 
 
