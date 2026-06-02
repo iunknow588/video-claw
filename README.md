@@ -293,7 +293,6 @@ docker-compose up -d app
 
 访问入口：
 
-- Swagger（API 文档）：暂时不提供
 - Health：`http://127.0.0.1:8000/health`
 - CAO 控制台：`http://127.0.0.1:8000/cao`
 
@@ -366,46 +365,17 @@ $env:LOBSTER_BASE_URL="http://127.0.0.1:8018"
 python src\scripts\front_flow_smoke.py
 ```
 
-## 9. 设计文档索引
+## 9. 当前 README 的边界
 
-设计文档已经沉淀在 `doc/design/`，建议按下面顺序阅读：
+这份 README 负责回答三个问题：
 
-### 总体结构
+1. 仓库现在长什么样
+2. 系统按什么职责拆分
+3. 从哪里启动、配置、测试
 
-- `doc/design/README.md`
-- `doc/design/体系结构与流程划分总说明.md`
-- `doc/design/系统模块与技能结构说明.md`
-- `doc/design/代码重构落地清单.md`
+更细的重构动机、部门边界推导、历史方案对比，统一由内部文档系统或单独资料管理，不包含在当前公开仓库展示中。
 
-### 入口、编排与治理
-
-- `doc/design/API路由与业务逻辑解耦说明.md`
-- `doc/design/CEO服务收敛与部门归属调整说明.md`
-- `doc/design/CEO隐身原则与对外接口分层说明.md`
-- `doc/design/前台进度格式化与存储展示职责说明.md`
-- `doc/design/Pipeline接口标准化说明.md`
-- `doc/design/CQO质检回退策略说明.md`
-- `doc/design/Leader汇报与CEO查询机制.md`
-- `doc/design/前三段内容流程联调说明.md`
-
-### CIO 与基础设施
-
-- `doc/design/基础设施运行时说明.md`
-- `doc/design/Ark视频模型联调说明.md`
-- `doc/design/运行期资产目录说明.md`
-- `doc/design/CIO数据层统一说明.md`
-- `doc/design/统一事件与日志体系说明.md`
-- `doc/design/Runtime去平铺化说明.md`
-- `doc/design/配置与依赖管理集中化说明.md`
-- `doc/design/依赖构建集中化说明.md`
-
-### 专项文档
-
-- `doc/design/COO服务职责拆分说明.md`
-- `doc/design/CHO公共Agent管理服务说明.md`
-- `doc/design/财务预算运行时说明.md`
-
-## 10. 当前 README 的边界
+## 10. 其他说明
 
 这份 README 负责回答三个问题：
 
@@ -413,4 +383,4 @@ python src\scripts\front_flow_smoke.py
 2. 系统按什么职责划分
 3. 从哪里启动、配置、测试
 
-更细的重构动机、部门边界推导、历史方案对比，统一留在 `doc/design/` 与 `doc/design/references/` 中维护。
+更细的重构动机、部门边界推导、历史方案对比，统一由内部文档或单独资料管理，不包含在当前公开仓库展示中。
