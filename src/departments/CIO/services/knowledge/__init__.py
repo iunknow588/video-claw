@@ -38,6 +38,11 @@ DEFAULT_KNOWLEDGE_BASE: dict[str, list[dict[str, Any]]] = {
             "summary": "Vertical first, stronger opening in first three seconds.",
         },
         {
+            "asset_id": "platform-xigua",
+            "title": "Xigua Delivery Guide",
+            "summary": "Knowledge-heavy structure, stronger retention arc, support both vertical and horizontal delivery.",
+        },
+        {
             "asset_id": "platform-bilibili",
             "title": "Bilibili Delivery Guide",
             "summary": "Longer retention arc, stronger information density.",

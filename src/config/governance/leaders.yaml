@@ -90,7 +90,7 @@ leaders:
   lead.analysis:
     display_name: "Analysis Center"
     description: "Break down structure, hooks, emotional rhythm, and reusable content patterns."
-    model: "deepseek-v4"
+    model: "astron-code-latest"
     bound_tools:
       - "lead.analysis.hotspot_structure"
       - "lead.analysis.hook_extraction"
@@ -111,7 +111,7 @@ leaders:
   lead.research_development:
     display_name: "CTO Technology Planning"
     description: "Owns prompt packages, title options, validation, and prompt version governance."
-    model: "glm-5.1"
+    model: "astron-code-latest"
     bound_tools:
       - "lead.research_development.prompt_package"
       - "lead.research_development.title_candidate"
@@ -131,7 +131,7 @@ leaders:
   lead.production:
     display_name: "Production Execution Center"
     description: "Owns script drafting, subtitle and voice generation, video composition, rendering, and asset landing."
-    model: "glm-5.1"
+    model: "astron-code-latest"
     bound_tools:
       - "lead.production.script_draft"
       - "lead.production.script_review"

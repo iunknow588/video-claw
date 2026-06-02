@@ -35,6 +35,7 @@ class AIProviderProfile(BaseModel):
     api_key: str = ""
     base_url: str
     model: str
+    resource_id: str = ""
 
 
 class AIRuntimeConfig(BaseModel):
@@ -43,9 +44,21 @@ class AIRuntimeConfig(BaseModel):
     use_placeholder_when_unconfigured: bool = True
 
 
+class HiDreamProviderConfig(BaseModel):
+    app_id: str = ""
+    api_key: str = ""
+    api_secret: str = ""
+    create_url: str = ""
+    query_url: str = ""
+    default_resolution: str = "2k"
+    default_aspect_ratio: str = "9:16"
+
+
 class AIProvidersConfig(BaseModel):
     deepseek: AIProviderProfile
     glm: AIProviderProfile
+    xfyun_maas: AIProviderProfile
+    hidream: HiDreamProviderConfig
     seedance: AIProviderProfile
     runtime: AIRuntimeConfig
 

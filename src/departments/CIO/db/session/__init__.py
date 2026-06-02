@@ -38,7 +38,9 @@ class DatabaseSessionRuntime:
 
         database_url = make_url(database_runtime.url)
         engine_kwargs = {"echo": database_runtime.echo}
-        if not database_url.drivername.startswith("sqlite"):
+        if database_url.drivername.startswith("sqlite"):
+            engine_kwargs["connect_args"] = {"timeout": 30}
+        else:
             engine_kwargs.update(
                 pool_size=database_runtime.pool_size,
                 max_overflow=database_runtime.max_overflow,

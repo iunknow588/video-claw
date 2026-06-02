@@ -39,7 +39,7 @@ class VerifyBalanceSkill(BaseSkill):
         provider_status: dict[str, dict[str, Any]] = {}
         blocked_reasons: list[str] = []
         for provider in required_services:
-            if provider not in {"deepseek", "glm", "seedance"}:
+            if provider not in {"deepseek", "glm", "xfyun_maas", "seedance"}:
                 blocked_reasons.append(f"{provider} provider is unsupported")
                 provider_status[provider] = {
                     "ready": False,

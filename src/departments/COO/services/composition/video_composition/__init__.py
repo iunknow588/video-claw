@@ -9,6 +9,7 @@ class VideoCompositionService:
     PLATFORM_PRESETS = {
         "douyin": {"resolution": "1080x1920", "aspect_ratio": "9:16", "fps": 30},
         "xiaohongshu": {"resolution": "1080x1920", "aspect_ratio": "9:16", "fps": 30},
+        "xigua": {"resolution": "1920x1080", "aspect_ratio": "16:9", "fps": 30},
         "bilibili": {"resolution": "1920x1080", "aspect_ratio": "16:9", "fps": 30},
     }
 

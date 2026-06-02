@@ -4,7 +4,11 @@ Centralized application configuration runtime.
 
 from __future__ import annotations
 
+import os
 from typing import Any
+from pathlib import Path
+
+from dotenv import load_dotenv
 
 from departments.CEO.config.agent import CEOConfigAgent
 from departments.CFO.config.agent import CFOConfigAgent
@@ -12,6 +16,25 @@ from departments.CIO.config.agent import CIOInfrastructureConfigAgent
 from departments.CIO.services.config_platform import ConfigManager, get_config_manager
 from departments.COO.config.agent import COOConfigAgent
 from departments.CSO.config.agent import CSOConfigAgent
+
+
+ROOT_ENV_PATH = Path(__file__).resolve().parents[5] / ".env"
+load_dotenv(ROOT_ENV_PATH, override=False)
+
+
+def _apply_provider_env_aliases() -> None:
+    """Normalize provider env aliases from vendor samples into app runtime keys."""
+
+    if not os.environ.get("SEEDANCE_API_KEY") and os.environ.get("ARK_API_KEY"):
+        os.environ["SEEDANCE_API_KEY"] = os.environ["ARK_API_KEY"]
+    if not os.environ.get("SEEDANCE_BASE_URL") and os.environ.get("ARK_BASE_URL"):
+        os.environ["SEEDANCE_BASE_URL"] = os.environ["ARK_BASE_URL"]
+    if not os.environ.get("SEEDANCE_MODEL"):
+        ark_video_model = os.environ.get("ARK_VIDEO_MODEL") or os.environ.get("ARK_MODEL")
+        if ark_video_model:
+            os.environ["SEEDANCE_MODEL"] = ark_video_model
+    if not os.environ.get("SEEDANCE_RESOURCE_ID") and os.environ.get("ARK_RESOURCE_ID"):
+        os.environ["SEEDANCE_RESOURCE_ID"] = os.environ["ARK_RESOURCE_ID"]
 
 
 DOMAIN_SPECS: dict[str, tuple[str, str]] = {
@@ -34,6 +57,7 @@ class Settings:
     """Single runtime-backed settings surface for the whole application."""
 
     def __init__(self, manager: ConfigManager | None = None) -> None:
+        _apply_provider_env_aliases()
         self._manager = manager or get_config_manager()
         self._ceo_agent = CEOConfigAgent(self._manager)
         self._cio_agent = CIOInfrastructureConfigAgent(self._manager)
@@ -43,6 +67,7 @@ class Settings:
         self.reload()
 
     def reload(self) -> "Settings":
+        _apply_provider_env_aliases()
         self.application = self._ceo_agent.load_application()
         self.leaders = self._ceo_agent.load_leaders()
         self.permissions = self._ceo_agent.load_permissions()
@@ -110,9 +135,22 @@ class Settings:
             "GLM_API_KEY": ai.glm.api_key,
             "GLM_BASE_URL": ai.glm.base_url,
             "GLM_MODEL": ai.glm.model,
+            "GLM_RESOURCE_ID": ai.glm.resource_id,
+            "XFYUN_MAAS_API_KEY": ai.xfyun_maas.api_key,
+            "XFYUN_MAAS_BASE_URL": ai.xfyun_maas.base_url,
+            "XFYUN_MAAS_MODEL": ai.xfyun_maas.model,
+            "XFYUN_MAAS_RESOURCE_ID": ai.xfyun_maas.resource_id,
+            "HIDREAM_APP_ID": ai.hidream.app_id,
+            "HIDREAM_API_KEY": ai.hidream.api_key,
+            "HIDREAM_API_SECRET": ai.hidream.api_secret,
+            "HIDREAM_CREATE_URL": ai.hidream.create_url,
+            "HIDREAM_QUERY_URL": ai.hidream.query_url,
+            "HIDREAM_DEFAULT_RESOLUTION": ai.hidream.default_resolution,
+            "HIDREAM_DEFAULT_ASPECT_RATIO": ai.hidream.default_aspect_ratio,
             "SEEDANCE_API_KEY": ai.seedance.api_key,
             "SEEDANCE_BASE_URL": ai.seedance.base_url,
             "SEEDANCE_MODEL": ai.seedance.model,
+            "SEEDANCE_RESOURCE_ID": ai.seedance.resource_id,
             "AI_HTTP_TIMEOUT": ai.runtime.http_timeout,
             "AI_MAX_RETRIES": ai.runtime.max_retries,
             "AI_USE_PLACEHOLDER_WHEN_UNCONFIGURED": ai.runtime.use_placeholder_when_unconfigured,

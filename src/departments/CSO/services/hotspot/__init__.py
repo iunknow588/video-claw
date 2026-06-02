@@ -2,7 +2,7 @@
 Hotspot Collection Service
 """
 
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from departments.CEO.core.logging import get_logger
 from departments.CIO.models.hotspot import HotspotItem
@@ -41,6 +41,9 @@ class HotspotService:
         for payload in payloads:
             existing = await self.get_by_platform_id(platform, payload["content_id"])
             if existing:
+                self._sync_existing_item(existing, payload)
+                await self.repository.session.flush()
+                await self.repository.session.refresh(existing)
                 created_items.append(existing)
                 continue
             item = await self.create(HotspotCreate(**payload))
@@ -55,6 +58,10 @@ class HotspotService:
         logger.info("Fetching XHS hotspots", keyword=keyword, count=count)
         return await self._fetch_from_provider("xiaohongshu", keyword, count)
 
+    async def fetch_from_xigua(self, keyword: str, count: int = 20) -> List[dict]:
+        logger.info("Fetching Xigua hotspots", keyword=keyword, count=count)
+        return await self._fetch_from_provider("xigua", keyword, count)
+
     async def fetch_from_bilibili(self, keyword: str, count: int = 20) -> List[dict]:
         logger.info("Fetching Bilibili hotspots", keyword=keyword, count=count)
         return await self._fetch_from_provider("bilibili", keyword, count)
@@ -62,3 +69,24 @@ class HotspotService:
     async def _fetch_from_provider(self, platform: str, keyword: str, count: int) -> List[dict]:
         provider = get_hotspot_provider(platform)
         return await provider.fetch(keyword=keyword, count=count)
+
+    @staticmethod
+    def _sync_existing_item(item: HotspotItem, payload: dict[str, Any]) -> None:
+        for field in (
+            "title",
+            "author",
+            "author_id",
+            "url",
+            "cover_image",
+            "video_url",
+            "view_count",
+            "like_count",
+            "comment_count",
+            "share_count",
+            "category",
+            "tags",
+            "duration",
+            "fetched_at",
+        ):
+            if field in payload:
+                setattr(item, field, payload[field])

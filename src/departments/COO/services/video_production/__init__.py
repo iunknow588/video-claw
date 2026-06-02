@@ -101,7 +101,7 @@ Requirements:
         await self.session.flush()
         
         try:
-            provider_result = await self._call_seedance(task.prompt, task.duration)
+            provider_result = await self._call_seedance(task.prompt, task.duration, task.size)
             provider_video_url = provider_result["video_url"]
             video_bytes = await self._materialize_video_content(task.uuid, provider_video_url)
             stored_video_url = await self.storage.save_video(
@@ -140,7 +140,7 @@ Requirements:
         
         return task
     
-    async def _call_seedance(self, prompt: str, duration: int) -> dict[str, object]:
+    async def _call_seedance(self, prompt: str, duration: int, size: str) -> dict[str, object]:
         """Call Seedance API with placeholder fallback when not configured."""
         logger.info("Calling Seedance API", model=self.model, duration=duration, configured=self.client.is_configured)
         if should_use_placeholder(self.provider):
@@ -152,13 +152,15 @@ Requirements:
                 model=self.model,
                 prompt=prompt,
                 duration=duration,
+                ratio=self._size_to_ratio(size),
             )
+            resolved = self._extract_provider_video_result(response.data)
             for key in ("video_url", "url", "download_url"):
-                value = response.data.get(key)
+                value = resolved.get(key)
                 if value:
                     return {
                         "video_url": value,
-                        "cost": float(response.data.get("cost", self._estimate_cost(duration))),
+                        "cost": float(resolved.get("cost", self._estimate_cost(duration))),
                         "token_usage": response.usage.to_dict(),
                     }
             raise ValueError("Seedance response did not contain a video URL")
@@ -179,6 +181,30 @@ Requirements:
                 completion_text="video placeholder",
             ).to_dict(),
         }
+
+    @staticmethod
+    def _extract_provider_video_result(payload: dict[str, object]) -> dict[str, object]:
+        if isinstance(payload.get("data"), dict):
+            data = payload["data"]
+            if isinstance(data, dict):
+                return data
+        if isinstance(payload.get("task"), dict):
+            task = payload["task"]
+            if isinstance(task, dict):
+                return task
+        return payload
+
+    @staticmethod
+    def _size_to_ratio(size: str) -> str:
+        normalized = (size or "").strip()
+        mapping = {
+            "1080x1920": "9:16",
+            "720x1280": "9:16",
+            "1920x1080": "16:9",
+            "1280x720": "16:9",
+            "1080x1080": "1:1",
+        }
+        return mapping.get(normalized, "9:16")
 
     async def _materialize_video_content(self, task_uuid: str, provider_video_url: str) -> bytes:
         """Build or download bytes before storing into the configured backend."""

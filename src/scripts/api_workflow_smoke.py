@@ -4,6 +4,7 @@ Smoke test against a running local API server.
 
 from __future__ import annotations
 
+import os
 import sys
 import time
 from typing import Any
@@ -11,12 +12,12 @@ from typing import Any
 import httpx
 
 
-BASE_URL = "http://127.0.0.1:8000"
+BASE_URL = os.environ.get("LOBSTER_BASE_URL", "http://127.0.0.1:8000")
 
 
 def request_json(method: str, path: str, **kwargs: Any) -> Any:
     url = f"{BASE_URL}{path}"
-    response = httpx.request(method, url, timeout=60.0, **kwargs)
+    response = httpx.request(method, url, timeout=60.0, trust_env=False, **kwargs)
     response.raise_for_status()
     return response.json()
 

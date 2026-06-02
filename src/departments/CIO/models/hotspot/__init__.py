@@ -35,3 +35,8 @@ class HotspotItem(BaseModel):
         Index("ix_category", "category"),
         {"comment": "Hotspot content items"},
     )
+
+    @property
+    def source_mode(self) -> str:
+        tags = {str(item).lower() for item in (self.tags or [])}
+        return "mock" if {"mvp", "mock"} & tags else "provider"

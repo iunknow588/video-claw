@@ -28,7 +28,7 @@ class HotspotCreate(BaseModel):
 
 
 class HotspotFetchRequest(BaseModel):
-    platform: str = Field(..., description="douyin / xiaohongshu / bilibili")
+    platform: str = Field(..., description="首批: douyin / xiaohongshu / xigua")
     keyword: str = Field(..., min_length=1, max_length=100)
     count: int = Field(default=10, ge=1, le=50)
 
@@ -40,10 +40,27 @@ class HotspotResponse(BaseModel):
     content_id: str
     title: Optional[str]
     author: Optional[str]
+    author_id: Optional[str] = None
+    url: Optional[str] = None
+    cover_image: Optional[str] = None
+    video_url: Optional[str] = None
     view_count: int
     like_count: int
+    comment_count: int = 0
+    share_count: int = 0
     category: Optional[str]
+    tags: Optional[List[str]] = None
+    duration: Optional[int] = None
+    fetched_at: Optional[str] = None
+    source_mode: str = "provider"
     created_at: datetime
+    updated_at: datetime
+
+
+class HotspotSearchResponse(BaseModel):
+    keyword: str
+    platform: Optional[str] = None
+    results: List[HotspotResponse]
 
 
 # --- Analysis Schemas ---
@@ -57,9 +74,17 @@ class AnalysisResponse(BaseModel):
     uuid: str
     hotspot_id: str
     analysis_type: str
+    report_title: str = "爆款DNA报告"
+    content_structure: Optional[Any] = None
+    emotion_curve: Optional[Any] = None
+    hook_design: Optional[Any] = None
     framework_summary: Optional[str]
+    reusable_elements: Optional[List[Any]] = None
+    risk_warnings: Optional[List[Any]] = None
+    dna_report: Optional[Dict[str, Any]] = None
     api_cost: Optional[float]
     created_at: datetime
+    updated_at: datetime
 
 
 # --- Script Schemas ---
@@ -74,17 +99,36 @@ class ScriptCreate(BaseModel):
     hook: Optional[str] = None
     cta: Optional[str] = None
 
+
+class ScriptSceneResponse(BaseModel):
+    timing: Optional[str] = None
+    visuals: Optional[str] = None
+    audio: Optional[str] = None
+    text: Optional[str] = None
+
+
 class ScriptResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     uuid: str
     analysis_id: str
+    content_type: str
+    style: str
     title: str
     topic: str
     duration: int
+    hook: Optional[str] = None
+    cta: Optional[str] = None
+    tags: Optional[List[str]] = None
+    scenes: Optional[List[ScriptSceneResponse]] = None
+    similarity_score: Optional[float] = None
+    api_cost: Optional[float] = None
+    created_by: Optional[str] = None
+    script_bundle: Optional[Dict[str, Any]] = None
     status: str
     version: int
     created_at: datetime
+    updated_at: datetime
 
 
 # --- Video Task Schemas ---
@@ -94,6 +138,16 @@ class VideoTaskCreate(BaseModel):
     size: str = "1080x1920"
     duration: Optional[int] = None
     prompt: Optional[str] = None
+
+
+class ImageTaskCreate(BaseModel):
+    script_id: Optional[str] = None
+    prompt: str = Field(..., min_length=1, max_length=4000)
+    negative_prompt: str = ""
+    aspect_ratio: str = Field(default="9:16", min_length=1, max_length=20)
+    resolution: str = Field(default="2k", min_length=1, max_length=20)
+    image_count: int = Field(default=1, ge=1, le=4)
+    use_case: str = Field(default="storyboard", min_length=1, max_length=50)
 
 
 class ScriptReviewRequest(BaseModel):
@@ -148,6 +202,25 @@ class VideoTaskResponse(BaseModel):
     created_at: datetime
 
 
+class ImageTaskResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    uuid: str
+    script_id: Optional[str]
+    status: str
+    provider_name: Optional[str]
+    provider_task_id: Optional[str]
+    prompt: str
+    negative_prompt: Optional[str]
+    aspect_ratio: Optional[str]
+    resolution: Optional[str]
+    image_count: int
+    image_urls: Optional[List[str]]
+    primary_image_url: Optional[str]
+    api_cost: Optional[float]
+    created_at: datetime
+
+
 class ReviewRecordResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -196,7 +269,7 @@ class CostRecordResponse(BaseModel):
 
 class DomainWorkflowRequest(BaseModel):
     domain: str = Field(..., min_length=1, max_length=100, description="目标内容领域")
-    platform: str = Field(..., description="douyin / xiaohongshu / bilibili")
+    platform: str = Field(..., description="首批: douyin / xiaohongshu / xigua")
     hotspot_count: int = Field(default=12, ge=3, le=50)
     top_n: int = Field(default=3, ge=1, le=10)
     content_type: str = Field(default="knowledge")
@@ -294,7 +367,10 @@ class PromptPackageResponse(BaseModel):
     title_candidates: List[str]
     prompt_summary: str
     script_topic: str
+    script_topic_variants: List[str]
     video_prompt: str
+    video_prompt_variants: List[str]
+    image_prompt_variants: List[str]
 
 
 class DomainWorkflowResponse(BaseModel):

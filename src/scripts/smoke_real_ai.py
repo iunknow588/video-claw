@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-import app.models  # noqa: F401
+import departments.CIO.models  # noqa: F401
 from departments.CEO.core.config import settings
 from departments.CIO.models.base import Base
 from departments.CIO.models.hotspot import HotspotItem

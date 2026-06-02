@@ -25,6 +25,7 @@ class TechnicalSpecCheckSkill(BaseSkill):
     PLATFORM_LIMITS = {
         "douyin": {"min_duration": 5, "max_duration": 180, "sizes": {"1080x1920", "720x1280"}},
         "xiaohongshu": {"min_duration": 5, "max_duration": 180, "sizes": {"1080x1920", "720x1280"}},
+        "xigua": {"min_duration": 10, "max_duration": 600, "sizes": {"1920x1080", "1080x1920"}},
         "bilibili": {"min_duration": 10, "max_duration": 600, "sizes": {"1920x1080", "1080x1920"}},
     }
 

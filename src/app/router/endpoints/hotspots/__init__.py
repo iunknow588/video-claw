@@ -8,7 +8,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from departments.CIO.db.session import get_db
-from departments.CIO.schemas.video import HotspotCreate, HotspotFetchRequest, HotspotResponse
+from departments.CIO.schemas.video import (
+    HotspotCreate,
+    HotspotFetchRequest,
+    HotspotResponse,
+    HotspotSearchResponse,
+)
 from departments.CSO.services.use_cases.hotspot_api import HotspotApiUseCase
 
 router = APIRouter()
@@ -34,7 +39,7 @@ async def list_hotspots(
     return await HotspotApiUseCase(db).list_hotspots(platform=platform, limit=limit)
 
 
-@router.get("/search")
+@router.get("/search", response_model=HotspotSearchResponse)
 async def search_hotspots(
     keyword: str = Query(..., min_length=1, max_length=100),
     platform: Optional[str] = Query(None),

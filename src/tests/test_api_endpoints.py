@@ -18,6 +18,9 @@ async def test_full_api_workflow(api_client):
     assert fetch_resp.status_code == 200
     hotspots = fetch_resp.json()
     assert len(hotspots) >= 1
+    assert hotspots[0]["source_mode"] == "mock"
+    assert hotspots[0]["url"].startswith("https://example.com/")
+    assert "mvp" in hotspots[0]["tags"]
     hotspot_id = hotspots[0]["uuid"]
 
     analysis_resp = await api_client.post(
@@ -27,6 +30,9 @@ async def test_full_api_workflow(api_client):
     assert analysis_resp.status_code == 200
     analysis = analysis_resp.json()
     analysis_id = analysis["uuid"]
+    assert analysis["report_title"] == "爆款DNA报告"
+    assert "dna_report" in analysis
+    assert "framework_summary" in analysis["dna_report"]
 
     script_resp = await api_client.post(
         "/api/scripts",
@@ -42,6 +48,10 @@ async def test_full_api_workflow(api_client):
     script = script_resp.json()
     script_id = script["uuid"]
     assert script["status"] == "pending_review"
+    assert script["hook"]
+    assert script["cta"]
+    assert len(script["scenes"]) >= 1
+    assert "script_bundle" in script
 
     approve_script_resp = await api_client.post(
         f"/api/scripts/review/{script_id}",
@@ -50,6 +60,7 @@ async def test_full_api_workflow(api_client):
     assert approve_script_resp.status_code == 200
     approved_script = approve_script_resp.json()
     assert approved_script["status"] == "approved"
+    assert len(approved_script["scenes"]) >= 1
 
     video_resp = await api_client.post(
         "/api/videos",
@@ -81,7 +92,7 @@ async def test_video_requires_approved_script(api_client):
     fetch_resp = await api_client.post(
         "/api/hotspots/fetch",
         json={
-            "platform": "bilibili",
+            "platform": "xigua",
             "keyword": "ops",
             "count": 1,
         },
@@ -119,6 +130,34 @@ async def test_video_requires_approved_script(api_client):
 
 
 @pytest.mark.asyncio
+async def test_image_task_endpoint_returns_placeholder_asset(api_client):
+    response = await api_client.post(
+        "/api/images",
+        json={
+            "prompt": "龙虾门店运营封面图，强对比画面，适合抖音竖屏首帧",
+            "negative_prompt": "模糊, 低清晰度",
+            "aspect_ratio": "9:16",
+            "resolution": "2k",
+            "image_count": 1,
+            "use_case": "cover",
+        },
+    )
+    assert response.status_code == 200
+    task = response.json()
+    assert task["status"] in {"pending", "processing", "completed"}
+
+    status_resp = await api_client.get(f"/api/images/task/{task['uuid']}")
+    assert status_resp.status_code == 200
+    status_data = status_resp.json()
+    assert status_data["provider_name"] == "hidream"
+
+    list_resp = await api_client.get("/api/images")
+    assert list_resp.status_code == 200
+    listed = list_resp.json()
+    assert any(item["uuid"] == task["uuid"] for item in listed)
+
+
+@pytest.mark.asyncio
 async def test_domain_workflow_returns_prompt_package(api_client):
     response = await api_client.post(
         "/api/cao/workflows/domain-auto-run",
@@ -140,6 +179,9 @@ async def test_domain_workflow_returns_prompt_package(api_client):
     assert len(data["expanded_queries"]) >= 3
     assert len(data["selected_hotspots"]) == 3
     assert len(data["prompt_package"]["core_keywords"]) >= 1
+    assert len(data["prompt_package"]["script_topic_variants"]) >= 3
+    assert len(data["prompt_package"]["video_prompt_variants"]) >= 2
+    assert len(data["prompt_package"]["image_prompt_variants"]) >= 2
     assert data["workflow_run_id"] is not None
     assert data["script_status"] == "pending_review"
     assert data["qa_status"] == "passed"
@@ -190,7 +232,7 @@ async def test_workflow_run_history_is_queryable(api_client):
         "/api/cao/workflows/domain-auto-run",
         json={
             "domain": "龙虾营销",
-            "platform": "bilibili",
+            "platform": "xigua",
             "hotspot_count": 6,
             "top_n": 2,
             "content_type": "knowledge",
@@ -405,7 +447,7 @@ async def test_promotion_chat_can_report_recent_runs(api_client):
         "/api/cao/workflows/domain-auto-run",
         json={
             "domain": "ceo-chat-history",
-            "platform": "bilibili",
+            "platform": "xigua",
             "hotspot_count": 6,
             "top_n": 2,
             "content_type": "knowledge",

@@ -23,7 +23,7 @@ async def create_analysis(
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
-@router.get("/hotspot/{hotspot_id}")
+@router.get("/hotspot/{hotspot_id}", response_model=AnalysisResponse)
 async def get_analysis_by_hotspot(
     hotspot_id: str,
     db: AsyncSession = Depends(get_db),

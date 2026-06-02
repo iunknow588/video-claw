@@ -27,3 +27,18 @@ class AnalysisReport(BaseModel):
         Index("ix_analysis_reports_created_at", "created_at"),
         {"comment": "AI analysis reports"},
     )
+
+    @property
+    def report_title(self) -> str:
+        return "爆款DNA报告"
+
+    @property
+    def dna_report(self) -> dict:
+        return {
+            "content_structure": self.content_structure if self.content_structure is not None else {},
+            "emotion_curve": self.emotion_curve if self.emotion_curve is not None else {},
+            "hook_design": self.hook_design if self.hook_design is not None else {},
+            "framework_summary": self.framework_summary or "",
+            "reusable_elements": list(self.reusable_elements or []),
+            "risk_warnings": list(self.risk_warnings or []),
+        }

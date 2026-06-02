@@ -3,12 +3,13 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from departments.CEO.core.config import settings
+from departments.CEO.core.config import Settings, settings
 from departments.CEO.services.application_runtime import get_application_runtime
 from departments.CEO.services.control_plane import control_plane
 from departments.CFO.services.finance_runtime import get_finance_runtime
 from departments.CIO.services.config_platform import ConfigDiscovery, ConfigManager
 from departments.CIO.services.database_runtime import get_database_runtime
+from departments.CIO.services.database_runtime import normalize_database_url
 from departments.CIO.services.redis_runtime import get_redis_runtime
 
 
@@ -29,9 +30,37 @@ def test_settings_are_loaded_from_split_config_runtime():
     assert settings.SERVER_PORT == 8000
     assert settings.DAILY_BUDGET == 1000.0
     assert settings.VIDEO_STORAGE_BACKEND == "local"
+    assert settings.HOTSPOT_PLATFORMS == ["douyin", "xiaohongshu", "xigua"]
     assert settings.leaders.scope == "company_system"
-    assert settings.leaders.leaders["lead.production"].model == "glm-5.1"
+    assert settings.leaders.leaders["lead.production"].model == "astron-code-latest"
     assert settings.workflow.main_route[0] == "lead.cfo"
+
+
+def test_settings_supports_ark_api_key_alias_for_seedance(monkeypatch):
+    monkeypatch.delenv("SEEDANCE_API_KEY", raising=False)
+    monkeypatch.setenv("ARK_API_KEY", "ark-demo-key")
+
+    reloaded_settings = Settings(manager=ConfigManager())
+
+    assert reloaded_settings.SEEDANCE_API_KEY == "ark-demo-key"
+
+
+def test_settings_supports_ark_seedance_aliases(monkeypatch):
+    monkeypatch.delenv("SEEDANCE_API_KEY", raising=False)
+    monkeypatch.delenv("SEEDANCE_BASE_URL", raising=False)
+    monkeypatch.delenv("SEEDANCE_MODEL", raising=False)
+    monkeypatch.delenv("SEEDANCE_RESOURCE_ID", raising=False)
+    monkeypatch.setenv("ARK_API_KEY", "ark-demo-key")
+    monkeypatch.setenv("ARK_BASE_URL", "https://ark.example.com/api/v3")
+    monkeypatch.setenv("ARK_VIDEO_MODEL", "doubao-video-demo")
+    monkeypatch.setenv("ARK_RESOURCE_ID", "resource-demo")
+
+    reloaded_settings = Settings(manager=ConfigManager())
+
+    assert reloaded_settings.SEEDANCE_API_KEY == "ark-demo-key"
+    assert reloaded_settings.SEEDANCE_BASE_URL == "https://ark.example.com/api/v3"
+    assert reloaded_settings.SEEDANCE_MODEL == "doubao-video-demo"
+    assert reloaded_settings.SEEDANCE_RESOURCE_ID == "resource-demo"
 
 
 def test_config_manager_resolves_env_placeholders(tmp_path: Path, monkeypatch):
@@ -157,6 +186,14 @@ def test_config_manager_invalidates_cache_when_content_changes_without_mtime_cha
     assert second.url == "sqlite+aiosqlite:///tmp/bravo.db"
 
 
+def test_normalize_database_url_resolves_relative_sqlite_path():
+    normalized = normalize_database_url("sqlite+aiosqlite:///runtime/local-dev.db")
+
+    assert normalized.startswith("sqlite+aiosqlite:///")
+    assert "runtime/local-dev.db" in normalized.replace("\\", "/")
+    assert normalized != "sqlite+aiosqlite:///runtime/local-dev.db"
+
+
 def test_control_plane_defaults_are_loaded_from_governance_config():
     control_plane.reset_defaults()
 
@@ -194,7 +231,7 @@ def test_cio_infrastructure_runtimes_are_loaded_from_owned_config():
     database_runtime = get_database_runtime()
     redis_runtime = get_redis_runtime()
 
-    assert database_runtime.url == settings.database.url
+    assert database_runtime.url == normalize_database_url(settings.database.url)
     assert database_runtime.pool_size == settings.database.pool_size
     assert database_runtime.version == settings.version("cio_database")
     assert redis_runtime.host == settings.redis.host

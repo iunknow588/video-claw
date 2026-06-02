@@ -23,14 +23,16 @@ from departments.CIO.models.artifact import ArtifactRecord
 from departments.CIO.models.analysis import AnalysisReport
 from departments.CIO.models.cost import CostRecord
 from departments.CIO.models.hotspot import HotspotItem
+from departments.CIO.models.image import ImageTask
 from departments.CIO.models.information_event import InformationEvent
 from departments.CIO.models.review import ReviewRecord
 from departments.CIO.models.script import Script
 from departments.CIO.models.step_log import WorkflowStepLog
 from departments.CTO.services.ai_clients import (
     AIProviderResult,
+    SeedanceClient,
     TokenUsage,
-    build_glm_client,
+    build_xfyun_maas_client,
     get_ai_provider_config,
     should_use_placeholder,
 )
@@ -39,6 +41,7 @@ from departments.CIO.services.knowledge import CIOInformationService
 from departments.CSO.services.hotspot import HotspotService
 from departments.CFO.services.finance import FinanceService
 from departments.COO.services.script_management import ScriptService
+from departments.COO.services.asset_management import ImageGenerationService
 from departments.CIO.services.operations import OperationsService
 from departments.CIO.services.storage import (
     LocalVideoStorage,
@@ -57,7 +60,7 @@ async def test_hotspot_search_and_fetch(session):
     service = HotspotService(session)
     await service.create(
         HotspotCreate(
-            platform="bilibili",
+            platform="xigua",
             content_id="abc123",
             title="Lobster operations breakdown",
             author="tester",
@@ -69,6 +72,52 @@ async def test_hotspot_search_and_fetch(session):
     results = await service.search("Lobster")
     assert len(results) == 1
     assert results[0].content_id == "abc123"
+
+
+@pytest.mark.asyncio
+async def test_hotspot_fetch_refreshes_existing_payload(session):
+    service = HotspotService(session)
+    item = await service.create(
+        HotspotCreate(
+            platform="douyin",
+            content_id="douyin-refresh-1",
+            title="old title",
+            author="old_author",
+            tags=["mvp"],
+        )
+    )
+    await session.flush()
+
+    async def fake_fetch_from_provider(platform, keyword, count):
+        return [
+            {
+                "platform": "douyin",
+                "content_id": "douyin-refresh-1",
+                "title": "new title",
+                "author": "new_author",
+                "author_id": "new_author_id",
+                "url": "https://example.com/douyin/new/1",
+                "cover_image": "https://example.com/assets/douyin/new-1.jpg",
+                "video_url": None,
+                "view_count": 99999,
+                "like_count": 8888,
+                "comment_count": 777,
+                "share_count": 66,
+                "category": "general",
+                "tags": ["lobster", "douyin", "mvp", "mock"],
+                "duration": 42,
+                "fetched_at": "2026-06-02T00:00:00+00:00",
+            }
+        ]
+
+    service._fetch_from_provider = fake_fetch_from_provider  # type: ignore[method-assign]
+
+    refreshed = await service.fetch_hotspots(SimpleNamespace(platform="douyin", keyword="lobster", count=1))
+    assert refreshed[0].uuid == item.uuid
+    assert refreshed[0].title == "new title"
+    assert refreshed[0].author == "new_author"
+    assert refreshed[0].view_count == 99999
+    assert refreshed[0].fetched_at == "2026-06-02T00:00:00+00:00"
 
 
 @pytest.mark.asyncio
@@ -118,6 +167,90 @@ async def test_analysis_script_video_flow_creates_audit_records(session):
 
 
 @pytest.mark.asyncio
+async def test_script_service_normalizes_scene_shape(session, monkeypatch):
+    hotspot = HotspotItem(
+        platform="douyin",
+        content_id="dy-script-normalize-1",
+        title="Scene shape case",
+        author="creator",
+        category="knowledge",
+    )
+    session.add(hotspot)
+    await session.flush()
+
+    analysis = AnalysisReport(
+        hotspot_id=hotspot.uuid,
+        analysis_type="comprehensive",
+        framework_summary="normalize scenes",
+        reusable_elements=["hook"],
+    )
+    session.add(analysis)
+    await session.flush()
+
+    service = ScriptService(session)
+    monkeypatch.setattr(settings.ai_providers.runtime, "use_placeholder_when_unconfigured", False)
+
+    async def fake_chat_json(*, model: str, prompt: str, system_prompt: str, temperature: float = 0.7):
+        return AIProviderResult(
+            data={
+                "title": "Normalized Script",
+                "scenes": [
+                    {"time": "00:00-00:05", "shot": "macro close-up", "voiceover": "intro", "caption": "hello"},
+                    {"timing": "00:05-00:10", "visuals": "wide shot", "audio": "detail", "text": "world"},
+                ],
+                "hook": "hook",
+                "cta": "cta",
+                "tags": ["one"],
+                "similarity_score": 0.12,
+                "cost": 0.01,
+            },
+            usage=TokenUsage(input_tokens=10, output_tokens=20, total_tokens=30),
+            raw_response={},
+        )
+
+    monkeypatch.setattr(service.client, "chat_json", fake_chat_json)
+    script = await service.generate_script(
+        analysis=analysis,
+        content_type="knowledge",
+        style="clean",
+        topic="normalize",
+        duration=10,
+    )
+
+    assert script.scenes[0]["timing"] == "00:00-00:05"
+    assert script.scenes[0]["visuals"] == "macro close-up"
+    assert script.scenes[0]["audio"] == "intro"
+    assert script.scenes[0]["text"] == "hello"
+    assert script.scenes[1]["timing"] == "00:05-00:10"
+
+
+@pytest.mark.asyncio
+async def test_image_generation_service_creates_placeholder_asset(session, monkeypatch):
+    monkeypatch.setattr(settings.ai_providers.hidream, "app_id", "")
+    monkeypatch.setattr(settings.ai_providers.hidream, "api_key", "")
+    monkeypatch.setattr(settings.ai_providers.hidream, "api_secret", "")
+
+    service = ImageGenerationService(session)
+    task = await service.create_task(
+        script_id=None,
+        prompt="龙虾门店运营封面图，强对比构图",
+        negative_prompt="模糊, 低清晰度",
+        aspect_ratio="9:16",
+        resolution="2k",
+        image_count=1,
+        use_case="cover",
+    )
+    processed = await service.process_task(task.uuid)
+    await session.commit()
+
+    assert isinstance(processed, ImageTask)
+    assert processed.status == "completed"
+    assert processed.primary_image_url is not None
+    assert processed.primary_image_url.endswith(".png")
+    assert processed.result_payload["mode"] == "placeholder"
+
+
+@pytest.mark.asyncio
 async def test_analysis_service_preserves_provider_token_usage(session, monkeypatch):
     hotspot = HotspotItem(
         platform="douyin",
@@ -132,7 +265,7 @@ async def test_analysis_service_preserves_provider_token_usage(session, monkeypa
     service = AIAnalysisService(session)
     monkeypatch.setattr(settings.ai_providers.runtime, "use_placeholder_when_unconfigured", False)
 
-    async def fake_chat_json(*, model: str, prompt: str):
+    async def fake_chat_json(*, model: str, prompt: str, system_prompt: str, temperature: float = 0.3):
         return AIProviderResult(
             data={
                 "content_structure": {"beats": 3},
@@ -361,22 +494,122 @@ def test_describe_video_storage_for_s3_backend(monkeypatch):
 
 
 def test_ai_provider_factory_uses_central_runtime_policy(monkeypatch):
-    monkeypatch.setattr(settings.ai_providers.glm, "api_key", "")
-    monkeypatch.setattr(settings.ai_providers.glm, "base_url", "https://glm.example.com/v4")
-    monkeypatch.setattr(settings.ai_providers.glm, "model", "glm-test")
+    monkeypatch.setattr(settings.ai_providers.xfyun_maas, "api_key", "")
+    monkeypatch.setattr(settings.ai_providers.xfyun_maas, "base_url", "https://maas.example.com/v2")
+    monkeypatch.setattr(settings.ai_providers.xfyun_maas, "model", "xfyun-test")
+    monkeypatch.setattr(settings.ai_providers.xfyun_maas, "resource_id", "resource-1")
     monkeypatch.setattr(settings.ai_providers.runtime, "http_timeout", 12.5)
     monkeypatch.setattr(settings.ai_providers.runtime, "max_retries", 5)
     monkeypatch.setattr(settings.ai_providers.runtime, "use_placeholder_when_unconfigured", True)
 
-    provider = get_ai_provider_config("glm")
-    client = build_glm_client(provider)
+    provider = get_ai_provider_config("xfyun_maas")
+    client = build_xfyun_maas_client(provider)
 
-    assert provider.provider == "glm"
-    assert provider.model == "glm-test"
+    assert provider.provider == "xfyun_maas"
+    assert provider.model == "xfyun-test"
+    assert provider.resource_id == "resource-1"
     assert provider.is_configured is False
     assert should_use_placeholder(provider) is True
     assert client.timeout == 12.5
     assert client.max_retries == 5
+
+
+@pytest.mark.asyncio
+async def test_xfyun_client_repairs_malformed_json(monkeypatch):
+    monkeypatch.setattr(settings.ai_providers.xfyun_maas, "api_key", "demo-key")
+    monkeypatch.setattr(settings.ai_providers.xfyun_maas, "base_url", "https://maas.example.com/v2")
+    monkeypatch.setattr(settings.ai_providers.xfyun_maas, "model", "astron-code-latest")
+    monkeypatch.setattr(settings.ai_providers.xfyun_maas, "resource_id", "")
+
+    provider = get_ai_provider_config("xfyun_maas")
+    client = build_xfyun_maas_client(provider)
+    responses = iter(
+        [
+            {
+                "choices": [
+                    {
+                        "message": {
+                            "content": '{"title":"bad","audio":"Voiceover: "broken""}',
+                        }
+                    }
+                ],
+                "usage": {"prompt_tokens": 10, "completion_tokens": 12, "total_tokens": 22},
+            },
+            {
+                "choices": [
+                    {
+                        "message": {
+                            "content": '{"title":"bad","audio":"Voiceover: broken"}',
+                        }
+                    }
+                ],
+                "usage": {"prompt_tokens": 6, "completion_tokens": 8, "total_tokens": 14},
+            },
+        ]
+    )
+
+    async def fake_post_json(*, path, payload, headers=None):
+        return next(responses)
+
+    monkeypatch.setattr(client, "_post_json", fake_post_json)
+
+    result = await client.chat_json(
+        model=provider.model,
+        prompt="Generate JSON",
+        system_prompt="Return JSON only",
+        temperature=0.1,
+    )
+
+    assert result.data["audio"] == "Voiceover: broken"
+    assert result.usage.total_tokens == 36
+
+
+@pytest.mark.asyncio
+async def test_seedance_client_uses_task_create_and_poll(monkeypatch):
+    client = SeedanceClient(
+        api_key="demo-key",
+        base_url="https://ark.cn-beijing.volces.com/api/v3",
+        timeout=1,
+        max_retries=0,
+    )
+
+    async def fake_post_json(self, *, path, payload, headers=None):
+        assert path == "/contents/generations/tasks"
+        assert payload["model"] == "doubao-seedance-2-0-260128"
+        assert payload["content"][0]["type"] == "text"
+        assert payload["ratio"] == "9:16"
+        return {"id": "task-123", "status": "submitted"}
+
+    query_calls = {"count": 0}
+
+    async def fake_get_json(self, *, path, headers=None):
+        assert path == "/contents/generations/tasks/task-123"
+        query_calls["count"] += 1
+        if query_calls["count"] == 1:
+            return {"id": "task-123", "status": "running"}
+        return {"id": "task-123", "status": "succeeded", "video_url": "https://example.com/video.mp4"}
+
+    monkeypatch.setattr(SeedanceClient, "_post_json", fake_post_json, raising=False)
+    monkeypatch.setattr(SeedanceClient, "_get_json", fake_get_json, raising=False)
+
+    result = await client.create_video(
+        model="doubao-seedance-2-0-260128",
+        prompt="demo prompt",
+        duration=5,
+        ratio="9:16",
+    )
+
+    assert result.data["video_url"] == "https://example.com/video.mp4"
+    assert query_calls["count"] == 2
+
+
+def test_video_service_extracts_nested_provider_video_result(session):
+    service = VideoService(session)
+
+    assert service._extract_provider_video_result({"video_url": "https://example.com/a.mp4"})["video_url"] == "https://example.com/a.mp4"
+    assert service._extract_provider_video_result({"data": {"video_url": "https://example.com/b.mp4"}})["video_url"] == "https://example.com/b.mp4"
+    assert service._size_to_ratio("1080x1920") == "9:16"
+    assert service._size_to_ratio("1920x1080") == "16:9"
 
 
 def test_storage_runtime_centralizes_media_path_resolution(tmp_path, monkeypatch):

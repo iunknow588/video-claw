@@ -1,4 +1,4 @@
-url: "mysql+aiomysql://user:password@localhost:3306/ai_video_prod?charset=utf8mb4"
+url: "${DATABASE_URL:mysql+aiomysql://user:YOUR_PASSWORD@localhost:3306/ai_video_prod?charset=utf8mb4}"
 pool_size: 10
 max_overflow: 20
 pool_timeout: 30

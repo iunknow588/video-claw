@@ -11,7 +11,7 @@ from departments.CIO.models.analysis import AnalysisReport
 from departments.CEO.core.logging import get_logger
 from departments.CTO.services.ai_clients import (
     AIProviderError,
-    build_glm_client,
+    build_xfyun_maas_client,
     get_ai_provider_config,
     should_use_placeholder,
 )
@@ -25,10 +25,10 @@ class ScriptService:
     
     def __init__(self, session: AsyncSession):
         self.session = session
-        self.provider = get_ai_provider_config("glm")
+        self.provider = get_ai_provider_config("xfyun_maas")
         self.model = self.provider.model
         self.audit_service = AuditService(session)
-        self.client = build_glm_client(self.provider)
+        self.client = build_xfyun_maas_client(self.provider)
     
     async def generate_script(
         self,
@@ -42,7 +42,8 @@ class ScriptService:
         
         prompt = self._build_script_prompt(analysis, content_type, style, topic, duration)
         
-        script_data = await self._call_glm(prompt)
+        script_data = await self._call_text_generation(prompt)
+        normalized_scenes = self._normalize_scenes(script_data.get("scenes", []))
         
         script = Script(
             analysis_id=analysis.uuid,
@@ -51,7 +52,7 @@ class ScriptService:
             topic=topic,
             title=script_data.get("title", "Untitled"),
             duration=duration,
-            scenes=script_data.get("scenes", []),
+            scenes=normalized_scenes,
             hook=script_data.get("hook", ""),
             cta=script_data.get("cta", ""),
             tags=script_data.get("tags", []),
@@ -67,7 +68,7 @@ class ScriptService:
         await self.audit_service.record_cost(
             source_type="script",
             source_uuid=script.uuid,
-            provider="glm",
+            provider=self.provider.provider,
             model_name=self.model,
             amount=float(script.api_cost or 0.0),
             request_summary=prompt[:500],
@@ -112,17 +113,22 @@ Provide output in JSON format:
 - similarity_score: estimated similarity to original (0-1)
 """
     
-    async def _call_glm(self, prompt: str) -> Dict[str, Any]:
-        """Call GLM API with placeholder fallback when not configured."""
-        logger.info("Calling GLM API", model=self.model, configured=self.client.is_configured)
+    async def _call_text_generation(self, prompt: str) -> Dict[str, Any]:
+        """Call the configured text provider with placeholder fallback when not configured."""
+        logger.info("Calling XFYun MaaS API", model=self.model, configured=self.client.is_configured)
         if should_use_placeholder(self.provider):
             return self._placeholder_response()
 
         try:
-            response = await self.client.chat_json(model=self.model, prompt=prompt)
+            response = await self.client.chat_json(
+                model=self.model,
+                prompt=prompt,
+                system_prompt="You generate original short-video scripts. Return valid JSON only.",
+                temperature=0.7,
+            )
             return {
                 "title": response.data.get("title", "Untitled"),
-                "scenes": response.data.get("scenes", []),
+                "scenes": self._normalize_scenes(response.data.get("scenes", [])),
                 "hook": response.data.get("hook", ""),
                 "cta": response.data.get("cta", ""),
                 "tags": response.data.get("tags", []),
@@ -131,7 +137,7 @@ Provide output in JSON format:
                 "token_usage": response.usage.to_dict(),
             }
         except (AIProviderError, KeyError, TypeError, ValueError) as exc:
-            logger.warning("GLM call fallback to placeholder", error=str(exc))
+            logger.warning("XFYun MaaS call fallback to placeholder", error=str(exc))
             if should_use_placeholder(self.provider):
                 return self._placeholder_response()
             raise
@@ -139,7 +145,7 @@ Provide output in JSON format:
     def _placeholder_response(self) -> Dict[str, Any]:
         return {
             "title": "Generated Script",
-            "scenes": [
+            "scenes": self._normalize_scenes([
                 {
                     "timing": "0-8s",
                     "visuals": "Open with an eye-catching close-up and fast pacing",
@@ -158,7 +164,7 @@ Provide output in JSON format:
                     "audio": "Narration closes with a memorable CTA",
                     "text": "Summary and CTA",
                 },
-            ],
+            ]),
             "hook": "Three steps to turn a hot topic into a usable video idea.",
             "cta": "Follow for more!",
             "tags": ["mvp", "ai-video"],
@@ -166,6 +172,29 @@ Provide output in JSON format:
             "cost": 0.08,
             "token_usage": self.client.normalize_usage(None, prompt="placeholder-script", completion_text="Generated Script").to_dict(),
         }
+
+    @staticmethod
+    def _normalize_scenes(raw_scenes: Any) -> list[dict[str, str | None]]:
+        if not isinstance(raw_scenes, list):
+            return []
+
+        normalized: list[dict[str, str | None]] = []
+        for item in raw_scenes:
+            if not isinstance(item, dict):
+                continue
+            timing = item.get("timing") or item.get("time") or item.get("timestamp")
+            visuals = item.get("visuals") or item.get("visual") or item.get("shot")
+            audio = item.get("audio") or item.get("voiceover") or item.get("narration")
+            text = item.get("text") or item.get("overlay") or item.get("caption")
+            normalized.append(
+                {
+                    "timing": str(timing).strip() if timing is not None else None,
+                    "visuals": str(visuals).strip() if visuals is not None else None,
+                    "audio": str(audio).strip() if audio is not None else None,
+                    "text": str(text).strip() if text is not None else None,
+                }
+            )
+        return normalized
     
     async def review_script(self, script_id: str, approved: bool, feedback: str = "") -> Script:
         """Review and approve/reject script"""
@@ -189,5 +218,7 @@ Provide output in JSON format:
             status_after=script.status,
             review_payload={"analysis_id": script.analysis_id},
         )
+        await self.session.flush()
+        await self.session.refresh(script)
         logger.info("Script reviewed", uuid=script_id, approved=approved)
         return script

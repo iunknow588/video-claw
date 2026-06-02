@@ -25,7 +25,7 @@ async def create_script(
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
-@router.get("")
+@router.get("", response_model=list[ScriptResponse])
 async def list_scripts(
     status: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
@@ -33,7 +33,7 @@ async def list_scripts(
     return await ScriptApiUseCase(db).list_scripts(status=status)
 
 
-@router.post("/review/{script_id}")
+@router.post("/review/{script_id}", response_model=ScriptResponse)
 async def review_script(
     script_id: str,
     data: ScriptReviewRequest,

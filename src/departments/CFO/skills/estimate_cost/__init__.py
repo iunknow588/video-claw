@@ -27,6 +27,7 @@ class EstimateCostSkill(BaseSkill):
     PLATFORM_FACTORS = {
         "douyin": 1.0,
         "xiaohongshu": 1.05,
+        "xigua": 1.08,
         "bilibili": 1.1,
     }
 
@@ -53,7 +54,7 @@ class EstimateCostSkill(BaseSkill):
         }
         estimated_tokens = sum(adjusted_breakdown.values())
         estimated_cost = round((estimated_tokens / 1000) * 0.018 + (0.12 if auto_generate_video else 0.0), 4)
-        required_services = ["deepseek", "glm"]
+        required_services = ["xfyun_maas"]
         if auto_generate_video:
             required_services.append("seedance")
 
@@ -67,6 +68,7 @@ class EstimateCostSkill(BaseSkill):
                 "platform_factor": platform_factor,
                 "assumptions": [
                     "research and analysis scale with hotspot_count/top_n",
+                    "text analysis and script generation share one xfyun_maas provider",
                     "video generation reserves extra seedance quota",
                     "cost model is a lightweight preflight estimate rather than provider billing",
                 ],

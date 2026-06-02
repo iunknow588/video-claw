@@ -2,6 +2,7 @@
 from departments.CIO.models.artifact import ArtifactRecord
 from departments.CIO.models.cost import CostRecord
 from departments.CIO.models.hotspot import HotspotItem
+from departments.CIO.models.image import ImageTask
 from departments.CIO.models.information_event import InformationEvent
 from departments.CIO.models.knowledge_asset import KnowledgeAsset
 from departments.CIO.models.leader_report import LeaderReportRecord
@@ -16,6 +17,7 @@ __all__ = [
     "ArtifactRecord",
     "CostRecord",
     "HotspotItem",
+    "ImageTask",
     "InformationEvent",
     "KnowledgeAsset",
     "LeaderReportRecord",

@@ -216,11 +216,25 @@ pip install -r src/requirements.txt
 准备环境变量时，至少确认：
 
 ```env
-DATABASE_URL=mysql+aiomysql://root:password@127.0.0.1:3306/ai_video_prod?charset=utf8mb4
+DATABASE_URL=mysql+aiomysql://root:YOUR_PASSWORD@127.0.0.1:3306/ai_video_prod?charset=utf8mb4
 VIDEO_STORAGE_BACKEND=local
 MEDIA_ROOT=runtime/media
 MEDIA_URL_PREFIX=/media
 AI_USE_PLACEHOLDER_WHEN_UNCONFIGURED=true
+XFYUN_MAAS_API_KEY=
+SEEDANCE_API_KEY=
+SEEDANCE_BASE_URL=https://ark.cn-beijing.volces.com/api/v3
+SEEDANCE_MODEL=
+```
+
+如果直接从 Ark 控制台或示例复制参数，也支持以下别名：
+
+```env
+ARK_API_KEY=
+ARK_BASE_URL=
+ARK_VIDEO_MODEL=
+ARK_MODEL=
+ARK_RESOURCE_ID=
 ```
 
 启动依赖服务：
@@ -264,8 +278,17 @@ python -m pytest -c pytest.ini src/tests -q
 辅助脚本目录：
 
 - `src/scripts/preflight_check.py`：启动前配置检查
+- `src/scripts/check_seedance_access.py`：Ark 视频模型直连检查
+- `src/scripts/front_flow_smoke.py`：前三段内容流程冒烟
 - `src/scripts/api_workflow_smoke.py`：API 工作流冒烟
 - `src/scripts/smoke_real_ai.py`：真实 AI 接口联调冒烟
+
+推荐顺序：
+
+1. `python src\scripts\preflight_check.py`
+2. `python src\scripts\front_flow_smoke.py`
+3. `python src\scripts\check_seedance_access.py`
+4. `python src\scripts\api_workflow_smoke.py`
 
 ## 9. 设计文档索引
 
@@ -285,10 +308,12 @@ python -m pytest -c pytest.ini src/tests -q
 - `doc/design/Pipeline接口标准化说明.md`
 - `doc/design/CQO质检回退策略说明.md`
 - `doc/design/Leader汇报与CEO查询机制.md`
+- `doc/design/前三段内容流程联调说明.md`
 
 ### CIO 与基础设施
 
 - `doc/design/基础设施运行时说明.md`
+- `doc/design/Ark视频模型联调说明.md`
 - `doc/design/运行期资产目录说明.md`
 - `doc/design/CIO数据层统一说明.md`
 - `doc/design/统一事件与日志体系说明.md`

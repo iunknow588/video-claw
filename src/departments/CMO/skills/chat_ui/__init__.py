@@ -299,6 +299,9 @@ class ChatUISkill(BaseSkill):
             "douyin": "douyin",
             "小红书": "xiaohongshu",
             "xiaohongshu": "xiaohongshu",
+            "西瓜": "xigua",
+            "西瓜视频": "xigua",
+            "xigua": "xigua",
             "b站": "bilibili",
             "bilibili": "bilibili",
         }
@@ -325,7 +328,7 @@ class ChatUISkill(BaseSkill):
         patterns = [
             r"(?:给|做|围绕|关于)(.+?)(?:做一条|生成|发布|视频|脚本)",
             r"在(.+?)领域",
-            r"(.+?)(?:抖音|小红书|b站|bilibili|douyin|xiaohongshu)",
+            r"(.+?)(?:抖音|小红书|西瓜视频|西瓜|b站|bilibili|douyin|xiaohongshu|xigua)",
         ]
         for pattern in patterns:
             match = re.search(pattern, message, flags=re.IGNORECASE)

@@ -3,6 +3,7 @@ AI Analysis Service
 Uses DeepSeek for content reverse engineering
 """
 
+import json
 from typing import Any, Dict
 
 from departments.CEO.core.logging import get_logger
@@ -12,7 +13,7 @@ from departments.CIO.services.data_access.analysis_repository import AnalysisRep
 from departments.CQO.services.audit import AuditService
 from departments.CTO.services.ai_clients import (
     AIProviderError,
-    build_deepseek_client,
+    build_xfyun_maas_client,
     get_ai_provider_config,
     should_use_placeholder,
 )
@@ -24,15 +25,15 @@ class AIAnalysisService:
     """Service for AI-powered content analysis."""
 
     def __init__(self, session):
-        self.provider = get_ai_provider_config("deepseek")
+        self.provider = get_ai_provider_config("xfyun_maas")
         self.model = self.provider.model
         self.audit_service = AuditService(session)
         self.repository = AnalysisRepository(session)
-        self.client = build_deepseek_client(self.provider)
+        self.client = build_xfyun_maas_client(self.provider)
 
     async def analyze_content(self, hotspot: HotspotItem) -> AnalysisReport:
         prompt = self._build_analysis_prompt(hotspot)
-        analysis_data = await self._call_deepseek(prompt)
+        analysis_data = await self._call_text_analysis(prompt)
 
         report = await self.repository.create(
             {
@@ -52,7 +53,7 @@ class AIAnalysisService:
         await self.audit_service.record_cost(
             source_type="CCO",
             source_uuid=report.uuid,
-            provider="deepseek",
+            provider=self.provider.provider,
             model_name=self.model,
             amount=float(report.api_cost or 0.0),
             request_summary=prompt[:500],
@@ -86,25 +87,32 @@ Provide analysis in JSON format with these keys:
 - risk_warnings: potential copyright/ethical risks
 """
 
-    async def _call_deepseek(self, prompt: str) -> Dict[str, Any]:
-        logger.info("Calling DeepSeek API", model=self.model, configured=self.client.is_configured)
+    async def _call_text_analysis(self, prompt: str) -> Dict[str, Any]:
+        logger.info("Calling XFYun MaaS API", model=self.model, configured=self.client.is_configured)
         if should_use_placeholder(self.provider):
             return self._placeholder_response()
 
         try:
-            response = await self.client.chat_json(model=self.model, prompt=prompt)
+            response = await self.client.chat_json(
+                model=self.model,
+                prompt=prompt,
+                system_prompt="You are a structured analysis assistant. Return valid JSON only.",
+                temperature=0.3,
+            )
             return {
                 "content_structure": response.data.get("content_structure", {}),
                 "emotion_curve": response.data.get("emotion_curve", {}),
                 "hook_design": response.data.get("hook_design", {}),
-                "framework_summary": response.data.get("framework_summary", ""),
+                "framework_summary": self._normalize_framework_summary(
+                    response.data.get("framework_summary", "")
+                ),
                 "reusable_elements": response.data.get("reusable_elements", []),
                 "risk_warnings": response.data.get("risk_warnings", []),
                 "cost": float(response.data.get("cost", 0.0)),
                 "token_usage": response.usage.to_dict(),
             }
         except (AIProviderError, KeyError, TypeError, ValueError) as exc:
-            logger.warning("DeepSeek call fallback to placeholder", error=str(exc))
+            logger.warning("XFYun MaaS call fallback to placeholder", error=str(exc))
             if should_use_placeholder(self.provider):
                 return self._placeholder_response()
             raise
@@ -124,3 +132,12 @@ Provide analysis in JSON format with these keys:
                 completion_text="Placeholder analysis",
             ).to_dict(),
         }
+
+    def _normalize_framework_summary(self, value: Any) -> str:
+        if isinstance(value, str):
+            return value
+        if value is None:
+            return ""
+        if isinstance(value, (dict, list)):
+            return json.dumps(value, ensure_ascii=False)
+        return str(value)

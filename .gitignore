@@ -9,6 +9,11 @@ venv/
 env/
 ENV/
 
+# Local environment config files containing secrets
+.env
+.env.*
+!**/.env.example
+
 # Test and tool caches
 .pytest_cache/
 .mypy_cache/

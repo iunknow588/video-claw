@@ -5,6 +5,7 @@ Hotspot provider adapter skeletons.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from datetime import datetime, timezone
 from typing import List
 
 
@@ -26,6 +27,7 @@ class MockHotspotProvider(BaseHotspotProvider):
 
     async def fetch(self, *, keyword: str, count: int) -> List[dict]:
         safe_keyword = keyword.strip() or "hot-topic"
+        fetched_at = datetime.now(timezone.utc).isoformat()
         return [
             {
                 "platform": self.platform,
@@ -41,9 +43,9 @@ class MockHotspotProvider(BaseHotspotProvider):
                 "comment_count": 100 + index * 10,
                 "share_count": 50 + index * 5,
                 "category": "general",
-                "tags": [safe_keyword, self.platform, "mvp"],
+                "tags": [safe_keyword, self.platform, "mvp", "mock"],
                 "duration": 30 + index,
-                "fetched_at": None,
+                "fetched_at": fetched_at,
             }
             for index in range(count)
         ]
@@ -63,6 +65,13 @@ class XiaohongshuHotspotProvider(MockHotspotProvider):
         super().__init__(self.platform)
 
 
+class XiguaHotspotProvider(MockHotspotProvider):
+    platform = "xigua"
+
+    def __init__(self):
+        super().__init__(self.platform)
+
+
 class BilibiliHotspotProvider(MockHotspotProvider):
     platform = "bilibili"
 
@@ -75,6 +84,7 @@ def get_hotspot_provider(platform: str) -> BaseHotspotProvider:
     providers = {
         "douyin": DouyinHotspotProvider(),
         "xiaohongshu": XiaohongshuHotspotProvider(),
+        "xigua": XiguaHotspotProvider(),
         "bilibili": BilibiliHotspotProvider(),
     }
     try:

@@ -34,3 +34,19 @@ class Script(BaseModel):
         Index("ix_scripts_created_at", "created_at"),
         {"comment": "Video scripts"},
     )
+
+    @property
+    def script_bundle(self) -> dict:
+        return {
+            "title": self.title,
+            "content_type": self.content_type,
+            "style": self.style,
+            "topic": self.topic,
+            "duration": self.duration,
+            "hook": self.hook,
+            "cta": self.cta,
+            "tags": list(self.tags or []),
+            "scenes": list(self.scenes or []),
+            "similarity_score": float(self.similarity_score or 0.0) if self.similarity_score is not None else None,
+            "api_cost": float(self.api_cost or 0.0) if self.api_cost is not None else None,
+        }
