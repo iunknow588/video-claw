@@ -1,6 +1,6 @@
 ﻿from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from statistics import mean
 from typing import Any
 
@@ -99,30 +99,32 @@ class CAOConsoleService:
             for stage_name in route
         ]
 
-        return {
-            "console_title": "龙虾宝宝视频制作平台",
-            "console_subtitle": f"{names['ceo']} 正在默默关注视频制作流程。",
-            "console_frontdesk_name": names["cao"],
-            "identity_settings": identity_settings,
-            "display_policy": {
-                "ceo_visible": False,
-                "workflow_visible": True,
-                "delivery_visible": True,
-            },
-            "pipeline_metrics": {
-                "total_runs": total_runs,
-                "completed_runs": completed_runs,
-                "failed_runs": failed_runs,
-                "active_runs": active_runs,
-                "success_rate": success_rate,
-                "qa_pass_rate": qa_pass_rate,
-                "delivery_ready_rate": delivery_ready_rate,
-                "avg_duration_ms": avg_duration_ms,
-                "avg_tokens": avg_tokens,
-            },
-            "stage_statuses": stage_statuses,
-            "recent_runs": [self._serialize_public_run(run) for run in recent_runs],
-        }
+        return self._serialize_public_payload(
+            {
+                "console_title": "龙虾宝宝视频制作平台",
+                "console_subtitle": f"{names['ceo']} 正在默默关注视频制作流程。",
+                "console_frontdesk_name": names["cao"],
+                "identity_settings": identity_settings,
+                "display_policy": {
+                    "ceo_visible": False,
+                    "workflow_visible": True,
+                    "delivery_visible": True,
+                },
+                "pipeline_metrics": {
+                    "total_runs": total_runs,
+                    "completed_runs": completed_runs,
+                    "failed_runs": failed_runs,
+                    "active_runs": active_runs,
+                    "success_rate": success_rate,
+                    "qa_pass_rate": qa_pass_rate,
+                    "delivery_ready_rate": delivery_ready_rate,
+                    "avg_duration_ms": avg_duration_ms,
+                    "avg_tokens": avg_tokens,
+                },
+                "stage_statuses": stage_statuses,
+                "recent_runs": [self._serialize_public_run(run) for run in recent_runs],
+            }
+        )
 
     async def list_public_runs(
         self,
@@ -138,7 +140,7 @@ class CAOConsoleService:
             platform=platform,
             status=status,
         )
-        return [self._serialize_public_run(run) for run in runs]
+        return self._serialize_public_payload([self._serialize_public_run(run) for run in runs])
 
     async def get_public_trace(self, workflow_run_id: str) -> dict[str, Any]:
         run = await self.workflow_run_service.get_by_uuid(workflow_run_id)
@@ -187,29 +189,31 @@ class CAOConsoleService:
                 }
             )
 
-        return {
-            "run": self._serialize_public_run(run),
-            "summary": {
-                "trace_id": summary.get("trace_id"),
-                "step_count": summary.get("step_count", 0),
-                "total_cost": summary.get("total_cost", 0),
-                "total_tokens": summary.get("total_tokens", 0),
-                "stage_statuses": {
-                    item["name"]: item["status"] for item in public_stage_statuses
+        return self._serialize_public_payload(
+            {
+                "run": self._serialize_public_run(run),
+                "summary": {
+                    "trace_id": summary.get("trace_id"),
+                    "step_count": summary.get("step_count", 0),
+                    "total_cost": summary.get("total_cost", 0),
+                    "total_tokens": summary.get("total_tokens", 0),
+                    "stage_statuses": {
+                        item["name"]: item["status"] for item in public_stage_statuses
+                    },
+                    "pipeline_order": [item["name"] for item in public_stage_statuses],
                 },
-                "pipeline_order": [item["name"] for item in public_stage_statuses],
-            },
-            "identity_settings": identity_settings,
-            "public_stage_statuses": public_stage_statuses,
-            "public_steps": public_steps,
-            "public_artifacts": self._build_public_artifacts(result_payload),
-            "public_logs": self._build_public_logs(
-                run=run,
-                public_steps=public_steps,
-                public_artifacts=self._build_public_artifacts(result_payload),
-                identity_names=names,
-            ),
-        }
+                "identity_settings": identity_settings,
+                "public_stage_statuses": public_stage_statuses,
+                "public_steps": public_steps,
+                "public_artifacts": self._build_public_artifacts(result_payload),
+                "public_logs": self._build_public_logs(
+                    run=run,
+                    public_steps=public_steps,
+                    public_artifacts=self._build_public_artifacts(result_payload),
+                    identity_names=names,
+                ),
+            }
+        )
 
     async def get_identity_settings(self) -> dict[str, Any]:
         return await self.system_settings_service.get_identity_settings()
@@ -258,8 +262,29 @@ class CAOConsoleService:
         platform_label = self._label_platform(getattr(run, "platform", None))
         created_at = getattr(run, "created_at", None)
         if isinstance(created_at, datetime):
-            return f"{platform_label}任务 {created_at.strftime('%m-%d %H:%M')}"
+            local_created_at = self._to_local_display_datetime(created_at)
+            return f"{platform_label}任务 {local_created_at.strftime('%m-%d %H:%M')}"
         return f"{platform_label}任务"
+
+    @staticmethod
+    def _to_local_display_datetime(value: datetime) -> datetime:
+        if value.tzinfo is None:
+            value = value.replace(tzinfo=UTC)
+        return value.astimezone()
+
+    def _serialize_public_payload(self, value: Any) -> Any:
+        if isinstance(value, datetime):
+            return self._to_local_display_datetime(value).isoformat(timespec="seconds")
+        if isinstance(value, dict):
+            return {
+                key: self._serialize_public_payload(item)
+                for key, item in value.items()
+            }
+        if isinstance(value, list):
+            return [self._serialize_public_payload(item) for item in value]
+        if isinstance(value, tuple):
+            return [self._serialize_public_payload(item) for item in value]
+        return value
 
     @staticmethod
     def _normalize_public_text(value: Any) -> str | None:

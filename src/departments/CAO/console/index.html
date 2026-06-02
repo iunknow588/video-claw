@@ -470,6 +470,7 @@
 
     const identityState = { ...defaultIdentityNames };
     const displayStateStorageKey = "cao_display_state_v1";
+    const clearedDisplayMarkerStorageKey = "cao_display_cleared_marker_v1";
     let latestRunsState = [];
     let currentDisplayedRunId = null;
     let currentDisplayedTrace = null;
@@ -493,12 +494,21 @@
         const naiveMatch = value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?$/);
         if (naiveMatch) {
           const [, year, month, day, hour, minute, second = "00"] = naiveMatch;
-          return `${Number(year)}/${Number(month)}/${Number(day)} ${hour}:${minute}:${second}`;
+          return new Date(
+            Date.UTC(
+              Number(year),
+              Number(month) - 1,
+              Number(day),
+              Number(hour),
+              Number(minute),
+              Number(second),
+            ),
+          ).toLocaleString("zh-CN", { hour12: false });
         }
       }
       const date = new Date(value);
       if (Number.isNaN(date.getTime())) return String(value);
-      return date.toLocaleString("zh-CN", { hour12: false, timeZone: "Asia/Shanghai" });
+      return date.toLocaleString("zh-CN", { hour12: false });
     };
 
     function readDisplayState() {
@@ -522,6 +532,32 @@
     function clearDisplayState() {
       try {
         localStorage.removeItem(displayStateStorageKey);
+      } catch {
+        // ignore storage failures in constrained browsers
+      }
+    }
+
+    function readClearedDisplayMarker() {
+      try {
+        const raw = localStorage.getItem(clearedDisplayMarkerStorageKey);
+        if (!raw) return null;
+        return JSON.parse(raw);
+      } catch {
+        return null;
+      }
+    }
+
+    function writeClearedDisplayMarker(payload) {
+      try {
+        localStorage.setItem(clearedDisplayMarkerStorageKey, JSON.stringify(payload));
+      } catch {
+        // ignore storage failures in constrained browsers
+      }
+    }
+
+    function clearClearedDisplayMarker() {
+      try {
+        localStorage.removeItem(clearedDisplayMarkerStorageKey);
       } catch {
         // ignore storage failures in constrained browsers
       }
@@ -639,6 +675,10 @@
       const preferredRunId = currentDisplayedRunId || readDisplayState()?.runId || null;
       if (preferredRunId && runs.some((run) => run.uuid === preferredRunId)) {
         return preferredRunId;
+      }
+      const clearedMarker = readClearedDisplayMarker();
+      if (clearedMarker?.runId && runs[0]?.uuid === clearedMarker.runId) {
+        return null;
       }
       return runs[0]?.uuid || null;
     }
@@ -828,6 +868,7 @@
       const trace = await response.json();
       currentDisplayedRunId = workflowRunId;
       currentDisplayedTrace = trace;
+      clearClearedDisplayMarker();
       setActiveRunCard(workflowRunId);
       renderDisplayMeta(trace.run, { fromCache: updateMetaFromCache });
       updateIdentityState(trace.identity_settings?.names || {});
@@ -859,12 +900,27 @@
           body: JSON.stringify({ names }),
         });
         if (!response.ok) {
-          appendMessage("error", "设置", "称呼保存失败。");
+          let detail = "";
+          try {
+            const errorPayload = await response.json();
+            detail = errorPayload?.detail || errorPayload?.message || "";
+          } catch {
+            try {
+              detail = await response.text();
+            } catch {
+              detail = "";
+            }
+          }
+          const message = detail
+            ? `称呼保存失败：${String(detail).slice(0, 160)}`
+            : `称呼保存失败（HTTP ${response.status}）。`;
+          appendMessage("error", "设置", message);
           return;
         }
         const settings = await response.json();
         updateIdentityState(settings.names || {});
         renderIdentitySettings(settings);
+        await loadStatus().catch(() => {});
         appendMessage("status", "设置", "CXO 称呼已更新。");
       } catch (error) {
         appendMessage("error", "设置", error instanceof Error ? error.message : "称呼保存失败。");
@@ -875,13 +931,19 @@
 
     async function clearDisplayedLogs() {
       clearDisplayState();
-      appendMessage("status", "展示", "已清空当前展示资料，正在切换到最新任务。");
-      currentDisplayedRunId = null;
-      const latestRunId = findPreferredRunId(latestRunsState);
-      if (latestRunId) {
-        await loadTrace(latestRunId);
-        return;
+      if (currentDisplayedRunId || latestRunsState[0]?.uuid) {
+        writeClearedDisplayMarker({
+          runId: currentDisplayedRunId || latestRunsState[0]?.uuid || null,
+          clearedAt: new Date().toISOString(),
+        });
+      } else {
+        clearClearedDisplayMarker();
       }
+      appendMessage("status", "展示", "已清空当前展示资料，等待新的任务记录或手动重新选择。");
+      currentDisplayedRunId = null;
+      currentDisplayedTrace = null;
+      liveTraceRunId = null;
+      setActiveRunCard(null);
       renderDisplayMeta(null);
       logGrid.innerHTML = '<div class="empty">暂无日志记录。</div>';
     }
