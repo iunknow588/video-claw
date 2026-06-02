@@ -62,7 +62,16 @@ class ContentAnalysisUseCase:
                     trace_id=trace_id,
                     parent_id="lead.analysis",
                     skill=self.assembly.get_skill("lead.analysis.analysis_persist"),
-                    input_bundle={"trace_id": trace_id, **reusable_bundle, "analysis_id": report.uuid},
+                    input_bundle={
+                        "trace_id": trace_id,
+                        "analysis_id": report.uuid,
+                        **base_bundle,
+                        **structured_bundle,
+                        **hook_bundle,
+                        **emotion_bundle,
+                        **risk_bundle,
+                        **reusable_bundle,
+                    },
                 )
             ).output_json
             analysis_bundles.append(persisted_bundle["analysis_bundle"])

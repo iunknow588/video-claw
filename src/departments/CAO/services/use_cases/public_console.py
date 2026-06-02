@@ -34,3 +34,9 @@ class PublicConsoleUseCase:
             return await self.service.get_public_trace(workflow_run_id)
         except ValueError as exc:
             raise LookupError(str(exc)) from exc
+
+    async def get_identity_settings(self) -> dict:
+        return await self.service.get_identity_settings()
+
+    async def update_identity_settings(self, names: dict) -> dict:
+        return await self.service.update_identity_settings(names)

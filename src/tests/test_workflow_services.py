@@ -1,7 +1,9 @@
+from datetime import datetime
 from types import SimpleNamespace
 
 import pytest
 
+from departments.CAO.service import CAOConsoleService
 from departments.CEO.core.config import settings
 from departments.CEO.services.control_plane import control_plane
 from departments.CEO.services.orchestration import PipelineContext, PipelineResult
@@ -72,6 +74,28 @@ async def test_hotspot_search_and_fetch(session):
     results = await service.search("Lobster")
     assert len(results) == 1
     assert results[0].content_id == "abc123"
+
+
+def test_cao_console_service_uses_friendly_fallback_for_corrupted_domain():
+    service = CAOConsoleService(SimpleNamespace())
+    run = SimpleNamespace(
+        uuid="run-1",
+        domain="??????",
+        publish_goal=None,
+        platform="douyin",
+        workflow_type="domain_auto_run",
+        status="completed",
+        duration=20,
+        created_at=datetime(2026, 6, 2, 1, 12),
+        trace_id="trace-1",
+        result_payload={"qa_status": "passed"},
+    )
+
+    payload = service._serialize_public_run(run)
+
+    assert payload["domain"] == "??????"
+    assert payload["display_domain"] == "抖音任务 06-02 01:12"
+    assert payload["workflow_type_label"] == "自动制作流程"
 
 
 @pytest.mark.asyncio

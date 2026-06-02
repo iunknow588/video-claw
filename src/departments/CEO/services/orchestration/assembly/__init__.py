@@ -121,6 +121,7 @@ class WorkflowAssembly:
         return {
             "analysis_id": report.uuid,
             "hotspot_id": report.hotspot_id,
+            "report_title": "爆款DNA报告",
             "framework_summary": report.framework_summary,
             "content_structure": report.content_structure,
             "emotion_curve": report.emotion_curve,

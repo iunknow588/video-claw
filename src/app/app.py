@@ -5,7 +5,7 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.router import api_router
@@ -66,6 +66,10 @@ def create_application() -> FastAPI:
     @application.get("/cao", include_in_schema=False)
     async def cao_console():
         return HTMLResponse(cao_console_html)
+
+    @application.get("/", include_in_schema=False)
+    async def root_entry():
+        return RedirectResponse(url="/cao", status_code=307)
 
     @application.get("/health")
     async def health_check():

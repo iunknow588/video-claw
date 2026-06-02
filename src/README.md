@@ -213,6 +213,12 @@ python -m venv .venv
 pip install -r src/requirements.txt
 ```
 
+推荐先复制一份环境变量模板：
+
+```powershell
+Copy-Item .env.example .env
+```
+
 准备环境变量时，至少确认：
 
 ```env
@@ -237,6 +243,14 @@ ARK_MODEL=
 ARK_RESOURCE_ID=
 ```
 
+系统启动依赖与顺序如下：
+
+1. 准备 `.env`
+2. 启动 `MySQL / Redis`
+3. 执行 Alembic 迁移
+4. 启动 FastAPI 应用
+5. 再运行各类检查或冒烟脚本
+
 启动依赖服务：
 
 ```powershell
@@ -249,10 +263,34 @@ docker-compose up -d db redis
 python -m alembic -c alembic.ini upgrade head
 ```
 
-启动应用：
+启动应用有两种常用方式。
+
+方式 A：开发模式，使用 `uvicorn` 热重载
 
 ```powershell
 python -m uvicorn main:app --app-dir src --reload
+```
+
+方式 B：按系统运行时配置启动，直接执行主入口脚本
+
+```powershell
+python src/main.py
+```
+
+两种方式的区别：
+
+- `python -m uvicorn main:app --app-dir src --reload`
+  - 适合开发联调
+  - 代码变更后自动重载
+  - 默认监听 `127.0.0.1:8000`
+- `python src/main.py`
+  - 适合按系统运行时配置验证正式启动逻辑
+  - 端口、debug、worker 数量由运行时配置决定
+
+如果需要完整容器方式，也可以直接启动：
+
+```powershell
+docker-compose up -d app
 ```
 
 访问入口：
@@ -275,20 +313,60 @@ python -m uvicorn main:app --app-dir src --reload
 python -m pytest -c pytest.ini src/tests -q
 ```
 
-辅助脚本目录：
+辅助脚本目录：`src/scripts/`
 
-- `src/scripts/preflight_check.py`：启动前配置检查
-- `src/scripts/check_seedance_access.py`：Ark 视频模型直连检查
-- `src/scripts/front_flow_smoke.py`：前三段内容流程冒烟
-- `src/scripts/api_workflow_smoke.py`：API 工作流冒烟
-- `src/scripts/smoke_real_ai.py`：真实 AI 接口联调冒烟
+### 8.1 脚本作用
+
+- `src/scripts/preflight_check.py`
+  - 启动前配置检查
+  - 检查数据库、存储、讯飞 MaaS、Seedance 等关键配置是否齐全
+  - 可选参数：`--live-seedance`
+
+- `src/scripts/check_seedance_access.py`
+  - 对当前 `SEEDANCE_*` 配置做一次真实的建任务请求
+  - 用来确认视频模型、Key、Base URL 是否真的可用
+
+- `src/scripts/front_flow_smoke.py`
+  - 只检查前三段内容流程
+  - 验证“热点采集 -> 爆款分析 -> 原创脚本”是否能跑通
+  - 依赖本地 API 服务已启动
+
+- `src/scripts/api_workflow_smoke.py`
+  - 检查完整 API 工作流
+  - 包含热点、分析、脚本、审核、视频任务创建与状态轮询
+  - 依赖本地 API 服务已启动
+
+- `src/scripts/smoke_real_ai.py`
+  - 直接调用服务层进行真实 AI 联调
+  - 不走前台页面，适合排查模型配置和服务装配问题
+
+### 8.2 推荐执行顺序
 
 推荐顺序：
 
 1. `python src\scripts\preflight_check.py`
-2. `python src\scripts\front_flow_smoke.py`
-3. `python src\scripts\check_seedance_access.py`
-4. `python src\scripts\api_workflow_smoke.py`
+2. `python src\scripts\check_seedance_access.py`
+3. 启动本地服务：`python -m uvicorn main:app --app-dir src --reload`
+4. `python src\scripts\front_flow_smoke.py`
+5. `python src\scripts\api_workflow_smoke.py`
+6. 如需绕开 API 直接联调，再执行：`python src\scripts\smoke_real_ai.py`
+
+### 8.3 环境变量补充
+
+下面这些脚本支持用环境变量覆盖默认目标：
+
+```env
+LOBSTER_BASE_URL=http://127.0.0.1:8000
+LOBSTER_PLATFORM=douyin
+LOBSTER_KEYWORD=lobster
+```
+
+例如：
+
+```powershell
+$env:LOBSTER_BASE_URL="http://127.0.0.1:8018"
+python src\scripts\front_flow_smoke.py
+```
 
 ## 9. 设计文档索引
 
@@ -305,6 +383,8 @@ python -m pytest -c pytest.ini src/tests -q
 
 - `doc/design/API路由与业务逻辑解耦说明.md`
 - `doc/design/CEO服务收敛与部门归属调整说明.md`
+- `doc/design/CEO隐身原则与对外接口分层说明.md`
+- `doc/design/前台进度格式化与存储展示职责说明.md`
 - `doc/design/Pipeline接口标准化说明.md`
 - `doc/design/CQO质检回退策略说明.md`
 - `doc/design/Leader汇报与CEO查询机制.md`

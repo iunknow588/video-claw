@@ -329,14 +329,14 @@ async def test_cao_console_page_is_served(api_client):
 
     cao_response = await api_client.get("/cao")
     assert cao_response.status_code == 200
-    assert "流程交付台 / CAO 管理台" in cao_response.text
-    assert "CEO 隐身运行" in cao_response.text
+    assert "龙虾宝宝视频制作平台" in cao_response.text
+    assert "龙虾CAO 正在值班" in cao_response.text
+    assert "龙虾CEO 正在默默关注视频制作流程" in cao_response.text
     assert "/api/cmo/chat" in cao_response.text
-    assert "/api/cao/pipeline-status" in cao_response.text
-    assert "/api/cao/runs/" in cao_response.text
+    assert "称呼设置" in cao_response.text
     assert "主链路状态" in cao_response.text
     assert "最近任务" in cao_response.text
-    assert "链路回放" in cao_response.text
+    assert "日志记录" in cao_response.text
     assert "CEO 治理总览" not in cao_response.text
 
 
@@ -345,7 +345,8 @@ async def test_cao_pipeline_status_hides_ceo_and_exposes_public_flow(api_client)
     response = await api_client.get("/api/cao/pipeline-status")
     assert response.status_code == 200
     data = response.json()
-    assert data["console_title"] == "流程交付台 / CAO 管理台"
+    assert data["console_title"] == "龙虾宝宝视频制作平台"
+    assert data["console_subtitle"] == "龙虾CEO 正在默默关注视频制作流程。"
     assert data["display_policy"]["ceo_visible"] is False
     assert data["display_policy"]["workflow_visible"] is True
     assert "pipeline_metrics" in data
@@ -381,6 +382,48 @@ async def test_cao_public_trace_hides_ceo_stage(api_client):
     assert trace["run"]["uuid"] == workflow_run_id
     assert "ceo.workflow" not in trace["summary"]["stage_statuses"]
     assert trace["public_stage_statuses"][0]["name"] == "lead.cfo"
+    assert len(trace["public_steps"]) >= 1
+    assert len(trace["public_logs"]) >= 3
+    assert trace["public_artifacts"]["research"]["selected_hotspots"]
+    assert trace["public_artifacts"]["analysis"]["reports"]
+    assert trace["public_artifacts"]["analysis"]["reports"][0]["framework_summary"]
+    assert trace["public_artifacts"]["planning"]["prompt_summary"]
+    assert trace["public_artifacts"]["planning"]["video_prompt"]
+    assert trace["public_artifacts"]["production"]["title"]
+    assert trace["public_artifacts"]["production"]["scenes"]
+    assert "recommendation" in trace["public_artifacts"]["qa"]
+    cfo_status_logs = [item for item in trace["public_logs"] if item["type"] == "status" and item["stage"] == "lead.cfo"]
+    assert cfo_status_logs
+    assert any("预算校验" in item["summary"] for item in cfo_status_logs)
+    assert all("lead.cfo" not in item["summary"] for item in cfo_status_logs)
+    assert any(item["title"] == "已找到热门视频" for item in trace["public_logs"])
+    assert any(item["title"] == "新提示词已生成" for item in trace["public_logs"])
+
+
+@pytest.mark.asyncio
+async def test_cao_identity_settings_can_be_saved_and_reused(api_client):
+    get_resp = await api_client.get("/api/cao/identity-settings")
+    assert get_resp.status_code == 200
+    settings = get_resp.json()
+    assert settings["names"]["ceo"] == "龙虾CEO"
+    assert settings["names"]["cao"] == "龙虾CAO"
+
+    patch_resp = await api_client.patch(
+        "/api/cao/identity-settings",
+        json={"names": {"ceo": "阿甲", "cao": "小龙虾前台", "cmo": "小龙虾传播官"}},
+    )
+    assert patch_resp.status_code == 200
+    updated = patch_resp.json()
+    assert updated["names"]["ceo"] == "阿甲"
+    assert updated["names"]["cao"] == "小龙虾前台"
+    assert updated["names"]["cmo"] == "小龙虾传播官"
+
+    status_resp = await api_client.get("/api/cao/pipeline-status")
+    assert status_resp.status_code == 200
+    status_data = status_resp.json()
+    assert status_data["console_subtitle"] == "阿甲 正在默默关注视频制作流程。"
+    assert status_data["console_frontdesk_name"] == "小龙虾前台"
+    assert status_data["identity_settings"]["names"]["cmo"] == "小龙虾传播官"
 
 @pytest.mark.asyncio
 async def test_promotion_chat_streams_status_and_result(api_client):
@@ -436,6 +479,10 @@ async def test_cmo_chat_streams_status_and_result(api_client):
     assert status_event["source"] == "lead.promotion.progress_ui"
     assert qa_status_event["source"] == "lead.promotion.progress_ui"
     assert result_event["source"] == "lead.promotion.report_ui"
+    assert cfo_status_event["actor_key"] == "cfo"
+    assert cfo_status_event["stage_label"] == "财务闸门"
+    assert "预算校验" in cfo_status_event["message"]
+    assert "lead.cfo" not in cfo_status_event["message"]
     assert result_event["summary"]["total_tokens"] > 0
     assert result_event["result"]["finance_bundle"]["finance_check"]["passed"] is True
     assert result_event["result"]["qa_status"] == "passed"

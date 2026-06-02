@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>流程交付台 / CAO 管理台</title>
+  <title>龙虾宝宝视频制作平台</title>
   <style>
     :root {
       color-scheme: light;
@@ -208,8 +208,7 @@
     }
 
     .summary-grid,
-    .run-grid,
-    .trace-grid {
+    .run-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 10px;
@@ -261,6 +260,98 @@
       font-size: 12px;
     }
 
+    .settings-grid,
+    .log-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .rail-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .settings-item,
+    .log-item {
+      padding: 12px;
+      border: 1px solid #e7ddcf;
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .settings-item strong,
+    .log-item strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+
+    .settings-input {
+      width: 100%;
+      height: 40px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0 12px;
+      background: #fffdfa;
+      color: inherit;
+      font: inherit;
+    }
+
+    .settings-actions {
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .settings-panel[hidden] {
+      display: none;
+    }
+
+    .secondary-button {
+      height: 36px;
+      padding: 0 12px;
+      background: #fff;
+      color: var(--accent);
+      border: 1px solid var(--line);
+    }
+
+    .log-window {
+      max-height: 560px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .log-meta-bar {
+      margin-bottom: 10px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .log-meta,
+    .log-summary,
+    .log-detail {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+      overflow-wrap: anywhere;
+    }
+
+    .log-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #f3efe8;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
     @media (max-width: 1024px) {
       .app {
         grid-template-columns: 1fr;
@@ -278,33 +369,48 @@
     <section class="surface shell">
       <header class="header">
         <div>
-          <h1 class="title">流程交付台 / CAO 管理台</h1>
-          <div class="subtitle">CEO 隐身运行，CAO 负责对外交付。</div>
+          <h1 class="title" id="consoleTitle">龙虾宝宝视频制作平台</h1>
+          <div class="subtitle" id="frontdeskLine">龙虾CAO 正在值班。</div>
         </div>
-        <div class="status-chip" id="statusChip">正在等待状态刷新</div>
+        <div class="status-chip" id="statusChip">龙虾CEO 正在默默关注视频制作流程。</div>
       </header>
 
       <div class="messages" id="messageList">
-        <div class="message status">已连接控制台，页面会自动读取 /api/cao/pipeline-status。</div>
+        <div class="message status" id="welcomeMessage">欢迎来到龙虾视频制作前台，龙虾CAO 会持续同步生产链路、交付进度与结果。</div>
       </div>
 
       <footer class="composer">
         <div>
-          <label class="label" for="messageInput">消息输入</label>
+          <label class="label" for="messageInput" id="messageInputLabel">消息输入</label>
           <div class="composer-row">
-            <textarea id="messageInput" placeholder="输入要发送给 CMO 的消息。"></textarea>
+            <textarea id="messageInput" placeholder="输入要发送给 龙虾CMO 的消息。"></textarea>
             <button id="sendButton" type="button">发送</button>
           </div>
         </div>
-        <div class="meta">接口：/api/cmo/chat /api/cao/pipeline-status /api/cao/runs/</div>
+        <div class="meta" id="composerMeta">龙虾CAO 负责对外交付，龙虾CMO 负责接收消息并回传制作进度。</div>
       </footer>
     </section>
 
     <aside class="rail">
       <section class="rail-block">
+        <div class="rail-head">
+          <h2 class="rail-title">称呼设置</h2>
+          <button id="toggleSettingsButton" class="secondary-button" type="button">打开设置</button>
+        </div>
+        <div class="settings-panel" id="settingsPanel" hidden>
+          <div class="settings-grid" id="settingsGrid">
+            <div class="empty">正在加载称呼设置。</div>
+          </div>
+          <div class="settings-actions">
+            <button id="saveSettingsButton" type="button">保存称呼</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="rail-block">
         <h2 class="rail-title">主链路状态</h2>
         <div class="summary-grid" id="summaryGrid">
-          <div class="card"><strong>等待刷新</strong><span>加载 /api/cao/pipeline-status 中。</span></div>
+          <div class="card"><strong>正在准备</strong><span>龙虾CAO 正在整理当前制作链路。</span></div>
         </div>
       </section>
 
@@ -316,9 +422,15 @@
       </section>
 
       <section class="rail-block">
-        <h2 class="rail-title">链路回放</h2>
-        <div class="trace-grid" id="traceGrid">
-          <div class="empty">点击最近任务中的条目即可查看回放。</div>
+        <div class="rail-head">
+          <h2 class="rail-title">日志记录</h2>
+          <button id="clearDisplayButton" class="secondary-button" type="button">清空展示</button>
+        </div>
+        <div class="log-meta-bar" id="logDisplayMeta">默认展示最新任务的日志资料。</div>
+        <div class="log-window">
+          <div class="log-list" id="logGrid">
+            <div class="empty">点击最近任务中的条目即可查看日志记录。</div>
+          </div>
         </div>
       </section>
     </aside>
@@ -328,10 +440,41 @@
     const messageList = document.getElementById("messageList");
     const messageInput = document.getElementById("messageInput");
     const sendButton = document.getElementById("sendButton");
+    const toggleSettingsButton = document.getElementById("toggleSettingsButton");
+    const saveSettingsButton = document.getElementById("saveSettingsButton");
+    const clearDisplayButton = document.getElementById("clearDisplayButton");
     const statusChip = document.getElementById("statusChip");
+    const frontdeskLine = document.getElementById("frontdeskLine");
+    const welcomeMessage = document.getElementById("welcomeMessage");
+    const composerMeta = document.getElementById("composerMeta");
     const summaryGrid = document.getElementById("summaryGrid");
     const runGrid = document.getElementById("runGrid");
-    const traceGrid = document.getElementById("traceGrid");
+    const settingsPanel = document.getElementById("settingsPanel");
+    const settingsGrid = document.getElementById("settingsGrid");
+    const logDisplayMeta = document.getElementById("logDisplayMeta");
+    const logGrid = document.getElementById("logGrid");
+
+    const defaultIdentityNames = {
+      ceo: "龙虾CEO",
+      cao: "龙虾CAO",
+      cmo: "龙虾CMO",
+      cfo: "龙虾CFO",
+      cio: "龙虾CIO",
+      cto: "龙虾CTO",
+      coo: "龙虾COO",
+      cho: "龙虾CHO",
+      cqo: "龙虾CQO",
+      cso: "龙虾CSO",
+      cco: "龙虾CCO",
+    };
+
+    const identityState = { ...defaultIdentityNames };
+    const displayStateStorageKey = "cao_display_state_v1";
+    let latestRunsState = [];
+    let currentDisplayedRunId = null;
+    let currentDisplayedTrace = null;
+    let liveTraceRunId = null;
+    let liveTraceRefreshTimer = null;
 
     const escapeHtml = (value) =>
       String(value ?? "")
@@ -340,6 +483,190 @@
         .replaceAll(">", "&gt;")
         .replaceAll('"', "&quot;")
         .replaceAll("'", "&#39;");
+
+    const formatNumber = (value) =>
+      typeof value === "number" ? value.toLocaleString("zh-CN") : "-";
+
+    const formatDateTime = (value) => {
+      if (!value) return "-";
+      if (typeof value === "string") {
+        const naiveMatch = value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?$/);
+        if (naiveMatch) {
+          const [, year, month, day, hour, minute, second = "00"] = naiveMatch;
+          return `${Number(year)}/${Number(month)}/${Number(day)} ${hour}:${minute}:${second}`;
+        }
+      }
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return String(value);
+      return date.toLocaleString("zh-CN", { hour12: false, timeZone: "Asia/Shanghai" });
+    };
+
+    function readDisplayState() {
+      try {
+        const raw = localStorage.getItem(displayStateStorageKey);
+        if (!raw) return null;
+        return JSON.parse(raw);
+      } catch {
+        return null;
+      }
+    }
+
+    function writeDisplayState(payload) {
+      try {
+        localStorage.setItem(displayStateStorageKey, JSON.stringify(payload));
+      } catch {
+        // ignore storage failures in constrained browsers
+      }
+    }
+
+    function clearDisplayState() {
+      try {
+        localStorage.removeItem(displayStateStorageKey);
+      } catch {
+        // ignore storage failures in constrained browsers
+      }
+    }
+
+    function applyIdentityNames() {
+      frontdeskLine.textContent = `${identityState.cao} 正在值班。`;
+      statusChip.textContent = `${identityState.ceo} 正在默默关注视频制作流程。`;
+      welcomeMessage.textContent = `欢迎来到龙虾视频制作前台，${identityState.cao} 会持续同步生产链路、交付进度与结果。`;
+      composerMeta.textContent = `${identityState.cao} 负责对外交付，${identityState.cmo} 负责接收消息并回传制作进度。`;
+      messageInput.placeholder = `输入要发送给 ${identityState.cmo} 的消息。`;
+    }
+
+    function updateIdentityState(names) {
+      if (!names || typeof names !== "object") return;
+      for (const [key, value] of Object.entries(names)) {
+        if (key in identityState && typeof value === "string" && value.trim()) {
+          identityState[key] = value.trim();
+        }
+      }
+      applyIdentityNames();
+      if (currentDisplayedTrace) {
+        renderLogs(currentDisplayedTrace);
+      }
+    }
+
+    function resolveStatusActorName(event) {
+      const actorKey = typeof event?.actor_key === "string" ? event.actor_key : "";
+      if (actorKey && identityState[actorKey]) {
+        return identityState[actorKey];
+      }
+      if (typeof event?.stage_label === "string" && event.stage_label.trim()) {
+        return event.stage_label.trim();
+      }
+      return "流程播报";
+    }
+
+    function resolveStatusMessage(event) {
+      if (typeof event?.message === "string" && event.message.trim()) {
+        return event.message.trim();
+      }
+      if (typeof event?.stage_label === "string" && event.stage_label.trim()) {
+        return `${event.stage_label.trim()}状态已更新。`;
+      }
+      return "流程状态已更新。";
+    }
+
+    function renderIdentitySettings(settings) {
+      const profiles = Array.isArray(settings?.profiles) ? settings.profiles : [];
+      if (!profiles.length) {
+        settingsGrid.innerHTML = '<div class="empty">暂无称呼设置。</div>';
+        return;
+      }
+
+      settingsGrid.innerHTML = profiles.map((profile) => `
+        <label class="settings-item">
+          <strong>${escapeHtml(profile.code)}</strong>
+          <input
+            class="settings-input"
+            type="text"
+            data-identity-key="${escapeHtml(profile.key)}"
+            value="${escapeHtml(profile.name || profile.default_name || "")}"
+            placeholder="${escapeHtml(profile.default_name || "")}"
+          />
+        </label>
+      `).join("");
+    }
+
+    function setSettingsPanelOpen(isOpen) {
+      settingsPanel.hidden = !isOpen;
+      toggleSettingsButton.textContent = isOpen ? "收起设置" : "打开设置";
+    }
+
+    function setActiveRunCard(runId) {
+      Array.from(runGrid.querySelectorAll(".run-card")).forEach((item) => {
+        item.classList.toggle("active", !!runId && item.dataset.runId === runId);
+      });
+    }
+
+    function renderDisplayMeta(run, { fromCache = false } = {}) {
+      if (!run) {
+        logDisplayMeta.textContent = "默认展示最新任务的日志资料。";
+        return;
+      }
+      const taskName = run.display_domain || run.domain || "未命名任务";
+      const platform = run.platform || "-";
+      const sourceLabel = fromCache ? "已恢复上次未清空的展示资料" : "当前展示任务";
+      logDisplayMeta.textContent = `${sourceLabel}：${taskName} / 平台：${platform} / 时间：${formatDateTime(run.created_at)}`;
+    }
+
+    function getCachedTraceForRun(runId) {
+      const saved = readDisplayState();
+      if (!saved || saved.runId !== runId || !saved.trace) {
+        return null;
+      }
+      return saved;
+    }
+
+    function restoreDisplayState() {
+      const saved = readDisplayState();
+      if (!saved || !saved.trace) return;
+      currentDisplayedRunId = saved.runId || null;
+      currentDisplayedTrace = saved.trace;
+      renderDisplayMeta(saved.run || saved.trace.run || null, { fromCache: true });
+      renderLogs(saved.trace);
+    }
+
+    function isDisplayableTrace(trace) {
+      if (!trace || typeof trace !== "object") return false;
+      if (Array.isArray(trace.public_logs) && trace.public_logs.length > 0) return true;
+      return Number(trace?.summary?.step_count || 0) > 0;
+    }
+
+    function findPreferredRunId(runs) {
+      const preferredRunId = currentDisplayedRunId || readDisplayState()?.runId || null;
+      if (preferredRunId && runs.some((run) => run.uuid === preferredRunId)) {
+        return preferredRunId;
+      }
+      return runs[0]?.uuid || null;
+    }
+
+    async function loadLatestAvailableTrace(excludedRunId = null) {
+      for (const run of latestRunsState) {
+        if (!run?.uuid || run.uuid === excludedRunId) continue;
+        const trace = await loadTrace(run.uuid, { persistDisplayState: false, suppressErrorUI: true });
+        if (trace) {
+          return trace;
+        }
+      }
+      return null;
+    }
+
+    function queueLiveTraceRefresh(workflowRunId) {
+      if (!workflowRunId) return;
+      liveTraceRunId = workflowRunId;
+      if (liveTraceRefreshTimer) {
+        return;
+      }
+      liveTraceRefreshTimer = window.setTimeout(async () => {
+        const targetRunId = liveTraceRunId;
+        liveTraceRefreshTimer = null;
+        if (!targetRunId) return;
+        await loadTrace(targetRunId, { persistDisplayState: false });
+      }, 700);
+    }
 
     function appendMessage(kind, title, text) {
       const node = document.createElement("div");
@@ -373,77 +700,197 @@
 
     function renderRuns(status) {
       const runs = status.recent_runs || [];
+      latestRunsState = runs;
       if (!runs.length) {
         runGrid.innerHTML = '<div class="empty">暂无最近任务。</div>';
+        currentDisplayedRunId = null;
         return;
       }
 
       runGrid.innerHTML = runs
         .map((run, index) => `
           <div class="card run-card ${index === 0 ? "active" : ""}" data-run-id="${escapeHtml(run.uuid || "")}">
-            <strong>${escapeHtml(run.domain || "未命名任务")}</strong>
+            <strong>${escapeHtml(run.display_domain || run.domain || "未命名任务")}</strong>
             <span>平台：${escapeHtml(run.platform || "-")}</span>
             <span>状态：${escapeHtml(run.status || "-")}</span>
             <span>质检：${escapeHtml(run.qa_status || "-")}</span>
-            <div class="pill">${escapeHtml(run.workflow_type || "domain_auto_run")}</div>
+            <div class="pill">${escapeHtml(run.workflow_type_label || run.workflow_type || "自动制作流程")}</div>
           </div>
         `)
         .join("");
 
       Array.from(runGrid.querySelectorAll(".run-card")).forEach((card) => {
         card.addEventListener("click", () => {
-          Array.from(runGrid.querySelectorAll(".run-card")).forEach((item) => item.classList.remove("active"));
-          card.classList.add("active");
           loadTrace(card.dataset.runId);
         });
       });
 
-      const first = runs[0];
-      if (first && first.uuid) {
-        loadTrace(first.uuid);
+      const selectedRunId = findPreferredRunId(runs);
+      setActiveRunCard(selectedRunId);
+
+      if (selectedRunId) {
+        loadTrace(selectedRunId, { updateMetaFromCache: false });
       }
     }
 
-    function renderTrace(trace) {
-      const steps = trace.steps || [];
-      if (!steps.length) {
-        traceGrid.innerHTML = '<div class="empty">暂无回放记录。</div>';
+    function renderLogs(trace) {
+      currentDisplayedTrace = trace || null;
+      const logs = Array.isArray(trace.public_logs) ? trace.public_logs : [];
+      if (!logs.length) {
+        const hasSteps = Number(trace?.summary?.step_count || 0) > 0;
+        logGrid.innerHTML = hasSteps
+          ? '<div class="empty">当前任务已有内部步骤记录，前台日志正在整理中。</div>'
+          : '<div class="empty">暂无日志记录。</div>';
         return;
       }
 
-      traceGrid.innerHTML = steps
-        .map((step) => `
-          <div class="trace-item">
-            <strong>${escapeHtml(step.stage || step.name || "步骤")}</strong>
-            <span>${escapeHtml(step.status || "-")} / ${escapeHtml(step.message || "")}</span>
+      logGrid.innerHTML = logs.map((item) => `
+        <article class="log-item">
+          <strong>${escapeHtml(item.title || "日志记录")}</strong>
+          <div class="log-meta">
+            <span class="log-pill">${escapeHtml(resolveLogActorName(item))}</span>
+            <span class="log-pill">${escapeHtml(item.stage_label || item.stage || "阶段")}</span>
+            <span class="log-pill">${escapeHtml(formatDateTime(item.created_at))}</span>
           </div>
-        `)
-        .join("");
+          <div class="log-summary">${escapeHtml(item.summary || "")}</div>
+          ${(Array.isArray(item.details) ? item.details : []).map((detail) => `
+            <div class="log-detail">${escapeHtml(detail)}</div>
+          `).join("")}
+        </article>
+      `).join("");
+    }
+
+    function resolveLogActorName(item) {
+      const actorKey = typeof item?.actor_key === "string" ? item.actor_key : "";
+      if (actorKey && identityState[actorKey]) {
+        return identityState[actorKey];
+      }
+      if (typeof item?.actor_name === "string" && item.actor_name.trim()) {
+        return item.actor_name.trim();
+      }
+      if (typeof item?.stage_label === "string" && item.stage_label.trim()) {
+        return item.stage_label.trim();
+      }
+      return "系统";
     }
 
     async function loadStatus() {
       const response = await fetch("/api/cao/pipeline-status");
       const status = await response.json();
-      statusChip.textContent = status.console_subtitle || "CAO 管理台已就绪";
+      updateIdentityState(status.identity_settings?.names || {});
+      renderIdentitySettings(status.identity_settings);
       renderSummary(status);
       renderRuns(status);
     }
 
-    async function loadTrace(workflowRunId) {
+    async function loadTrace(
+      workflowRunId,
+      { updateMetaFromCache = false, persistDisplayState = true, suppressErrorUI = false, allowRetry = true } = {},
+    ) {
       if (!workflowRunId) return;
       const response = await fetch(`/api/cao/runs/${encodeURIComponent(workflowRunId)}/trace`);
       if (!response.ok) {
-        traceGrid.innerHTML = '<div class="empty">链路回放加载失败。</div>';
-        return;
+        if (allowRetry) {
+          await new Promise((resolve) => window.setTimeout(resolve, 400));
+          return loadTrace(workflowRunId, {
+            updateMetaFromCache,
+            persistDisplayState,
+            suppressErrorUI,
+            allowRetry: false,
+          });
+        }
+
+        const cached = getCachedTraceForRun(workflowRunId);
+        if (cached?.trace) {
+          currentDisplayedRunId = workflowRunId;
+          setActiveRunCard(workflowRunId);
+          renderDisplayMeta(cached.run || cached.trace.run || null, { fromCache: true });
+          renderLogs(cached.trace);
+          if (!suppressErrorUI) {
+            appendMessage("status", "展示", "日志接口暂时不可用，已回退到本地展示资料。");
+          }
+          return cached.trace;
+        }
+
+        const fallback = await loadLatestAvailableTrace(workflowRunId);
+        if (fallback) {
+          if (!suppressErrorUI) {
+            appendMessage("status", "展示", "当前任务日志暂时不可用，已切换到最近可用任务。");
+          }
+          return fallback;
+        }
+
+        if (!suppressErrorUI) {
+          logGrid.innerHTML = '<div class="empty">日志记录暂时不可用，请稍后自动重试或重新选择任务。</div>';
+        }
+        return null;
       }
       const trace = await response.json();
-      renderTrace(trace);
+      currentDisplayedRunId = workflowRunId;
+      currentDisplayedTrace = trace;
+      setActiveRunCard(workflowRunId);
+      renderDisplayMeta(trace.run, { fromCache: updateMetaFromCache });
+      updateIdentityState(trace.identity_settings?.names || {});
+      renderLogs(trace);
+      if (persistDisplayState && isDisplayableTrace(trace)) {
+        writeDisplayState({
+          runId: workflowRunId,
+          run: trace.run,
+          trace,
+        });
+      }
+      return trace;
+    }
+
+    async function saveIdentitySettings() {
+      const inputs = Array.from(settingsGrid.querySelectorAll("[data-identity-key]"));
+      const names = {};
+      for (const input of inputs) {
+        const key = input.dataset.identityKey;
+        if (!key) continue;
+        names[key] = input.value.trim();
+      }
+
+      saveSettingsButton.disabled = true;
+      try {
+        const response = await fetch("/api/cao/identity-settings", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ names }),
+        });
+        if (!response.ok) {
+          appendMessage("error", "设置", "称呼保存失败。");
+          return;
+        }
+        const settings = await response.json();
+        updateIdentityState(settings.names || {});
+        renderIdentitySettings(settings);
+        appendMessage("status", "设置", "CXO 称呼已更新。");
+      } catch (error) {
+        appendMessage("error", "设置", error instanceof Error ? error.message : "称呼保存失败。");
+      } finally {
+        saveSettingsButton.disabled = false;
+      }
+    }
+
+    async function clearDisplayedLogs() {
+      clearDisplayState();
+      appendMessage("status", "展示", "已清空当前展示资料，正在切换到最新任务。");
+      currentDisplayedRunId = null;
+      const latestRunId = findPreferredRunId(latestRunsState);
+      if (latestRunId) {
+        await loadTrace(latestRunId);
+        return;
+      }
+      renderDisplayMeta(null);
+      logGrid.innerHTML = '<div class="empty">暂无日志记录。</div>';
     }
 
     async function sendMessage() {
       const message = messageInput.value.trim();
       if (!message) return;
       sendButton.disabled = true;
+      liveTraceRunId = null;
       appendMessage("user", "你", message);
       messageInput.value = "";
 
@@ -473,30 +920,53 @@
             try {
               const event = JSON.parse(line);
               if (event.type === "reply") {
-                appendMessage("reply", "CMO", event.message || "已收到。");
+                appendMessage("reply", identityState.cmo, event.message || "已收到。");
               } else if (event.type === "status") {
-                const stage = event.stage || "流程";
-                appendMessage("status", stage, event.message || `${stage} 已更新。`);
+                appendMessage("status", resolveStatusActorName(event), resolveStatusMessage(event));
+                if (event.workflow_run_id) {
+                  currentDisplayedRunId = event.workflow_run_id;
+                  queueLiveTraceRefresh(event.workflow_run_id);
+                }
               } else if (event.type === "report") {
                 appendMessage("report", "报告", event.message || "收到报告。");
               } else if (event.type === "result") {
                 appendMessage("result", "结果", event.message || "收到结果。");
+                if (event.result?.workflow_run_id) {
+                  liveTraceRunId = event.result.workflow_run_id;
+                }
               } else if (event.type === "error") {
                 appendMessage("error", "错误", event.message || "发生错误。");
               }
             } catch {
-              appendMessage("reply", "CMO", line);
+              appendMessage("reply", identityState.cmo, line);
             }
           }
         }
       } catch (error) {
         appendMessage("error", "错误", error instanceof Error ? error.message : "发送失败。");
       } finally {
+        if (liveTraceRefreshTimer) {
+          window.clearTimeout(liveTraceRefreshTimer);
+          liveTraceRefreshTimer = null;
+        }
+        if (liveTraceRunId) {
+          await loadTrace(liveTraceRunId);
+        }
+        await loadStatus().catch(() => {});
         sendButton.disabled = false;
       }
     }
 
     sendButton.addEventListener("click", sendMessage);
+    toggleSettingsButton.addEventListener("click", () => {
+      setSettingsPanelOpen(settingsPanel.hidden);
+    });
+    saveSettingsButton.addEventListener("click", saveIdentitySettings);
+    clearDisplayButton.addEventListener("click", () => {
+      clearDisplayedLogs().catch((error) => {
+        appendMessage("error", "展示", error instanceof Error ? error.message : "清空展示失败。");
+      });
+    });
     messageInput.addEventListener("keydown", (event) => {
       if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
         event.preventDefault();
@@ -504,8 +974,11 @@
       }
     });
 
+    applyIdentityNames();
+    setSettingsPanelOpen(false);
+    restoreDisplayState();
     loadStatus().catch((error) => {
-      statusChip.textContent = "CAO 管理台加载失败";
+      statusChip.textContent = `${identityState.cao} 暂时还没拿到最新链路状态。`;
       appendMessage("error", "错误", error instanceof Error ? error.message : "状态加载失败。");
     });
   </script>

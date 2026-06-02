@@ -67,12 +67,14 @@ class WorkflowStepLogService:
         trace_id: str | None = None,
         skill_name: str | None = None,
         event_type: str | None = None,
+        ascending: bool = False,
     ) -> list[WorkflowStepLog]:
         return await self.repository.list_steps(
             limit=limit,
             trace_id=trace_id,
             skill_name=skill_name,
             event_type=event_type,
+            ascending=ascending,
         )
 
     async def summarize_trace(self, trace_id: str) -> dict[str, Any]:

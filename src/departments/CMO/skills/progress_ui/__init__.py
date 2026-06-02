@@ -1,9 +1,9 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from typing import Any
 
-from departments.CEO.leaders.organization import LEADER_STAGE_LABELS_CN
 from departments.CEO.skills.base import BaseSkill
+from departments.CMO.services.public_progress import build_public_status_payload
 
 
 class ProgressUISkill(BaseSkill):
@@ -31,22 +31,22 @@ class ProgressUISkill(BaseSkill):
     ]
     required_tokens = ["event"]
 
-    STATUS_LABELS = {
-        "running": "执行中",
-        "success": "已完成",
-        "failed": "失败",
-    }
-
     def execute(self, input_data: dict[str, Any]) -> dict[str, Any]:
         action = input_data.get("action")
         if action != "format_status_event":
             raise ValueError(f"Unsupported action for {self.skill_name}: {action}")
 
         event = dict(input_data.get("event") or {})
-        stage = str(event.get("stage") or "")
-        status = str(event.get("status") or "")
+        public_payload = build_public_status_payload(
+            str(event.get("stage") or ""),
+            str(event.get("status") or ""),
+            event.get("message"),
+        )
         event["source"] = self.skill_name
-        event["stage_label"] = LEADER_STAGE_LABELS_CN.get(stage, stage or "未知阶段")
-        event["status_label"] = self.STATUS_LABELS.get(status, status or "未知状态")
+        event["actor_key"] = public_payload["actor_key"]
+        event["stage_label"] = public_payload["stage_label"]
+        event["status_label"] = public_payload["status_label"]
+        event["raw_message"] = public_payload["raw_message"]
+        event["message"] = public_payload["message"]
         event["channel"] = "promotion_ui"
         return {"event": event}
