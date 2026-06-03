@@ -1,0 +1,43 @@
+# Enforce LF line endings and treat most files as text
+* text=auto eol=lf
+
+# Ensure common text files use LF
+*.sh text eol=lf
+*.py text eol=lf
+*.md text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.json text eol=lf
+*.toml text eol=lf
+*.cfg text eol=lf
+*.ini text eol=lf
+*.ps1 text eol=lf
+*.cmd text eol=lf
+*.bat text eol=lf
+
+# Treat binary files as binary
+*.png -text
+*.jpg -text
+*.jpeg -text
+*.gif -text
+*.mp4 -text
+*.mov -text
+*.avi -text
+*.mkv -text
+*.zip -text
+*.tar -text
+*.gz -text
+*.bz2 -text
+*.7z -text
+*.woff -text
+*.woff2 -text
+*.ttf -text
+*.otf -text
+*.pb -text
+*.bin -text
+*.exe -text
+*.dll -text
+*.so -text
+
+# Ensure scripts folder defaults to LF
+scripts/* text eol=lf

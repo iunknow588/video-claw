@@ -193,7 +193,7 @@ if (-not (Test-Path $pythonExe)) {
 if (-not $SkipInstall) {
     Write-Host "Installing Python dependencies..." -ForegroundColor Cyan
     & $pythonExe -m pip install --upgrade pip
-    & $pythonExe -m pip install -r src\requirements.txt
+    & $pythonExe -m pip install -e ".[dev]"
 }
 
 if (-not $UseProjectDatabase) {

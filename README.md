@@ -49,7 +49,7 @@ repo/
 |-- Dockerfile
 |-- docker-compose.yml
 |-- alembic.ini
-|-- pytest.ini
+|-- pyproject.toml
 |-- runtime/                   # 运行期产物
 |   |-- logs/
 |   `-- media/
@@ -60,7 +60,7 @@ repo/
     |-- scripts/               # 联调/预检脚本
     |-- tests/                 # 测试
     |-- main.py                # 启动入口
-    `-- requirements.txt
+|-- pyproject.toml
 ```
 
 ### 3.1 `src/app` 当前顶层模块
@@ -208,7 +208,7 @@ runtime/
 cd E:\2026OPC大赛\龙虾流程
 python -m venv .venv
 .\.venv\Scripts\activate
-pip install -r src/requirements.txt
+pip install -e .[dev]
 ```
 
 推荐先复制一份环境变量模板：
@@ -307,7 +307,7 @@ docker-compose up -d app
 运行测试：
 
 ```powershell
-python -m pytest -c pytest.ini src/tests -q
+python -m pytest src/tests -q
 ```
 
 辅助脚本目录：`src/scripts/`
