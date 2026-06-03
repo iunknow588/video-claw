@@ -160,7 +160,7 @@ async def test_image_task_endpoint_returns_placeholder_asset(api_client):
 @pytest.mark.asyncio
 async def test_domain_workflow_returns_prompt_package(api_client):
     response = await api_client.post(
-        "/api/cao/workflows/domain-auto-run",
+        "/api/cao/workflows/runs",
         json={
             "domain": "龙虾餐饮",
             "platform": "douyin",
@@ -201,7 +201,7 @@ async def test_domain_workflow_returns_prompt_package(api_client):
 @pytest.mark.asyncio
 async def test_domain_workflow_can_auto_generate_video(api_client):
     response = await api_client.post(
-        "/api/cao/workflows/domain-auto-run",
+        "/api/cao/workflows/runs",
         json={
             "domain": "龙虾门店运营",
             "platform": "xiaohongshu",
@@ -229,7 +229,7 @@ async def test_domain_workflow_can_auto_generate_video(api_client):
 @pytest.mark.asyncio
 async def test_workflow_run_history_is_queryable(api_client):
     create_resp = await api_client.post(
-        "/api/cao/workflows/domain-auto-run",
+        "/api/cao/workflows/runs",
         json={
             "domain": "龙虾营销",
             "platform": "xigua",
@@ -255,7 +255,7 @@ async def test_workflow_run_history_is_queryable(api_client):
 @pytest.mark.asyncio
 async def test_workflow_trace_endpoint_returns_summary(api_client):
     create_resp = await api_client.post(
-        "/api/cao/workflows/domain-auto-run",
+        "/api/cao/workflows/runs",
         json={
             "domain": "trace-summary-check",
             "platform": "douyin",
@@ -360,7 +360,7 @@ async def test_cao_pipeline_status_hides_ceo_and_exposes_public_flow(api_client)
 @pytest.mark.asyncio
 async def test_cao_public_trace_hides_ceo_stage(api_client):
     create_resp = await api_client.post(
-        "/api/cao/workflows/domain-auto-run",
+        "/api/cao/workflows/runs",
         json={
             "domain": "cao-trace-check",
             "platform": "douyin",
@@ -426,9 +426,9 @@ async def test_cao_identity_settings_can_be_saved_and_reused(api_client):
     assert status_data["identity_settings"]["names"]["cmo"] == "小龙虾传播官"
 
 @pytest.mark.asyncio
-async def test_promotion_chat_streams_status_and_result(api_client):
+async def test_cmo_chat_request_streams_status_and_result(api_client):
     response = await api_client.post(
-        "/api/promotion/chat",
+        "/api/cmo/chat",
         json={"message": "给龙虾门店运营做一条抖音视频，30秒"},
     )
     assert response.status_code == 200
@@ -489,9 +489,9 @@ async def test_cmo_chat_streams_status_and_result(api_client):
 
 
 @pytest.mark.asyncio
-async def test_promotion_chat_can_report_recent_runs(api_client):
+async def test_cmo_chat_can_report_recent_runs(api_client):
     create_resp = await api_client.post(
-        "/api/cao/workflows/domain-auto-run",
+        "/api/cao/workflows/runs",
         json={
             "domain": "ceo-chat-history",
             "platform": "xigua",
@@ -507,7 +507,7 @@ async def test_promotion_chat_can_report_recent_runs(api_client):
     assert create_resp.status_code == 200
 
     response = await api_client.post(
-        "/api/promotion/chat",
+        "/api/cmo/chat",
         json={"message": "查看最近任务"},
     )
     assert response.status_code == 200
@@ -521,7 +521,7 @@ async def test_promotion_chat_can_report_recent_runs(api_client):
 @pytest.mark.asyncio
 async def test_cao_governance_status_and_progress_endpoints(api_client):
     create_resp = await api_client.post(
-        "/api/cao/workflows/domain-auto-run",
+        "/api/cao/workflows/runs",
         json={
             "domain": "ceo-control-check",
             "platform": "douyin",
@@ -616,9 +616,9 @@ async def test_cao_governance_can_issue_optimize_command_and_manage_evolution(ap
 
 
 @pytest.mark.asyncio
-async def test_promotion_chat_can_query_ceo_management_surface(api_client):
+async def test_cmo_chat_can_query_ceo_management_surface(api_client):
     response = await api_client.post(
-        "/api/promotion/chat",
+        "/api/cmo/chat",
         json={"message": "查看公司状态"},
     )
     assert response.status_code == 200
@@ -634,11 +634,11 @@ async def test_promotion_chat_can_query_ceo_management_surface(api_client):
 
 
 @pytest.mark.asyncio
-async def test_promotion_chat_blocks_when_finance_gate_fails(api_client, monkeypatch):
+async def test_cmo_chat_blocks_when_finance_gate_fails(api_client, monkeypatch):
     monkeypatch.setattr(settings.finance, "daily_budget", 0.0001)
 
     response = await api_client.post(
-        "/api/promotion/chat",
+        "/api/cmo/chat",
         json={"message": "给龙虾门店运营做一条抖音视频，30秒"},
     )
     assert response.status_code == 200
@@ -698,9 +698,9 @@ async def test_cao_governance_leader_status_exposes_department_report_template(a
 
 
 @pytest.mark.asyncio
-async def test_promotion_chat_can_query_cto_status_by_title_alias(api_client):
+async def test_cmo_chat_can_query_cto_status_by_title_alias(api_client):
     response = await api_client.post(
-        "/api/promotion/chat",
+        "/api/cmo/chat",
         json={"message": "查看 CTO 状态"},
     )
     assert response.status_code == 200
@@ -714,7 +714,7 @@ async def test_promotion_chat_can_query_cto_status_by_title_alias(api_client):
 @pytest.mark.asyncio
 async def test_cao_governance_can_collect_periodic_reports_and_query_latest(api_client):
     run_resp = await api_client.post(
-        "/api/cao/workflows/domain-auto-run",
+        "/api/cao/workflows/runs",
         json={
             "domain": "report-cycle-check",
             "platform": "douyin",

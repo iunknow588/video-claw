@@ -47,6 +47,13 @@ class WorkflowStepLogService:
         )
 
     async def record_event(self, event: Any) -> WorkflowStepLog:
+        output_json = jsonable_encoder(event.output_json or {})
+        metadata_json = jsonable_encoder(event.metadata_json or {})
+
+        if getattr(event, "message", None):
+            output_json.setdefault("message", event.message)
+            metadata_json.setdefault("message", event.message)
+
         return await self.record_step(
             trace_id=event.trace_id,
             skill_name=event.source,
@@ -54,10 +61,10 @@ class WorkflowStepLogService:
             status=event.status or "recorded",
             parent_id=event.parent_id,
             input_json=jsonable_encoder(event.input_json or {}),
-            output_json=jsonable_encoder(event.output_json or {}),
+            output_json=output_json,
             error_message=event.error_message,
             cost=int(event.cost or 0),
-            metadata_json=jsonable_encoder(event.metadata_json or {}),
+            metadata_json=metadata_json,
         )
 
     async def list_steps(

@@ -405,6 +405,7 @@ class WorkflowRunResponse(BaseModel):
 
     uuid: str
     trace_id: Optional[str] = None
+    trigger_id: Optional[str] = None
     workflow_type: str
     domain: str
     platform: str

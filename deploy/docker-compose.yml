@@ -1,0 +1,72 @@
+"""
+Production deployment configuration for P1 features.
+"""
+version: '3.8'
+
+services:
+  # Main application
+  app:
+    build: ..
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://user:pass@db:5432/workflow
+      - REDIS_URL=redis://redis:6379/0
+      - PROMETHEUS_PORT=9090
+    depends_on:
+      - db
+      - redis
+      - prometheus
+    deploy:
+      replicas: 2  # Distributed deployment
+      
+  # PostgreSQL database
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=pass
+      - POSTGRES_DB=workflow
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ../migrations:/docker-entrypoint-initdb.d
+      
+  # Redis for distributed job store and locking
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    
+  # Prometheus for metrics collection
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+      
+  # Grafana for visualization
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+      
+  # Alertmanager for alerting
+  alertmanager:
+    image: prom/alertmanager
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml
+
+volumes:
+  postgres_data:
+  redis_data:
+  prometheus_data:
+  grafana_data:

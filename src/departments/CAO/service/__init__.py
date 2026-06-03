@@ -269,7 +269,7 @@ class CAOConsoleService:
     @staticmethod
     def _to_local_display_datetime(value: datetime) -> datetime:
         if value.tzinfo is None:
-            value = value.replace(tzinfo=UTC)
+            return value
         return value.astimezone()
 
     def _serialize_public_payload(self, value: Any) -> Any:
@@ -347,11 +347,21 @@ class CAOConsoleService:
         return None
 
     def _build_public_artifacts(self, result_payload: dict[str, Any]) -> dict[str, Any]:
+        # 正常流程的产物
         research_bundle = result_payload.get("research_bundle") if isinstance(result_payload.get("research_bundle"), dict) else {}
         analysis_bundle = result_payload.get("analysis_bundle") if isinstance(result_payload.get("analysis_bundle"), dict) else {}
         prompt_package = result_payload.get("prompt_package") if isinstance(result_payload.get("prompt_package"), dict) else {}
         production_bundle = result_payload.get("production_bundle") if isinstance(result_payload.get("production_bundle"), dict) else {}
         qa_bundle = result_payload.get("qa_bundle") if isinstance(result_payload.get("qa_bundle"), dict) else {}
+        
+        # 失败流程的产物（从 failure_context 中提取）
+        failure_context = result_payload.get("failure_context", {})
+        if failure_context:
+            research_bundle = research_bundle or failure_context.get("research_bundle", {})
+            analysis_bundle = analysis_bundle or failure_context.get("analysis_bundle", {})
+            prompt_package = prompt_package or failure_context.get("prompt_bundle", {})
+            production_bundle = production_bundle or failure_context.get("production_bundle", {})
+            qa_bundle = qa_bundle or failure_context.get("qa_bundle", {})
 
         public_artifacts: dict[str, Any] = {}
 
@@ -630,20 +640,28 @@ class CAOConsoleService:
                 continue
 
             latest = steps[-1]
-            public_status = build_public_status_payload(stage_name, str(latest.get("status") or ""), latest.get("message"))
-            summary = self._build_stage_progress_summary(stage_name, latest, len(steps), public_status)
+            latest_status_step = next(
+                (step for step in reversed(steps) if step.get("event_type") == "status"),
+                latest,
+            )
+            public_status = build_public_status_payload(
+                stage_name,
+                str(latest_status_step.get("status") or ""),
+                latest_status_step.get("message"),
+            )
+            summary = self._build_stage_progress_summary(stage_name, latest_status_step, len(steps), public_status)
             logs.append(
                 {
                     "type": "status",
                     "stage": stage_name,
-                    "stage_label": latest.get("stage_label") or PUBLIC_STAGE_LABELS.get(stage_name, stage_name),
-                    "actor_key": latest.get("actor_key"),
-                    "actor_name": latest.get("actor_name"),
-                    "title": f"{latest.get('stage_label') or PUBLIC_STAGE_LABELS.get(stage_name, stage_name)}阶段记录",
+                    "stage_label": latest_status_step.get("stage_label") or PUBLIC_STAGE_LABELS.get(stage_name, stage_name),
+                    "actor_key": latest_status_step.get("actor_key"),
+                    "actor_name": latest_status_step.get("actor_name"),
+                    "title": f"{latest_status_step.get('stage_label') or PUBLIC_STAGE_LABELS.get(stage_name, stage_name)}阶段记录",
                     "summary": summary,
                     "details": [],
-                    "status": latest.get("status"),
-                    "created_at": latest.get("created_at"),
+                    "status": latest_status_step.get("status"),
+                    "created_at": latest_status_step.get("created_at"),
                 }
             )
         return logs
@@ -675,7 +693,34 @@ class CAOConsoleService:
         if str(getattr(run, "status", "")).strip().lower() != "failed":
             return None
 
-        error_message = self._normalize_public_text_with_limit(getattr(run, "error_message", None), limit=240) or "任务执行失败。"
+        result_payload = run.result_payload if isinstance(run.result_payload, dict) else {}
+        failure_context = result_payload.get("failure_context", {})
+        
+        # 构建可读的错误详情
+        details = []
+        
+        # 如果有 QA 失败维度，展示具体原因
+        qa_checks = failure_context.get("qa_checks", [])
+        failed_checks = [c for c in qa_checks if c.get("applicable") and not c.get("pass")]
+        for check in failed_checks:
+            dimension = check.get("dimension", "未知维度")
+            issues = check.get("issues", [])
+            score = check.get("score", 0)
+            issues_text = "；".join(issues) if issues else "未通过"
+            details.append(f"【{dimension}】评分 {score}：{issues_text}")
+        
+        # 如果有失败阶段信息，添加阶段提示
+        failed_stage = failure_context.get("failed_stage")
+        if failed_stage and failed_stage != "unknown":
+            stage_label = PUBLIC_STAGE_LABELS.get(failed_stage, failed_stage)
+            details.insert(0, f"失败阶段：{stage_label}")
+        
+        # 通用错误信息
+        error_message = self._normalize_public_text_with_limit(
+            getattr(run, "error_message", None), 
+            limit=240
+        ) or "任务执行失败。"
+
         return {
             "type": "status",
             "stage": "workflow",
@@ -684,7 +729,7 @@ class CAOConsoleService:
             "actor_name": "系统",
             "title": "任务执行失败",
             "summary": error_message,
-            "details": [],
+            "details": details,  # 前台可展开查看具体失败维度
             "status": "failed",
             "created_at": created_at or getattr(run, "created_at", None),
         }

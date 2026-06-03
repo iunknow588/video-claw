@@ -11,9 +11,23 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 import departments.CIO.models  # noqa: F401
+from departments.CEO.core.config import settings
 from departments.CIO.db.session import get_db
 from departments.CIO.models.base import Base
 from main import app
+
+
+@pytest.fixture(autouse=True)
+def isolate_external_ai_providers(monkeypatch):
+    """
+    Keep tests deterministic by disabling live provider credentials from .env.
+    """
+    monkeypatch.setattr(settings.ai_providers.runtime, "use_placeholder_when_unconfigured", True)
+    monkeypatch.setattr(settings.ai_providers.xfyun_maas, "api_key", "")
+    monkeypatch.setattr(settings.ai_providers.seedance, "api_key", "")
+    monkeypatch.setattr(settings.ai_providers.hidream, "app_id", "")
+    monkeypatch.setattr(settings.ai_providers.hidream, "api_key", "")
+    monkeypatch.setattr(settings.ai_providers.hidream, "api_secret", "")
 
 
 @pytest_asyncio.fixture

@@ -30,6 +30,9 @@ from departments.CIO.models.information_event import InformationEvent
 from departments.CIO.models.review import ReviewRecord
 from departments.CIO.models.script import Script
 from departments.CIO.models.step_log import WorkflowStepLog
+from departments.CIO.models.workflow import WorkflowRun, WorkflowTrigger
+from departments.CIO.services.scheduler import TriggerScanner
+from departments.CIO.services.workflow_runs import WorkflowRunService
 from departments.CTO.services.ai_clients import (
     AIProviderResult,
     SeedanceClient,
@@ -953,13 +956,22 @@ async def test_workflow_engine_can_reroute_back_to_planning():
             self.failed = None
 
         async def create_run(self, **kwargs):
-            return SimpleNamespace(uuid="run-qa-reroute-1")
+            return SimpleNamespace(id=1, uuid="run-qa-reroute-1")
 
-        async def mark_completed(self, run_record, **kwargs):
-            self.completed = {"run_record": run_record, **kwargs}
-
-        async def mark_failed(self, run_record, error_message):
-            self.failed = {"run_record": run_record, "error_message": error_message}
+        async def update_run_status(self, run_id, status, result_payload=None):
+            if status == "completed":
+                self.completed = {
+                    "run_id": run_id,
+                    "status": status,
+                    "result_payload": result_payload,
+                }
+            if status == "failed":
+                self.failed = {
+                    "run_id": run_id,
+                    "status": status,
+                    "result_payload": result_payload,
+                }
+            return SimpleNamespace(id=run_id, status=status, result_payload=result_payload)
 
     class FakeRecorder:
         def __init__(self):
@@ -1128,7 +1140,7 @@ async def test_workflow_engine_can_reroute_back_to_planning():
         get_skill=lambda name: object(),
     )
 
-    result = await WorkflowExecutionEngine(assembly, recorder).run_domain_workflow(request)
+    result = await WorkflowExecutionEngine(assembly, recorder=recorder).run_domain_workflow(request)
 
     assert len(planning_pipeline.calls) == 2
     assert len(production_pipeline.calls) == 2
@@ -1139,3 +1151,87 @@ async def test_workflow_engine_can_reroute_back_to_planning():
     assert result["qa_status"] == "passed"
     assert workflow_run_service.failed is None
     assert any(log["message"] == "QA requested reroute" for log in recorder.logs)
+
+
+@pytest.mark.asyncio
+async def test_workflow_run_service_persists_trigger_id(session):
+    service = WorkflowRunService(session)
+
+    run = await service.create_run(
+        trace_id="trace-trigger-1",
+        workflow_type="domain_auto_run",
+        domain="lobster",
+        platform="douyin",
+        input_params={"top_n": 2},
+        trigger_id="trigger-uuid-1",
+    )
+    await session.commit()
+
+    assert run.trigger_id == "trigger-uuid-1"
+    assert run.result_payload["top_n"] == 2
+
+
+@pytest.mark.asyncio
+async def test_trigger_scanner_skips_when_active_run_exists(session):
+    class FakeEngine:
+        async def run_domain_workflow(self, **kwargs):
+            raise AssertionError("workflow should not run when duplicate active run exists")
+
+    trigger = WorkflowTrigger(
+        name="daily-lobster",
+        cron="0 3 * * *",
+        domain="lobster",
+        platform="douyin",
+        input_params={"top_n": 2},
+        enabled=True,
+    )
+    session.add(trigger)
+    await session.flush()
+
+    session.add(
+        WorkflowRun(
+            trace_id="trace-dup-1",
+            workflow_type="domain_auto_run",
+            domain="lobster",
+            platform="douyin",
+            status="running",
+            trigger_id=trigger.uuid,
+        )
+    )
+    await session.flush()
+
+    scanner = TriggerScanner(FakeEngine())
+    await scanner._fire_trigger(trigger, session)
+
+    assert trigger.last_fired_at is None
+
+
+@pytest.mark.asyncio
+async def test_trigger_scanner_passes_trigger_uuid_to_workflow_engine(session):
+    class FakeEngine:
+        def __init__(self):
+            self.calls = []
+
+        async def run_domain_workflow(self, request, **kwargs):
+            self.calls.append({"request": request, **kwargs})
+            return {"status": "completed"}
+
+    trigger = WorkflowTrigger(
+        name="daily-lobster",
+        cron="0 3 * * *",
+        domain="lobster",
+        platform="douyin",
+        input_params={"top_n": 2},
+        enabled=True,
+    )
+    session.add(trigger)
+    await session.flush()
+
+    engine = FakeEngine()
+    scanner = TriggerScanner(engine)
+    await scanner._execute_workflow(trigger)
+
+    assert len(engine.calls) == 1
+    assert engine.calls[0]["request"].domain == "lobster"
+    assert engine.calls[0]["request"].top_n == 2
+    assert engine.calls[0]["trigger_id"] == trigger.uuid

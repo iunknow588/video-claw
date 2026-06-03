@@ -17,16 +17,28 @@ class WorkflowRepository:
         self.session = session
 
     async def create_run(self, payload: dict[str, Any]) -> WorkflowRun:
-        record = WorkflowRun(**jsonable_encoder(payload))
+        normalized = dict(payload)
+        for key in ("result_payload", "expanded_queries", "selected_hotspot_ids", "prompt_package", "analysis_ids"):
+            if key in normalized and normalized[key] is not None:
+                normalized[key] = jsonable_encoder(normalized[key])
+        record = WorkflowRun(**normalized)
         self.session.add(record)
         await self.session.flush()
         return record
 
     async def update_run(self, record: WorkflowRun, updates: dict[str, Any]) -> WorkflowRun:
-        for key, value in jsonable_encoder(updates).items():
+        normalized = dict(updates)
+        for key in ("result_payload", "expanded_queries", "selected_hotspot_ids", "prompt_package", "analysis_ids"):
+            if key in normalized and normalized[key] is not None:
+                normalized[key] = jsonable_encoder(normalized[key])
+        for key, value in normalized.items():
             setattr(record, key, value)
         await self.session.flush()
         return record
+
+    async def get_run_by_id(self, run_id: int) -> WorkflowRun | None:
+        result = await self.session.execute(select(WorkflowRun).where(WorkflowRun.id == run_id))
+        return result.scalar_one_or_none()
 
     async def list_runs(
         self,
@@ -35,6 +47,7 @@ class WorkflowRepository:
         domain: str | None = None,
         platform: str | None = None,
         status: str | None = None,
+        trigger_id: str | None = None,
     ) -> list[WorkflowRun]:
         query = select(WorkflowRun).order_by(WorkflowRun.created_at.desc()).limit(limit)
         if domain:
@@ -43,12 +56,23 @@ class WorkflowRepository:
             query = query.where(WorkflowRun.platform == platform)
         if status:
             query = query.where(WorkflowRun.status == status)
+        if trigger_id:
+            query = query.where(WorkflowRun.trigger_id == trigger_id)
         result = await self.session.execute(query)
         return list(result.scalars().all())
 
     async def get_run_by_uuid(self, workflow_run_id: str) -> WorkflowRun | None:
         result = await self.session.execute(select(WorkflowRun).where(WorkflowRun.uuid == workflow_run_id))
         return result.scalar_one_or_none()
+
+    async def get_runs_by_trigger(
+        self,
+        trigger_id: str,
+        *,
+        status: str | None = None,
+        limit: int = 100,
+    ) -> list[WorkflowRun]:
+        return await self.list_runs(limit=limit, status=status, trigger_id=trigger_id)
 
     async def create_step(self, payload: dict[str, Any]) -> WorkflowStepLog:
         record = WorkflowStepLog(**jsonable_encoder(payload))

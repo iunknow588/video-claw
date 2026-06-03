@@ -23,20 +23,38 @@ class VideoQualityCheckSkill(BaseSkill):
 
     def execute(self, input_data: dict[str, Any]) -> dict[str, Any]:
         task = input_data.get("video_task") or {}
+        
+        # 情况1: 完全没有视频任务数据
         if not task:
             return {
                 "dimension": "video_quality",
                 "applicable": False,
                 "pass": True,
-                "score": 0.86,
+                "score": 1.0,
                 "issues": ["当前任务未生成视频，画面质量检测跳过。"],
                 "recommendation": "若后续生成视频，请重新触发画面质检。",
             }
 
+        # 情况2: 视频任务已明确失败 —— 关键修复
+        task_status = task.get("status")
+        if task_status == "failed":
+            return {
+                "dimension": "video_quality",
+                "applicable": True,  # 适用，且必须检查
+                "pass": False,  # 明确失败
+                "score": 0.0,
+                "issues": [
+                    f"视频生成任务状态为 failed，未能产出可质检视频。",
+                    f"失败原因：{task.get('error_message', '未知错误')}",
+                ],
+                "recommendation": "建议检查生产环节日志，排查视频生成失败原因后重试。",
+            }
+
+        # 情况3: 视频任务存在但未完成 —— 原有逻辑
         issues: list[str] = []
         score = 1.0
-        if task.get("status") != "completed":
-            issues.append(f"视频任务状态为 {task.get('status')}，尚未达到可质检状态。")
+        if task_status != "completed":
+            issues.append(f"视频任务状态为 {task_status}，尚未达到可质检状态。")
             score -= 0.5
         if float(task.get("progress") or 0.0) < 1.0:
             issues.append("视频生成进度未完成。")
@@ -63,4 +81,3 @@ class VideoQualityCheckSkill(BaseSkill):
 
     def validate_input(self, input_data: dict[str, Any]) -> bool:
         return isinstance(input_data, dict) and "platform" in input_data
-

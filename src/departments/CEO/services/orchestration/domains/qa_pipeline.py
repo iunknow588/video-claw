@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from departments.CEO.services.orchestration.pipeline import PipelineContext, PipelineResult
 from departments.CQO.services.use_cases.quality_gate import QualityGateUseCase
@@ -18,5 +18,7 @@ class QAPipeline:
             analysis_bundle=input_bundle["analysis_bundle"],
             production_bundle=input_bundle["production_bundle"],
         )
-        status = "success" if payload["qa_report"]["qa_status"] == "passed" else "rework"
+
+        qa_report = payload["qa_report"]
+        status = "success" if qa_report["qa_status"] == "passed" else "rework"
         return PipelineResult.from_payload(payload, status=status)

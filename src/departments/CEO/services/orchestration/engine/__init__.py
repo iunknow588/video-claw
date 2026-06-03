@@ -1,457 +1,607 @@
+"""
+Workflow execution engine.
+"""
 from __future__ import annotations
 
-from collections.abc import Awaitable, Callable
-from typing import Any
-from uuid import uuid4
+from datetime import UTC, datetime
+from typing import Any, Dict, List, Optional
+import traceback
+import uuid
 
-from departments.CEO.services.orchestration.pipeline import Pipeline, PipelineContext, PipelineResult
+from departments.CEO.services.orchestration.pipeline import PipelineContext
 from departments.CIO.schemas.video import DomainWorkflowRequest
-
-WorkflowEventCallback = Callable[[dict[str, Any]], Awaitable[None] | None]
+from departments.CIO.services.event_bus import WorkflowEventCallback
+from departments.CIO.services.workflow_runs import WorkflowRunService
 
 
 class WorkflowExecutionEngine:
-    """Thin CEO orchestrator that coordinates departmental pipelines end to end."""
+    """
+    Orchestrates multi-stage workflow execution.
 
-    def __init__(self, assembly: Any, recorder: Any):
+    Stages: CFO -> Research -> Analysis -> Planning -> Production -> QA -> Publish
+    """
+
+    def __init__(
+        self,
+        assembly,
+        workflow_run_service: Optional[WorkflowRunService] = None,
+        recorder=None,
+    ):
         self.assembly = assembly
-        self.recorder = recorder
+        self.workflow_run_service = (
+            workflow_run_service
+            or getattr(assembly, "workflow_run_service", None)
+            or WorkflowRunService()
+        )
+        self.recorder = recorder or getattr(assembly, "recorder", None)
+        self.control_plane = assembly.control_plane
 
     async def run_domain_workflow(
         self,
         request: DomainWorkflowRequest,
         *,
+        trigger_id: Optional[str] = None,
+        trace_id: Optional[str] = None,
         event_callback: WorkflowEventCallback | None = None,
-    ) -> dict[str, Any]:
-        trace_id = uuid4().hex
-        request_bundle = {**request.model_dump(), "trace_id": trace_id}
-        run_record = None
+    ) -> Dict[str, Any]:
+        """Execute complete domain workflow."""
+        trace_id = trace_id or str(uuid.uuid4())
 
-        ceo_plan = (
-            await self.recorder.call_skill(
-                trace_id=trace_id,
-                parent_id="ceo.workflow",
-                skill=self.assembly.get_skill("ceo.workflow"),
-                input_bundle=request_bundle,
-                method_name="build_plan",
-            )
-        ).raw_output
+        run = await self.workflow_run_service.create_run(
+            trace_id=trace_id,
+            workflow_type="domain_auto_run",
+            domain=request.domain,
+            platform=request.platform,
+            input_params=request.model_dump(),
+            trigger_id=trigger_id,
+        )
+
+        workflow_run_id = run.uuid
+        context = PipelineContext(trace_id=trace_id, workflow_run_id=workflow_run_id, request=request)
 
         try:
-            run_record = await self.assembly.workflow_run_service.create_run(
-                trace_id=trace_id,
-                workflow_type="domain_auto_run",
-                domain=request.domain,
-                platform=request.platform,
-                audience=request.audience,
-                publish_goal=request.publish_goal,
-                content_type=request.content_type,
-                style=request.style,
-                video_style=request.video_style,
-                duration=request.duration,
-                expanded_queries=[],
-            )
-            context = PipelineContext(
-                trace_id=trace_id,
-                workflow_run_id=run_record.uuid,
-                request=request,
-            )
-            await self.recorder.record_log(
-                trace_id=trace_id,
-                source="ceo.workflow",
-                level="info",
-                message="workflow accepted by CEO",
-                workflow_run_id=run_record.uuid,
-                context={"domain": request.domain, "platform": request.platform},
-            )
-
-            finance_result = await self._run_stage(
-                stage="lead.cfo",
-                message="CFO is validating the budget gate.",
+            failed_stage = "CFO"
+            cfo_result = await self._run_stage(
+                "lead.cfo",
                 context=context,
-                event_callback=event_callback,
-                pipeline=self.assembly.finance_pipeline,
                 input_bundle={},
+                event_callback=event_callback,
             )
-            finance_bundle = finance_result.bundle
-            await self.recorder.record_artifact(
-                trace_id=trace_id,
-                source="lead.cfo",
-                artifact_type="finance.bundle",
-                payload=finance_bundle,
-            )
+            await self._record_artifact(trace_id, "lead.cfo", "finance_bundle", cfo_result)
 
+            failed_stage = "Research"
             research_result = await self._run_stage(
-                stage="lead.research",
-                message="CSO is expanding queries and collecting hotspots.",
+                "lead.research",
                 context=context,
-                event_callback=event_callback,
-                pipeline=self.assembly.research_pipeline,
                 input_bundle={},
+                event_callback=event_callback,
             )
-            if not research_result.bundle["selected_hotspots"]:
-                raise ValueError("No hotspots available for the requested domain")
-            await self.recorder.record_artifact(
-                trace_id=trace_id,
-                source="lead.research",
-                artifact_type="research.bundle",
-                payload=research_result.bundle["bundle"],
-            )
+            await self._record_artifact(trace_id, "lead.research", "research_bundle", research_result)
 
+            failed_stage = "Analysis"
             analysis_result = await self._run_stage(
-                stage="lead.analysis",
-                message="CCO is reverse engineering content structure and risks.",
+                "lead.analysis",
                 context=context,
+                input_bundle={"hotspots": research_result.get("selected_hotspots", [])},
                 event_callback=event_callback,
-                pipeline=self.assembly.analysis_pipeline,
-                input_bundle={"hotspots": research_result.bundle["selected_hotspots"]},
             )
-            await self.recorder.record_artifact(
-                trace_id=trace_id,
-                source="lead.analysis",
-                artifact_type="analysis.bundle",
-                payload=analysis_result.bundle["bundle"],
-            )
+            await self._record_artifact(trace_id, "lead.analysis", "analysis_bundle", analysis_result)
 
-            planning_result = await self._run_planning_stage(
+            failed_stage = "Planning"
+            planning_result = await self._run_stage(
+                "lead.planning",
                 context=context,
+                input_bundle={
+                    "hotspots": research_result.get("selected_hotspots", []),
+                    "analyses": analysis_result.get("analysis_reports", []),
+                },
                 event_callback=event_callback,
+            )
+            await self._record_artifact(trace_id, "lead.research_development", "planning_bundle", planning_result)
+
+            failed_stage = "Production"
+            production_result = await self._run_stage(
+                "lead.production",
+                context=context,
+                input_bundle={
+                    "planning_bundle": planning_result,
+                    "primary_analysis": self._extract_primary_analysis(analysis_result),
+                    "qa_feedback": None,
+                },
+                event_callback=event_callback,
+            )
+            await self._record_artifact(trace_id, "lead.production", "production_bundle", production_result)
+
+            failed_stage = "QA"
+            planning_result, production_result, qa_result = await self._run_qa_stage(
+                context=context,
                 research_result=research_result,
                 analysis_result=analysis_result,
-                message="CTO is building the planning and prompt package.",
-            )
-            production_result = await self._run_production_stage(
-                context=context,
-                event_callback=event_callback,
                 planning_result=planning_result,
-                analysis_result=analysis_result,
-                qa_feedback=None,
-                message="COO is generating the script and production assets.",
-            )
-            qa_result = await self._run_qa_stage(
-                context=context,
-                event_callback=event_callback,
-                planning_result=planning_result,
-                analysis_result=analysis_result,
                 production_result=production_result,
-                message="CQO is running the quality gate.",
-            )
-
-            max_qa_rework_attempts = int(self.assembly.control_plane.get_qa_rework_policy().get("max_attempts", 1) or 0)
-            qa_rework_attempts = 0
-            while qa_result.status == "rework" and qa_rework_attempts < max_qa_rework_attempts:
-                qa_rework_attempts += 1
-                planning_result, production_result, qa_result = await self._run_qa_rework(
-                    context=context,
-                    event_callback=event_callback,
-                    planning_result=planning_result,
-                    analysis_result=analysis_result,
-                    research_result=research_result,
-                    qa_result=qa_result,
-                    attempt=qa_rework_attempts,
-                    max_attempts=max_qa_rework_attempts,
-                )
-
-            if qa_result.status == "rework":
-                recommendation = qa_result.bundle["qa_report"]["recommendation"]
-                await self.recorder.record_log(
-                    trace_id=context.trace_id,
-                    source="ceo.workflow",
-                    level="error",
-                    message="QA rework attempts exhausted",
-                    workflow_run_id=context.workflow_run_id,
-                    context={
-                        "max_attempts": max_qa_rework_attempts,
-                        "recommendation": recommendation,
-                    },
-                )
-                raise ValueError(recommendation)
-
-            publish_result = await self._run_stage(
-                stage="lead.publish",
-                message="CAO is preparing external delivery and publishing.",
-                context=context,
+                trace_id=trace_id,
                 event_callback=event_callback,
-                pipeline=self.assembly.publish_pipeline,
+            )
+
+            failed_stage = "Publish"
+            publish_result = await self._run_stage(
+                "lead.publish",
+                context=context,
                 input_bundle={
-                    "production_bundle": production_result.bundle["bundle"],
-                    "qa_bundle": qa_result.bundle,
+                    "production_bundle": self._resolve_stage_bundle(production_result),
+                    "qa_bundle": qa_result,
                 },
+                event_callback=event_callback,
             )
-            await self.recorder.record_artifact(
+            await self._record_artifact(trace_id, "lead.publish", "publish_bundle", publish_result)
+
+            result_payload = self._build_result_payload(
+                workflow_run_id=workflow_run_id,
                 trace_id=trace_id,
-                source="lead.publish",
-                artifact_type="publish.bundle",
-                payload=publish_result.bundle["bundle"],
+                trigger_id=trigger_id,
+                domain=request.domain,
+                platform=request.platform,
+                input_params=request.model_dump(),
+                cfo_result=cfo_result,
+                research_result=research_result,
+                analysis_result=analysis_result,
+                planning_result=planning_result,
+                production_result=production_result,
+                qa_result=qa_result,
+                publish_result=publish_result,
             )
 
-            video_task = production_result.bundle.get("video_task")
-            render_bundle = production_result.bundle["trace_bundle"]["render_bundle"]
-            prompt_package_payload = {
-                "selected_hotspot_ids": [item["uuid"] for item in research_result.bundle["selected_hotspots"]],
-                **planning_result.bundle["prompt_package"],
-            }
-            video_url = (
-                getattr(video_task, "video_url", None)
-                if video_task is not None
-                else render_bundle.get("delivery_asset_url")
-            )
-            result_payload = {
-                "domain": request.domain,
-                "platform": request.platform,
-                "workflow_run_id": run_record.uuid,
-                "trace_id": trace_id,
-                "finance_bundle": finance_bundle,
-                "expanded_queries": research_result.bundle["expanded_queries"],
-                "selected_hotspots": research_result.bundle["selected_hotspots"],
-                "prompt_package": prompt_package_payload,
-                "analysis_ids": analysis_result.bundle["bundle"]["analysis_ids"],
-                "script_id": production_result.bundle["script"].uuid,
-                "script_status": production_result.bundle["script"].status,
-                "qa_status": qa_result.bundle["qa_report"]["qa_status"],
-                "video_task_id": getattr(video_task, "uuid", None),
-                "video_status": getattr(video_task, "status", None) if video_task is not None else None,
-                "video_url": video_url,
-                "workflow_notes": [
-                    *finance_result.notes,
-                    *research_result.notes,
-                    *analysis_result.notes,
-                    *planning_result.notes,
-                    *production_result.notes,
-                    *qa_result.notes,
-                    *publish_result.notes,
-                ],
-                "ceo_plan": ceo_plan.run_plan,
-                "lead_route_list": ceo_plan.lead_route_list,
-                "research_bundle": research_result.bundle["bundle"],
-                "analysis_bundle": analysis_result.bundle["bundle"],
-                "prompt_bundle": planning_result.bundle["prompt_bundle"],
-                "production_bundle": production_result.bundle["trace_bundle"],
-                "qa_bundle": qa_result.bundle["bundle"],
-                "publish_bundle": publish_result.bundle["bundle"],
-            }
-
-            await self.assembly.workflow_run_service.mark_completed(
-                run_record,
-                expanded_queries=research_result.bundle["expanded_queries"],
-                selected_hotspot_ids=[item["uuid"] for item in research_result.bundle["selected_hotspots"]],
-                prompt_package=prompt_package_payload,
-                analysis_ids=analysis_result.bundle["bundle"]["analysis_ids"],
-                script_id=production_result.bundle["script"].uuid,
-                video_task_id=getattr(video_task, "uuid", None),
-                result_payload=result_payload,
-            )
-            await self.recorder.record_log(
-                trace_id=trace_id,
-                source="ceo.workflow",
-                level="info",
-                message="workflow completed",
-                workflow_run_id=run_record.uuid,
-                context={"qa_status": qa_result.bundle["qa_report"]["qa_status"]},
-            )
+            await self._mark_run_completed(run, result_payload)
             return result_payload
+
         except Exception as exc:
-            if run_record is not None:
-                await self.assembly.workflow_run_service.mark_failed(run_record, error_message=str(exc))
-            await self.recorder.record_log(
+            failure_context = await self._build_failure_context(
+                workflow_run_id=workflow_run_id,
                 trace_id=trace_id,
-                source="ceo.workflow",
-                level="error",
-                message="workflow failed",
-                workflow_run_id=getattr(run_record, "uuid", None),
-                context={"error": str(exc)},
+                trigger_id=trigger_id,
+                domain=request.domain,
+                platform=request.platform,
+                input_params=request.model_dump(),
+                failed_stage=failed_stage,
+                error=str(exc),
+                traceback=traceback.format_exc(),
+            )
+            await self._mark_run_failed(run, failure_context, str(exc))
+            raise
+
+    async def _run_stage(
+        self,
+        lead_role: str,
+        *,
+        context: PipelineContext,
+        input_bundle: Dict[str, Any],
+        event_callback: WorkflowEventCallback | None = None,
+    ) -> Dict[str, Any]:
+        """Execute a single workflow stage against the pipeline contract."""
+        pipeline_map = {
+            "lead.cfo": self.assembly.finance_pipeline,
+            "lead.research": self.assembly.research_pipeline,
+            "lead.analysis": self.assembly.analysis_pipeline,
+            "lead.planning": self.assembly.planning_pipeline,
+            "lead.production": self.assembly.production_pipeline,
+            "lead.qa": self.assembly.qa_pipeline,
+            "lead.publish": self.assembly.publish_pipeline,
+        }
+
+        pipeline = pipeline_map.get(lead_role)
+        if not pipeline:
+            raise ValueError(f"Unknown lead_role: {lead_role}")
+
+        await self._record_stage_status(
+            trace_id=context.trace_id,
+            workflow_run_id=context.workflow_run_id,
+            stage=lead_role,
+            status="running",
+            message=self._build_stage_status_message(lead_role, "running"),
+            event_callback=event_callback,
+        )
+
+        try:
+            if hasattr(pipeline, "run"):
+                result = await pipeline.run(context, input_bundle)
+                normalized = self._normalize_stage_result(result)
+            elif hasattr(pipeline, "execute"):
+                result = await pipeline.execute(**input_bundle)
+                normalized = self._normalize_stage_result(result)
+            else:
+                raise TypeError(f"Pipeline for {lead_role} does not expose run() or execute()")
+        except Exception as exc:
+            await self._record_stage_status(
+                trace_id=context.trace_id,
+                workflow_run_id=context.workflow_run_id,
+                stage=lead_role,
+                status="failed",
+                message=self._build_stage_status_message(lead_role, "failed", detail=str(exc)),
+                event_callback=event_callback,
             )
             raise
 
-    async def _run_planning_stage(
-        self,
-        *,
-        context: PipelineContext,
-        event_callback: WorkflowEventCallback | None,
-        research_result: PipelineResult,
-        analysis_result: PipelineResult,
-        message: str,
-    ) -> PipelineResult:
-        planning_result = await self._run_stage(
-            stage="lead.research_development",
-            message=message,
-            context=context,
-            event_callback=event_callback,
-            pipeline=self.assembly.planning_pipeline,
-            input_bundle={
-                "hotspots": research_result.bundle["selected_hotspots"],
-                "analyses": analysis_result.bundle["analysis_reports"],
-            },
-        )
-        await self.recorder.record_artifact(
-            trace_id=context.trace_id,
-            source="lead.research_development",
-            artifact_type="planning.bundle",
-            payload=planning_result.bundle["prompt_bundle"],
-        )
-        return planning_result
+        normalized_status = "success"
+        normalized_message = self._build_stage_status_message(lead_role, "success")
+        if lead_role == "lead.qa" and normalized.get("status") == "rework":
+            normalized_message = self._build_stage_status_message(lead_role, "success", detail="requested rework")
 
-    async def _run_production_stage(
-        self,
-        *,
-        context: PipelineContext,
-        event_callback: WorkflowEventCallback | None,
-        planning_result: PipelineResult,
-        analysis_result: PipelineResult,
-        qa_feedback: str | None,
-        message: str,
-    ) -> PipelineResult:
-        production_result = await self._run_stage(
-            stage="lead.production",
-            message=message,
-            context=context,
-            event_callback=event_callback,
-            pipeline=self.assembly.production_pipeline,
-            input_bundle={
-                "planning_bundle": planning_result.bundle,
-                "primary_analysis": analysis_result.bundle["analysis_reports"][0],
-                "qa_feedback": qa_feedback,
-            },
-        )
-        await self.recorder.record_artifact(
+        await self._record_stage_status(
             trace_id=context.trace_id,
-            source="lead.production",
-            artifact_type="production.bundle",
-            payload=production_result.bundle["trace_bundle"],
+            workflow_run_id=context.workflow_run_id,
+            stage=lead_role,
+            status=normalized_status,
+            message=normalized_message,
+            event_callback=event_callback,
         )
-        return production_result
+        return normalized
 
     async def _run_qa_stage(
         self,
         *,
         context: PipelineContext,
-        event_callback: WorkflowEventCallback | None,
-        planning_result: PipelineResult,
-        analysis_result: PipelineResult,
-        production_result: PipelineResult,
-        message: str,
-    ) -> PipelineResult:
-        qa_result = await self._run_stage(
-            stage="lead.qa",
-            message=message,
-            context=context,
-            event_callback=event_callback,
-            pipeline=self.assembly.qa_pipeline,
-            input_bundle={
-                "prompt_bundle": planning_result.bundle["prompt_bundle"],
-                "analysis_bundle": analysis_result.bundle["bundle"],
-                "production_bundle": production_result.bundle["bundle"],
-            },
-        )
-        await self.recorder.record_artifact(
-            trace_id=context.trace_id,
-            source="lead.qa",
-            artifact_type="qa.bundle",
-            payload=qa_result.bundle["bundle"],
-        )
-        return qa_result
+        research_result: Dict[str, Any],
+        analysis_result: Dict[str, Any],
+        planning_result: Dict[str, Any],
+        production_result: Dict[str, Any],
+        trace_id: str,
+        event_callback: WorkflowEventCallback | None = None,
+    ) -> tuple[Dict[str, Any], Dict[str, Any], Dict[str, Any]]:
+        """
+        Run QA stage with rework loop.
 
-    async def _run_qa_rework(
-        self,
-        *,
-        context: PipelineContext,
-        event_callback: WorkflowEventCallback | None,
-        planning_result: PipelineResult,
-        analysis_result: PipelineResult,
-        research_result: PipelineResult,
-        qa_result: PipelineResult,
-        attempt: int,
-        max_attempts: int,
-    ) -> tuple[PipelineResult, PipelineResult, PipelineResult]:
-        qa_report = qa_result.bundle["qa_report"]
-        reroute = self.assembly.qa_reroute_service.determine_reroute(qa_report)
-        await self.recorder.record_log(
-            trace_id=context.trace_id,
-            source="ceo.workflow",
-            level="info",
-            message="QA requested reroute",
-            workflow_run_id=context.workflow_run_id,
-            context={
-                "attempt": attempt,
-                "max_attempts": max_attempts,
-                "strategy": reroute.strategy,
-                "route_key": reroute.route_key,
-                "target": reroute.target,
-                "failed_dimensions": qa_report.get("failed_dimensions", []),
-            },
+        Supports configurable max rework attempts from control plane.
+        """
+        qa_policy = self.control_plane.get_qa_rework_policy()
+        max_reworks = max(
+            int(
+                qa_policy.get(
+                    "max_rework_attempts",
+                    qa_policy.get("max_attempts", 1),
+                )
+                or 0
+            ),
+            0,
         )
+        total_attempts = max_reworks + 1
 
-        qa_feedback = qa_report.get("recommendation")
-        if reroute.target == "lead.research_development":
-            planning_result = await self._run_planning_stage(
+        attempt = 0
+        qa_result: Dict[str, Any] | None = None
+
+        while attempt < total_attempts:
+            attempt += 1
+            qa_result = await self._run_stage(
+                "lead.qa",
                 context=context,
+                input_bundle={
+                    "prompt_bundle": planning_result.get("prompt_bundle", {}),
+                    "analysis_bundle": analysis_result.get("bundle", {}),
+                    "production_bundle": self._resolve_stage_bundle(production_result),
+                },
                 event_callback=event_callback,
-                research_result=research_result,
-                analysis_result=analysis_result,
-                message="CTO is revising the planning package based on CQO feedback.",
             )
 
-        if reroute.target not in {"lead.production", "lead.research_development"}:
-            raise ValueError(f"Unsupported QA reroute target: {reroute.target}")
+            await self._record_artifact(trace_id, "lead.qa", "qa_bundle", qa_result)
 
-        production_result = await self._run_production_stage(
-            context=context,
-            event_callback=event_callback,
-            planning_result=planning_result,
-            analysis_result=analysis_result,
-            qa_feedback=qa_feedback,
-            message="COO is reworking production based on CQO feedback.",
-        )
-        qa_result = await self._run_qa_stage(
-            context=context,
-            event_callback=event_callback,
-            planning_result=planning_result,
-            analysis_result=analysis_result,
-            production_result=production_result,
-            message="CQO is reviewing the reworked production output.",
-        )
+            if qa_result.get("status") != "rework":
+                break
+
+            if attempt >= total_attempts:
+                break
+
+            qa_report = qa_result.get("qa_report", qa_result)
+            reroute = self.assembly.qa_reroute_service.determine_reroute(qa_report)
+            qa_feedback = qa_report.get("recommendation")
+
+            await self._record_log(
+                trace_id=trace_id,
+                source="lead.qa",
+                workflow_run_id=context.workflow_run_id,
+                level="warning",
+                message="QA requested reroute",
+                context={
+                    "target": reroute.target,
+                    "route_key": reroute.route_key,
+                    "strategy": reroute.strategy,
+                    "attempt": attempt,
+                },
+            )
+
+            if reroute.target == "lead.research_development":
+                planning_result = await self._run_stage(
+                    "lead.planning",
+                    context=context,
+                    input_bundle={
+                        "hotspots": research_result.get("selected_hotspots", []),
+                        "analyses": analysis_result.get("analysis_reports", []),
+                    },
+                    event_callback=event_callback,
+                )
+                await self._record_artifact(
+                    trace_id,
+                    "lead.research_development",
+                    "planning_bundle",
+                    planning_result,
+                )
+
+            production_result = await self._run_stage(
+                "lead.production",
+                context=context,
+                input_bundle={
+                    "planning_bundle": planning_result,
+                    "primary_analysis": self._extract_primary_analysis(analysis_result),
+                    "qa_feedback": qa_feedback,
+                },
+                event_callback=event_callback,
+            )
+            await self._record_artifact(
+                trace_id,
+                "lead.production",
+                "production_bundle",
+                production_result,
+            )
+
+        if qa_result is None:
+            raise ValueError("QA stage produced no result")
+
+        if qa_result.get("status") == "rework":
+            recommendation = qa_result.get("qa_report", {}).get("recommendation") or qa_result.get(
+                "recommendation", "Manual review required"
+            )
+            raise ValueError(f"QA failed after {total_attempts} attempts: {recommendation}")
+
         return planning_result, production_result, qa_result
 
-    async def _run_stage(
+    def _build_result_payload(self, **kwargs) -> Dict[str, Any]:
+        """Build success result payload."""
+        research_result = kwargs.get("research_result", {}) or {}
+        analysis_result = kwargs.get("analysis_result", {}) or {}
+        planning_result = kwargs.get("planning_result", {}) or {}
+        production_result = kwargs.get("production_result", {}) or {}
+        qa_result = kwargs.get("qa_result", {}) or {}
+        publish_result = kwargs.get("publish_result", {}) or {}
+
+        production_bundle = self._resolve_stage_bundle(production_result)
+        script = production_bundle.get("script")
+        video_task = production_bundle.get("video_task")
+        render_bundle = production_bundle.get("render_bundle", {}) or {}
+        publish_bundle = publish_result.get("bundle", {}) or {}
+        qa_report = qa_result.get("qa_report", {}) or {}
+
+        video_url = (
+            getattr(video_task, "video_url", None)
+            or render_bundle.get("delivery_asset_url")
+        )
+
+        return {
+            "workflow_run_id": kwargs.get("workflow_run_id"),
+            "trace_id": kwargs.get("trace_id"),
+            "trigger_id": kwargs.get("trigger_id"),
+            "domain": kwargs.get("domain"),
+            "platform": kwargs.get("platform"),
+            "input_params": {
+                "domain": kwargs.get("domain"),
+                "platform": kwargs.get("platform"),
+                **(kwargs.get("input_params") or {}),
+            },
+            "status": "completed",
+            "finance_bundle": kwargs.get("cfo_result"),
+            "expanded_queries": research_result.get("expanded_queries", []),
+            "selected_hotspots": research_result.get("selected_hotspots", []),
+            "prompt_package": {
+                "selected_hotspot_ids": [
+                    item.get("uuid")
+                    for item in research_result.get("selected_hotspots", [])
+                    if isinstance(item, dict) and item.get("uuid")
+                ],
+                **(planning_result.get("prompt_package", {}) or {}),
+            },
+            "analysis_ids": analysis_result.get("bundle", {}).get("analysis_ids", []),
+            "script_id": getattr(script, "uuid", None) or production_result.get("script_id"),
+            "script_status": getattr(script, "status", None) or production_result.get("script_status"),
+            "qa_status": qa_report.get("qa_status") or qa_result.get("status"),
+            "video_task_id": getattr(video_task, "uuid", None) or production_result.get("video_task_id"),
+            "video_status": getattr(video_task, "status", None) or production_result.get("video_status"),
+            "video_url": video_url,
+            "publish_status": publish_bundle.get("publish_result", {}).get("status"),
+            "workflow_notes": self._aggregate_notes(kwargs),
+            "research_bundle": research_result.get("bundle"),
+            "analysis_bundle": analysis_result.get("bundle"),
+            "prompt_bundle": planning_result.get("prompt_bundle"),
+            "production_bundle": self._serialize_production_bundle(production_result),
+            "qa_bundle": self._serialize_qa_bundle(qa_result),
+            "publish_bundle": publish_bundle,
+        }
+
+    async def _build_failure_context(self, **kwargs) -> Dict[str, Any]:
+        """Build failure context with all available artifacts."""
+        return {
+            "workflow_run_id": kwargs.get("workflow_run_id"),
+            "trace_id": kwargs.get("trace_id"),
+            "trigger_id": kwargs.get("trigger_id"),
+            "domain": kwargs.get("domain"),
+            "platform": kwargs.get("platform"),
+            "input_params": {
+                "domain": kwargs.get("domain"),
+                "platform": kwargs.get("platform"),
+                **(kwargs.get("input_params") or {}),
+            },
+            "status": "failed",
+            "failed_stage": kwargs.get("failed_stage"),
+            "error": kwargs.get("error"),
+            "traceback": kwargs.get("traceback"),
+            "timestamp": datetime.now(UTC).isoformat(),
+        }
+
+    def _aggregate_notes(self, kwargs: Dict[str, Any]) -> List[str]:
+        """Aggregate notes from all stages."""
+        notes: List[str] = []
+        for key in [
+            "cfo_result",
+            "research_result",
+            "analysis_result",
+            "planning_result",
+            "production_result",
+            "qa_result",
+            "publish_result",
+        ]:
+            result = kwargs.get(key, {}) or {}
+            if result and "notes" in result:
+                notes.extend(result["notes"])
+        return notes
+
+    def _normalize_stage_result(self, result: Any) -> Dict[str, Any]:
+        if hasattr(result, "bundle") and hasattr(result, "status") and hasattr(result, "notes"):
+            payload = dict(result.bundle or {})
+            payload["status"] = result.status
+            payload["notes"] = list(result.notes or [])
+            return payload
+        if isinstance(result, dict):
+            return dict(result)
+        raise TypeError(f"Unsupported stage result type: {type(result)!r}")
+
+    def _extract_primary_analysis(self, analysis_result: Dict[str, Any]) -> Any:
+        analyses = analysis_result.get("analysis_reports") or []
+        return analyses[0] if analyses else None
+
+    def _resolve_stage_bundle(self, stage_result: Dict[str, Any]) -> Dict[str, Any]:
+        bundle = dict(stage_result or {})
+        nested_bundle = bundle.pop("bundle", None)
+        trace_bundle = bundle.pop("trace_bundle", None)
+        resolved: Dict[str, Any] = {}
+        if isinstance(nested_bundle, dict):
+            resolved.update(nested_bundle)
+        if isinstance(trace_bundle, dict):
+            resolved = {**trace_bundle, **resolved}
+        resolved = {**resolved, **bundle}
+        return resolved
+
+    def _serialize_production_bundle(self, production_result: Dict[str, Any]) -> Dict[str, Any]:
+        production_bundle = self._resolve_stage_bundle(production_result)
+        script = production_bundle.get("script")
+        video_task = production_bundle.get("video_task")
+        return {
+            **production_bundle,
+            "script": self._serialize_script(script),
+            "video_task": self._serialize_video_task(video_task),
+        }
+
+    def _serialize_qa_bundle(self, qa_result: Dict[str, Any]) -> Dict[str, Any]:
+        qa_bundle = dict(qa_result.get("bundle", {}) or {})
+        qa_bundle.setdefault("qa_report", qa_result.get("qa_report"))
+        checks = qa_bundle.get("checks") if isinstance(qa_bundle.get("checks"), list) else []
+        qa_bundle["failed_dimensions"] = [
+            check for check in checks
+            if isinstance(check, dict) and check.get("applicable") and not check.get("pass")
+        ]
+        qa_bundle["total_checks"] = len(checks)
+        qa_bundle["applicable_checks"] = sum(
+            1 for check in checks
+            if isinstance(check, dict) and check.get("applicable")
+        )
+        qa_bundle["passed_checks"] = sum(
+            1 for check in checks
+            if isinstance(check, dict) and check.get("applicable") and check.get("pass")
+        )
+        return qa_bundle
+
+    async def _record_artifact(
+        self,
+        trace_id: str,
+        source: str,
+        artifact_type: str,
+        payload: Dict[str, Any],
+    ) -> None:
+        if not self.recorder or not hasattr(self.recorder, "record_artifact"):
+            return
+        await self.recorder.record_artifact(
+            trace_id=trace_id,
+            source=source,
+            artifact_type=artifact_type,
+            payload=payload,
+        )
+
+    async def _record_log(
         self,
         *,
-        stage: str,
+        trace_id: str,
+        source: str,
+        workflow_run_id: str,
+        level: str,
         message: str,
-        context: PipelineContext,
+        context: Dict[str, Any],
+    ) -> None:
+        if not self.recorder or not hasattr(self.recorder, "record_log"):
+            return
+        await self.recorder.record_log(
+            trace_id=trace_id,
+            source=source,
+            workflow_run_id=workflow_run_id,
+            level=level,
+            message=message,
+            context=context,
+        )
+
+    async def _record_stage_status(
+        self,
+        *,
+        trace_id: str,
+        workflow_run_id: str,
+        stage: str,
+        status: str,
+        message: str,
         event_callback: WorkflowEventCallback | None,
-        pipeline: Pipeline,
-        input_bundle: dict[str, Any],
-    ) -> PipelineResult:
+    ) -> None:
+        if not self.recorder or not hasattr(self.recorder, "record_status"):
+            return
         await self.recorder.record_status(
-            trace_id=context.trace_id,
+            trace_id=trace_id,
             stage=stage,
-            status="running",
-            workflow_run_id=context.workflow_run_id,
+            status=status,
+            workflow_run_id=workflow_run_id,
             message=message,
             event_callback=event_callback,
         )
-        try:
-            result = await pipeline.run(context, input_bundle)
-        except Exception as exc:
-            await self.recorder.record_status(
-                trace_id=context.trace_id,
-                stage=stage,
-                status="failed",
-                workflow_run_id=context.workflow_run_id,
-                message=f"{stage} failed: {exc}",
-                event_callback=event_callback,
-            )
-            raise
 
-        completion_message = f"{stage} completed"
-        if result.status == "rework":
-            completion_message = f"{stage} completed and requested rework"
-        await self.recorder.record_status(
-            trace_id=context.trace_id,
-            stage=stage,
-            status="success",
-            workflow_run_id=context.workflow_run_id,
-            message=completion_message,
-            event_callback=event_callback,
+    def _build_stage_status_message(self, stage: str, status: str, detail: str | None = None) -> str:
+        if status == "running":
+            return f"{stage} started"
+        if status == "failed":
+            return f"{stage} failed: {detail or 'unknown error'}"
+        if detail:
+            return f"{stage} completed: {detail}"
+        return f"{stage} completed"
+
+    async def _mark_run_completed(self, run: Any, result_payload: Dict[str, Any]) -> None:
+        await self.workflow_run_service.update_run_status(
+            run_id=run.id,
+            status="completed",
+            result_payload=result_payload,
         )
-        return result
+
+    async def _mark_run_failed(self, run: Any, failure_context: Dict[str, Any], error_message: str) -> None:
+        await self.workflow_run_service.update_run_status(
+            run_id=run.id,
+            status="failed",
+            result_payload=failure_context,
+        )
+
+    def _serialize_script(self, script: Any) -> Any:
+        if script is None:
+            return None
+        serializer = getattr(self.assembly, "serialize_script", None)
+        if callable(serializer):
+            return serializer(script)
+        if hasattr(script, "__dict__"):
+            return dict(vars(script))
+        return script
+
+    def _serialize_video_task(self, video_task: Any) -> Any:
+        if video_task is None:
+            return None
+        serializer = getattr(self.assembly, "serialize_video_task", None)
+        if callable(serializer):
+            return serializer(video_task)
+        if hasattr(video_task, "__dict__"):
+            return dict(vars(video_task))
+        return video_task

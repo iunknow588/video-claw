@@ -98,7 +98,7 @@ def _build_failed_message(stage: str, raw_message: str) -> str:
     stage_label = PUBLIC_STAGE_LABELS.get(stage, stage or "流程阶段")
     prefix = f"{stage} failed:"
     if raw_message.lower().startswith(prefix.lower()):
-        reason = raw_message[len(prefix) :].strip()
+        reason = raw_message[len(prefix):].strip()
     else:
         reason = raw_message.strip()
 

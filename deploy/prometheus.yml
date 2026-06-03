@@ -1,0 +1,24 @@
+"""
+Prometheus configuration for workflow monitoring.
+"""
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - "workflow_alerts.yml"
+
+scrape_configs:
+  - job_name: 'workflow-app'
+    static_configs:
+      - targets: ['app:9090']
+    metrics_path: '/metrics'
+    
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093']

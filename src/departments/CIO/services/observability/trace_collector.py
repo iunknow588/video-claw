@@ -12,7 +12,7 @@ class TraceCollector:
         self.workflow_step_service = workflow_step_service
 
     async def append(self, event: Any) -> Any | None:
-        if event.kind not in {"trace"}:
+        if event.kind not in {"trace", "status"}:
             return None
         return await self.workflow_step_service.record_event(event)
 

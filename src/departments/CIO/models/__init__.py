@@ -11,7 +11,7 @@ from departments.CIO.models.script import Script
 from departments.CIO.models.step_log import WorkflowStepLog
 from departments.CIO.models.system_setting import SystemSettingRecord
 from departments.CIO.models.video import VideoTask
-from departments.CIO.models.workflow import WorkflowRun
+from departments.CIO.models.workflow import WorkflowRun, WorkflowTrigger
 
 __all__ = [
     "AnalysisReport",
@@ -26,4 +26,5 @@ __all__ = [
     "Script",
     "VideoTask",
     "WorkflowRun",
+    "WorkflowTrigger",
 ]
