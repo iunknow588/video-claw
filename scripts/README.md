@@ -1,15 +1,26 @@
-Normalize text files script
+Script layout
 
-Usage:
+- `runtime/`
+  - `run_local.cmd`
+  - `run_local.ps1`
+- `git/`
+  - `get.cmd`
+  - `get.ps1`
+  - `commit.cmd`
+  - `commit.ps1`
+- `text/`
+  - `normalize_text_files.py`
+  - `check_line_endings.py`
 
-From project root or scripts folder run:
+Common commands
 
 ```powershell
-python scripts\normalize_text_files.py --root . --dry-run
-python scripts\normalize_text_files.py --root . --fix
+scripts\runtime\run_local.cmd
+python scripts\text\normalize_text_files.py --root . --dry-run
+python scripts\text\normalize_text_files.py --root . --fix
 ```
 
-Notes:
-- Script will skip binary files and common asset directories (`.git`, `runtime`, `node_modules`, `venv`, `__pycache__`).
-- If `chardet` is installed it will improve encoding detection; otherwise the script falls back to UTF-8/latin-1 heuristics.
-- Always run with `--dry-run` first to review changes before `--fix`.
+Notes
+
+- Git scripts read repository remote settings from the repository root `.env`.
+- Text scripts skip binary files and common asset directories such as `.git`, `runtime`, `node_modules`, `venv`, and `__pycache__`.

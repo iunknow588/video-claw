@@ -44,7 +44,12 @@ function Get-EnvFileValues {
 }
 
 function Load-RepoUrlsFromEnv {
-    $envPath = Join-Path $PSScriptRoot ".env"
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$RepoRoot
+    )
+
+    $envPath = Join-Path $RepoRoot ".env"
     if (-not (Test-Path $envPath)) {
         return
     }
@@ -145,8 +150,9 @@ function Ensure-OriginRemote {
 # =============================================================================
 # Main
 # =============================================================================
-Load-RepoUrlsFromEnv
 $root = Resolve-RepoRoot -CreateIfMissing
+$root = [System.IO.Path]::GetFullPath($root)
+Load-RepoUrlsFromEnv -RepoRoot $root
 $repoCreated = Initialize-RepositoryIfMissing -Root $root
 Set-Location $root
 Ensure-OriginRemote

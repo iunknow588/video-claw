@@ -213,7 +213,7 @@ if ($PrepareOnly) {
     Write-Host "Python: $pythonExe"
     Write-Host "Database: $(if ($UseProjectDatabase) { 'project .env / config' } else { $env:DATABASE_URL })"
     Write-Host "Port: $resolvedPort"
-    Write-Host "Next: scripts\\run_local.cmd or .\\scripts\\run_local.ps1"
+    Write-Host "Next: scripts\\runtime\\run_local.cmd or .\\scripts\\runtime\\run_local.ps1"
     exit 0
 }
 

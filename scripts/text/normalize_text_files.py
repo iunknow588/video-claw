@@ -2,8 +2,8 @@
 """
 Normalize text file encodings to UTF-8 (no BOM) and line endings to LF.
 Usage:
-  python normalize_text_files.py --root ".." --fix
-  python normalize_text_files.py --root ".." --dry-run
+  python scripts/text/normalize_text_files.py --root . --fix
+  python scripts/text/normalize_text_files.py --root . --dry-run
 
 Notes:
 - Skips binary files and common asset directories by default.
@@ -50,6 +50,7 @@ SKIP_EXT = {
 }
 
 CHUNK = 8192
+DEFAULT_ROOT = Path(__file__).resolve().parents[2]
 
 
 def is_binary_bytes(data: bytes) -> bool:
@@ -175,7 +176,7 @@ def walk_and_apply(root: Path, fix: bool, dry_run: bool):
 
 def main():
     parser = argparse.ArgumentParser(description="Normalize text files to UTF-8 (no BOM) and LF line endings")
-    parser.add_argument("--root", default="..", help="Project root to scan")
+    parser.add_argument("--root", default=str(DEFAULT_ROOT), help="Project root to scan")
     parser.add_argument("--fix", action="store_true", help="Actually write changes")
     parser.add_argument("--dry-run", action="store_true", help="Do not write, only show what would change")
     parser.add_argument("--verbose", action="store_true")

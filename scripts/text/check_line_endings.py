@@ -9,10 +9,10 @@ files = [
     'deploy/docker-compose.yml',
     'deploy/prometheus.yml',
     'deploy/workflow_alerts.yml',
-    'scripts/run_local.cmd',
+    'scripts/runtime/run_local.cmd',
 ]
 
-root = Path('.')
+root = Path(__file__).resolve().parents[2]
 print('Checking files for CRLF and BOM')
 for f in files:
     p = root / f
