@@ -39,11 +39,16 @@ class CMOService:
         self,
         message: str,
         *,
+        workflow_params: dict[str, Any] | None = None,
         event_callback: PromotionEventCallback | None = None,
     ) -> None:
         parsed = await self._invoke_skill(
             self.chat_ui_skill,
-            {"action": "interpret_user_message", "message": message},
+            {
+                "action": "interpret_user_message",
+                "message": message,
+                "workflow_params": workflow_params or {},
+            },
         )
         intent = parsed.get("intent")
 

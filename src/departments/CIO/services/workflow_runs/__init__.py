@@ -116,7 +116,8 @@ class WorkflowRunService:
         self,
         run_id: int,
         status: str,
-        result_payload: Optional[Dict[str, Any]] = None
+        result_payload: Optional[Dict[str, Any]] = None,
+        error_message: Optional[str] = None,
     ) -> WorkflowRun:
         """Update workflow run status."""
         if hasattr(self.repository, "get_run_by_id") and hasattr(self.repository, "update_run"):
@@ -129,8 +130,15 @@ class WorkflowRunService:
             }
             if result_payload is not None:
                 updates["result_payload"] = result_payload
+            if error_message is not None:
+                updates["error_message"] = error_message
             return await self.repository.update_run(run, updates)
-        return await self.repository.update_status(run_id, status, result_payload)
+        return await self.repository.update_status(
+            run_id,
+            status,
+            result_payload,
+            error_message=error_message,
+        )
 
 
 class WorkflowRunRepository:
@@ -175,7 +183,8 @@ class WorkflowRunRepository:
         self,
         run_id: int,
         status: str,
-        result_payload: Optional[Dict[str, Any]] = None
+        result_payload: Optional[Dict[str, Any]] = None,
+        error_message: Optional[str] = None,
     ) -> WorkflowRun:
         """Update workflow run status."""
         async with database_runtime.session_factory()() as session:
@@ -185,6 +194,8 @@ class WorkflowRunRepository:
                 run.updated_at = datetime.now(UTC)
                 if result_payload is not None:
                     run.result_payload = result_payload
+                if error_message is not None:
+                    run.error_message = error_message
                 await session.commit()
                 await session.refresh(run)
             return run

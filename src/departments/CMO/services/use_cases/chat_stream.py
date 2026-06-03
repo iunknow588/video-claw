@@ -18,7 +18,12 @@ class ChatStreamUseCase:
         self.session = session
         self.service = CMOService(session)
 
-    async def stream_user_message(self, message: str) -> AsyncIterator[str]:
+    async def stream_user_message(
+        self,
+        message: str,
+        *,
+        workflow_params: dict[str, Any] | None = None,
+    ) -> AsyncIterator[str]:
         event_queue: asyncio.Queue[dict[str, Any] | None] = asyncio.Queue()
 
         async def publish(event: dict[str, Any]) -> None:
@@ -26,7 +31,11 @@ class ChatStreamUseCase:
 
         async def produce() -> None:
             try:
-                await self.service.handle_user_message(message, event_callback=publish)
+                await self.service.handle_user_message(
+                    message,
+                    workflow_params=workflow_params,
+                    event_callback=publish,
+                )
             except Exception as exc:
                 await self.session.rollback()
                 await event_queue.put(

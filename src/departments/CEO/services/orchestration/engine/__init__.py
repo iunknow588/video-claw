@@ -584,6 +584,7 @@ class WorkflowExecutionEngine:
             run_id=run.id,
             status="failed",
             result_payload=failure_context,
+            error_message=error_message,
         )
 
     def _serialize_script(self, script: Any) -> Any:

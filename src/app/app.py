@@ -61,11 +61,10 @@ def create_application() -> FastAPI:
     )
 
     cao_console_path = Path(__file__).resolve().parents[1] / "departments" / "CAO" / "console" / "index.html"
-    cao_console_html = cao_console_path.read_text(encoding="utf-8")
 
     @application.get("/cao", include_in_schema=False)
     async def cao_console():
-        return HTMLResponse(cao_console_html)
+        return HTMLResponse(cao_console_path.read_text(encoding="utf-8"))
 
     @application.get("/", include_in_schema=False)
     async def root_entry():

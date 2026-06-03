@@ -13,6 +13,8 @@ from departments.CHO.services import CHOService
 from departments.CCO.agent import AnalysisAgent
 from departments.COO.agent import ProductionAgent
 from departments.CSO.agent import ResearchAgent
+from departments.CMO.skills.chat_ui import ChatUISkill
+from departments.CSO.skills.domain_query_expansion import DomainQueryExpansionSkill
 from departments.CQO.skills import DeliveryAssetCheckSkill, RenderOutputCheckSkill
 from departments.CEO.skills.registry import ensure_builtin_skills_registered, registry
 
@@ -275,6 +277,18 @@ def test_skill_catalog_exposes_new_moneyprinter_style_adaptations():
     assert "delivery" in delivery_descriptor.tags
     assert "render" in render_descriptor.tags
     assert "render" in render_check_descriptor.tags
+
+
+def test_chat_ui_default_prompt_example_includes_video_type_and_platform():
+    skill = ChatUISkill()
+
+    empty_result = skill.execute({"action": "interpret_user_message", "message": ""})
+    help_result = skill.execute({"action": "interpret_user_message", "message": "你好"})
+
+    assert "知识讲解视频" in empty_result["reply_message"]
+    assert "小红书" in empty_result["reply_message"]
+    assert "知识讲解视频" in help_result["reply_message"]
+    assert "小红书" in help_result["reply_message"]
 
 
 def test_canonical_department_packages_expose_agents_and_skill_groups():

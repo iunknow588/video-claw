@@ -20,6 +20,57 @@ PUBLIC_WORKFLOW_TYPE_LABELS = {
     "domain_auto_run": "自动制作流程",
 }
 
+FAILED_STAGE_ALIAS_MAP = {
+    "CFO": "lead.cfo",
+    "Research": "lead.research",
+    "Analysis": "lead.analysis",
+    "Planning": "lead.research_development",
+    "Production": "lead.production",
+    "QA": "lead.qa",
+    "Publish": "lead.publish",
+}
+
+PUBLIC_SKILL_LABELS = {
+    "estimate_cost": "成本估算",
+    "verify_balance": "预算校验",
+    "charge": "预算扣减",
+    "domain_query_expansion": "检索词扩展",
+    "hotspot_collection": "热点采集",
+    "hotspot_dedup": "热点去重",
+    "hotspot_ranking": "热点排序",
+    "hotspot_snapshot": "热点归档",
+    "material_search": "素材检索",
+    "hotspot_structure": "结构拆解",
+    "hook_extraction": "钩子提取",
+    "emotion_curve": "情绪曲线分析",
+    "risk_extraction": "风险提取",
+    "reusable_element": "可复用元素提炼",
+    "analysis_persist": "分析结果归档",
+    "prompt_package": "提示词包生成",
+    "title_candidate": "标题候选生成",
+    "prompt_validation": "提示词校验",
+    "prompt_version": "提示词版本归档",
+    "script_draft": "脚本草案生成",
+    "subtitle_compose": "字幕合成",
+    "voiceover_generate": "配音生成",
+    "video_compose_plan": "视频合成规划",
+    "render_execute": "渲染执行",
+    "asset_storage": "资产入库",
+    "retry_recovery": "重试恢复",
+    "video_quality_check": "画面质量检查",
+    "content_compliance_check": "内容合规检查",
+    "gene_alignment_check": "爆款基因对齐检查",
+    "technical_spec_check": "技术规格检查",
+    "delivery_asset_check": "交付资产检查",
+    "render_output_check": "渲染结果检查",
+    "qa_report": "质检报告生成",
+    "publish_plan": "发布计划生成",
+    "platform_adapter": "平台适配",
+    "publish_execute": "发布执行",
+    "publish_callback": "发布回调登记",
+    "publish_history": "发布历史归档",
+}
+
 
 class CAOConsoleService:
     """CAO-facing public console service.
@@ -189,6 +240,8 @@ class CAOConsoleService:
                 }
             )
 
+        public_artifacts = self._build_public_artifacts(result_payload)
+
         return self._serialize_public_payload(
             {
                 "run": self._serialize_public_run(run),
@@ -197,6 +250,11 @@ class CAOConsoleService:
                     "step_count": summary.get("step_count", 0),
                     "total_cost": summary.get("total_cost", 0),
                     "total_tokens": summary.get("total_tokens", 0),
+                    "token_usage_by_lead": summary.get("token_usage_by_lead", {}),
+                    "token_usage_by_skill": summary.get("token_usage_by_skill", {}),
+                    "failed_steps": summary.get("failed_steps", []),
+                    "started_at": summary.get("started_at"),
+                    "finished_at": summary.get("finished_at"),
                     "stage_statuses": {
                         item["name"]: item["status"] for item in public_stage_statuses
                     },
@@ -205,11 +263,12 @@ class CAOConsoleService:
                 "identity_settings": identity_settings,
                 "public_stage_statuses": public_stage_statuses,
                 "public_steps": public_steps,
-                "public_artifacts": self._build_public_artifacts(result_payload),
+                "public_artifacts": public_artifacts,
                 "public_logs": self._build_public_logs(
                     run=run,
+                    raw_steps=steps,
                     public_steps=public_steps,
-                    public_artifacts=self._build_public_artifacts(result_payload),
+                    public_artifacts=public_artifacts,
                     identity_names=names,
                 ),
             }
@@ -356,6 +415,8 @@ class CAOConsoleService:
         
         # 失败流程的产物（从 failure_context 中提取）
         failure_context = result_payload.get("failure_context", {})
+        if not isinstance(failure_context, dict) or not failure_context:
+            failure_context = result_payload
         if failure_context:
             research_bundle = research_bundle or failure_context.get("research_bundle", {})
             analysis_bundle = analysis_bundle or failure_context.get("analysis_bundle", {})
@@ -378,11 +439,21 @@ class CAOConsoleService:
         if isinstance(hotspot_items, list):
             serialized_hotspots = [
                 serialized
-                for item in hotspot_items[:6]
+                for item in hotspot_items[:8]
                 if (serialized := self._serialize_public_hotspot(item)) is not None
             ]
             if serialized_hotspots:
                 research_artifact["selected_hotspots"] = serialized_hotspots
+
+        hotspot_pool = research_bundle.get("hotspot_pool")
+        if isinstance(hotspot_pool, list):
+            serialized_pool = [
+                serialized
+                for item in hotspot_pool[:12]
+                if (serialized := self._serialize_public_hotspot(item)) is not None
+            ]
+            if serialized_pool:
+                research_artifact["hotspot_pool"] = serialized_pool
 
         if research_artifact:
             public_artifacts["research"] = research_artifact
@@ -472,6 +543,18 @@ class CAOConsoleService:
             if value:
                 payload[field] = value
 
+        version_label = self._normalize_public_text_with_limit(item.get("version_label"), limit=48)
+        if version_label:
+            payload["version_label"] = version_label
+
+        fingerprint = self._normalize_public_text_with_limit(item.get("fingerprint"), limit=24)
+        if fingerprint:
+            payload["fingerprint"] = fingerprint
+
+        quality_score = item.get("quality_score")
+        if isinstance(quality_score, (int, float)):
+            payload["quality_score"] = round(float(quality_score), 4)
+
         for field in ("core_keywords", "hook_keywords", "visual_keywords", "title_candidates", "script_topic_variants"):
             values = self._normalize_public_list(item.get(field), limit=6, max_length=40)
             if values:
@@ -479,6 +562,11 @@ class CAOConsoleService:
 
         for field in ("video_prompt_variants", "image_prompt_variants"):
             values = self._normalize_public_list(item.get(field), limit=3, max_length=180)
+            if values:
+                payload[field] = values
+
+        for field in ("validation_issues", "validation_warnings"):
+            values = self._normalize_public_list(item.get(field), limit=6, max_length=120)
             if values:
                 payload[field] = values
 
@@ -509,7 +597,71 @@ class CAOConsoleService:
             if public_scenes:
                 payload["scenes"] = public_scenes
 
+        material_bundle = item.get("material_bundle") if isinstance(item.get("material_bundle"), dict) else {}
+        material_candidates = material_bundle.get("material_candidates")
+        if isinstance(material_candidates, list):
+            serialized_candidates = [
+                serialized
+                for candidate in material_candidates[:8]
+                if (serialized := self._serialize_public_material_candidate(candidate)) is not None
+            ]
+            if serialized_candidates:
+                payload["material_candidates"] = serialized_candidates
+
+        subtitle_bundle = item.get("subtitle_bundle") if isinstance(item.get("subtitle_bundle"), dict) else {}
+        subtitle_file = self._normalize_public_text_with_limit(subtitle_bundle.get("subtitle_file"), limit=180)
+        if subtitle_file:
+            payload["subtitle_file"] = subtitle_file
+        subtitle_items = subtitle_bundle.get("subtitle_items")
+        if isinstance(subtitle_items, list):
+            payload["subtitle_count"] = len(subtitle_items)
+
+        voiceover_bundle = item.get("voiceover_bundle") if isinstance(item.get("voiceover_bundle"), dict) else {}
+        audio_file = self._normalize_public_text_with_limit(voiceover_bundle.get("audio_file"), limit=180)
+        if audio_file:
+            payload["audio_file"] = audio_file
+        voice_profile = self._normalize_public_text_with_limit(voiceover_bundle.get("voice_profile"), limit=64)
+        if voice_profile:
+            payload["voice_profile"] = voice_profile
+        voice_segments = voiceover_bundle.get("voice_segments")
+        if isinstance(voice_segments, list):
+            payload["voice_segment_count"] = len(voice_segments)
+
+        composition_bundle = item.get("composition_bundle") if isinstance(item.get("composition_bundle"), dict) else {}
+        ffmpeg_plan = composition_bundle.get("ffmpeg_plan") if isinstance(composition_bundle.get("ffmpeg_plan"), dict) else {}
+        ffmpeg_inputs = self._normalize_public_list(ffmpeg_plan.get("inputs"), limit=8, max_length=120)
+        if ffmpeg_inputs:
+            payload["composition_inputs"] = ffmpeg_inputs
+        ffmpeg_filters = self._normalize_public_list(ffmpeg_plan.get("filters"), limit=8, max_length=64)
+        if ffmpeg_filters:
+            payload["composition_filters"] = ffmpeg_filters
+
+        render_bundle = item.get("render_bundle") if isinstance(item.get("render_bundle"), dict) else {}
+        render_mode = self._normalize_public_text_with_limit(render_bundle.get("render_mode"), limit=64)
+        if render_mode:
+            payload["render_mode"] = render_mode
+        delivery_asset_url = self._normalize_public_text_with_limit(render_bundle.get("delivery_asset_url"), limit=240)
+        if delivery_asset_url:
+            payload["delivery_asset_url"] = delivery_asset_url
+
         return payload
+
+    def _serialize_public_material_candidate(self, item: Any) -> dict[str, Any] | None:
+        if not isinstance(item, dict):
+            return None
+
+        payload: dict[str, Any] = {}
+        for field in ("title", "source", "type", "cache_path", "provider"):
+            value = self._normalize_public_text_with_limit(item.get(field), limit=120)
+            if value:
+                payload[field] = value
+        url = self._normalize_public_text_with_limit(item.get("url"), limit=240)
+        if url:
+            payload["url"] = url
+        duration = item.get("duration")
+        if isinstance(duration, (int, float)):
+            payload["duration"] = duration
+        return payload or None
 
     def _serialize_public_scene(self, scene: Any) -> dict[str, Any] | None:
         if not isinstance(scene, dict):
@@ -550,6 +702,22 @@ class CAOConsoleService:
         issues = self._normalize_public_list(qa_report.get("issues"), limit=5, max_length=72)
         if issues:
             payload["issues"] = issues
+
+        checks = item.get("checks") if isinstance(item.get("checks"), list) else []
+        check_summaries: list[str] = []
+        for check in checks[:8]:
+            if not isinstance(check, dict):
+                continue
+            dimension = self._normalize_public_text_with_limit(check.get("dimension"), limit=48) or "unknown"
+            status = "通过" if check.get("pass") else "未通过"
+            issue_list = check.get("issues") if isinstance(check.get("issues"), list) else []
+            issue_text = "；".join(str(entry) for entry in issue_list[:2]) if issue_list else ""
+            summary = f"{dimension}：{status}"
+            if issue_text:
+                summary = f"{summary} | {issue_text}"
+            check_summaries.append(summary[:200])
+        if check_summaries:
+            payload["checks"] = check_summaries
 
         return payload
 
@@ -601,6 +769,7 @@ class CAOConsoleService:
         self,
         *,
         run: Any,
+        raw_steps: list[Any],
         public_steps: list[dict[str, Any]],
         public_artifacts: dict[str, Any],
         identity_names: dict[str, str],
@@ -610,17 +779,13 @@ class CAOConsoleService:
             stage_timestamps[step["stage"]] = step.get("created_at") or stage_timestamps.get(step["stage"])
 
         logs = self._build_stage_progress_logs(public_steps)
+        logs.extend(self._build_skill_diagnostic_logs(raw_steps, identity_names))
 
-        artifact_builders = [
-            ("lead.research", self._build_research_log_entry(public_artifacts.get("research") or {}, identity_names, stage_timestamps.get("lead.research"))),
-            ("lead.analysis", self._build_analysis_log_entry(public_artifacts.get("analysis") or {}, identity_names, stage_timestamps.get("lead.analysis"))),
-            ("lead.research_development", self._build_planning_log_entry(public_artifacts.get("planning") or {}, identity_names, stage_timestamps.get("lead.research_development"))),
-            ("lead.production", self._build_production_log_entry(public_artifacts.get("production") or {}, identity_names, stage_timestamps.get("lead.production"))),
-            ("lead.qa", self._build_qa_log_entry(public_artifacts.get("qa") or {}, identity_names, stage_timestamps.get("lead.qa"))),
-        ]
-        for _, entry in artifact_builders:
-            if entry:
-                logs.append(entry)
+        logs.extend(self._build_research_log_entries(public_artifacts.get("research") or {}, identity_names, stage_timestamps.get("lead.research")))
+        logs.extend(self._build_analysis_log_entries(public_artifacts.get("analysis") or {}, identity_names, stage_timestamps.get("lead.analysis")))
+        logs.extend(self._build_planning_log_entries(public_artifacts.get("planning") or {}, identity_names, stage_timestamps.get("lead.research_development")))
+        logs.extend(self._build_production_log_entries(public_artifacts.get("production") or {}, identity_names, stage_timestamps.get("lead.production")))
+        logs.extend(self._build_qa_log_entries(public_artifacts.get("qa") or {}, identity_names, stage_timestamps.get("lead.qa")))
 
         failure_log = self._build_run_failure_log_entry(run=run, created_at=max(stage_timestamps.values(), default=getattr(run, "created_at", None)))
         if failure_log:
@@ -628,6 +793,102 @@ class CAOConsoleService:
 
         logs.sort(key=lambda item: ((item.get("created_at") or getattr(run, "created_at", None) or datetime.min), item.get("type") != "artifact"))
         return logs
+
+    def _build_skill_diagnostic_logs(self, raw_steps: list[Any], identity_names: dict[str, str]) -> list[dict[str, Any]]:
+        grouped_steps: dict[tuple[str, str], list[Any]] = {}
+        for step in raw_steps:
+            skill_name = str(getattr(step, "skill_name", "") or "")
+            if not skill_name.startswith("lead.") or skill_name.count(".") < 2:
+                continue
+            if getattr(step, "event_type", None) not in {"finish", "fail"}:
+                continue
+            stage_name = self._to_stage_name(skill_name)
+            if stage_name not in PUBLIC_STAGE_LABELS:
+                continue
+            grouped_steps.setdefault((stage_name, skill_name), []).append(step)
+
+        logs: list[dict[str, Any]] = []
+        for (stage_name, skill_name), steps in grouped_steps.items():
+            latest = steps[-1]
+            latest_output = latest.output_json if isinstance(latest.output_json, dict) else {}
+            latest_input = latest.input_json if isinstance(latest.input_json, dict) else {}
+            actor_key = STAGE_IDENTITY_KEYS.get(stage_name)
+            details = [f"技能标识：{skill_name}", f"累计执行：{len(steps)} 次"]
+
+            input_summary = self._summarize_public_value(
+                self._build_step_debug_summary(latest_input),
+                max_length=220,
+            )
+            if input_summary:
+                details.append(f"最近输入：{input_summary}")
+
+            recent_samples = steps[-3:]
+            for index, step in enumerate(recent_samples, start=max(len(steps) - len(recent_samples) + 1, 1)):
+                output_json = step.output_json if isinstance(step.output_json, dict) else {}
+                output_summary = self._summarize_public_value(
+                    self._build_step_debug_summary(output_json),
+                    max_length=220,
+                )
+                if output_summary:
+                    details.append(f"执行 {index} 输出：{output_summary}")
+                elif getattr(step, "error_message", None):
+                    error_summary = self._normalize_public_text_with_limit(step.error_message, limit=220)
+                    if error_summary:
+                        details.append(f"执行 {index} 错误：{error_summary}")
+
+            summary = self._build_skill_diagnostic_summary(latest, steps)
+            logs.append(
+                {
+                    "type": "artifact",
+                    "stage": stage_name,
+                    "stage_label": PUBLIC_STAGE_LABELS.get(stage_name, stage_name),
+                    "actor_key": actor_key,
+                    "actor_name": identity_names.get(actor_key, DEFAULT_IDENTITY_NAMES.get(actor_key or "", stage_name)),
+                    "title": f"技能执行：{self._label_skill_name(skill_name)}",
+                    "summary": summary,
+                    "details": details,
+                    "status": getattr(latest, "status", None),
+                    "created_at": getattr(latest, "created_at", None),
+                }
+            )
+        return logs
+
+    def _build_step_debug_summary(self, payload: dict[str, Any]) -> dict[str, Any] | None:
+        if not payload:
+            return None
+        ignored_keys = {"trace_id", "workflow_run_id", "hotspots", "reports", "analysis_reports", "snapshot"}
+        summary: dict[str, Any] = {}
+        for key, value in payload.items():
+            if key in ignored_keys:
+                continue
+            if isinstance(value, list):
+                normalized_list = self._normalize_public_list(value, limit=4, max_length=60)
+                if normalized_list:
+                    summary[key] = normalized_list
+            elif isinstance(value, dict):
+                nested_summary = self._summarize_public_value(value, max_length=120)
+                if nested_summary:
+                    summary[key] = nested_summary
+            else:
+                normalized = self._summarize_public_value(value, max_length=80)
+                if normalized:
+                    summary[key] = normalized
+            if len(summary) >= 6:
+                break
+        return summary or None
+
+    def _build_skill_diagnostic_summary(self, latest: Any, steps: list[Any]) -> str:
+        status = str(getattr(latest, "status", "") or "").strip().lower()
+        if status == "failed":
+            error_summary = self._normalize_public_text_with_limit(getattr(latest, "error_message", None), limit=220)
+            return error_summary or f"最近一次执行失败，共记录 {len(steps)} 次技能调用。"
+        if status == "success":
+            return f"最近一次执行成功，共记录 {len(steps)} 次技能调用。"
+        return f"已记录 {len(steps)} 次技能调用。"
+
+    def _label_skill_name(self, skill_name: str) -> str:
+        tail = skill_name.rsplit(".", maxsplit=1)[-1]
+        return PUBLIC_SKILL_LABELS.get(tail, tail.replace("_", " "))
 
     def _build_stage_progress_logs(self, public_steps: list[dict[str, Any]]) -> list[dict[str, Any]]:
         grouped: dict[str, list[dict[str, Any]]] = {}
@@ -695,6 +956,8 @@ class CAOConsoleService:
 
         result_payload = run.result_payload if isinstance(run.result_payload, dict) else {}
         failure_context = result_payload.get("failure_context", {})
+        if not isinstance(failure_context, dict) or not failure_context:
+            failure_context = result_payload
         
         # 构建可读的错误详情
         details = []
@@ -712,13 +975,17 @@ class CAOConsoleService:
         # 如果有失败阶段信息，添加阶段提示
         failed_stage = failure_context.get("failed_stage")
         if failed_stage and failed_stage != "unknown":
-            stage_label = PUBLIC_STAGE_LABELS.get(failed_stage, failed_stage)
+            normalized_failed_stage = FAILED_STAGE_ALIAS_MAP.get(str(failed_stage), str(failed_stage))
+            stage_label = PUBLIC_STAGE_LABELS.get(normalized_failed_stage, normalized_failed_stage)
             details.insert(0, f"失败阶段：{stage_label}")
         
         # 通用错误信息
         error_message = self._normalize_public_text_with_limit(
             getattr(run, "error_message", None), 
             limit=240
+        ) or self._normalize_public_text_with_limit(
+            failure_context.get("error"),
+            limit=240,
         ) or "任务执行失败。"
 
         return {
@@ -733,6 +1000,233 @@ class CAOConsoleService:
             "status": "failed",
             "created_at": created_at or getattr(run, "created_at", None),
         }
+
+    def _build_research_log_entries(self, artifact: dict[str, Any], identity_names: dict[str, str], created_at: Any) -> list[dict[str, Any]]:
+        logs: list[dict[str, Any]] = []
+        summary_entry = self._build_research_log_entry(artifact, identity_names, created_at)
+        if summary_entry:
+            logs.append(summary_entry)
+
+        queries = artifact.get("expanded_queries") if isinstance(artifact.get("expanded_queries"), list) else []
+        if queries:
+            logs.append(
+                self._build_artifact_log_entry(
+                    stage="lead.research",
+                    title="检索词已展开",
+                    summary=f"共生成 {len(queries)} 组检索词。",
+                    details=[f"检索词 {index}：{query}" for index, query in enumerate(queries[:12], start=1)],
+                    identity_names=identity_names,
+                    created_at=created_at,
+                )
+            )
+
+        pool_source = artifact.get("hotspot_pool") if isinstance(artifact.get("hotspot_pool"), list) else []
+        if not pool_source:
+            pool_source = artifact.get("selected_hotspots") if isinstance(artifact.get("selected_hotspots"), list) else []
+        if pool_source:
+            logs.append(
+                self._build_artifact_log_entry(
+                    stage="lead.research",
+                    title="热点候选池已归档",
+                    summary=f"候选池共保留 {len(pool_source)} 条结果。",
+                    details=[
+                        (
+                            f"候选 {index}："
+                            f"{self._normalize_public_text_with_limit(item.get('title'), limit=72) or '热点内容'}"
+                            f" | 作者：{self._normalize_public_text_with_limit(item.get('author'), limit=32) or '-'}"
+                            f" | 热度：{self._format_metric(item.get('heat_score'))}"
+                            f" | 播放：{self._format_metric(item.get('view_count'))}"
+                        )
+                        for index, item in enumerate(pool_source[:12], start=1)
+                    ],
+                    identity_names=identity_names,
+                    created_at=created_at,
+                )
+            )
+        return logs
+
+    def _build_analysis_log_entries(self, artifact: dict[str, Any], identity_names: dict[str, str], created_at: Any) -> list[dict[str, Any]]:
+        logs: list[dict[str, Any]] = []
+        summary_entry = self._build_analysis_log_entry(artifact, identity_names, created_at)
+        if summary_entry:
+            logs.append(summary_entry)
+
+        reports = artifact.get("reports") if isinstance(artifact.get("reports"), list) else []
+        for index, report in enumerate(reports[:6], start=1):
+            report_details = []
+            for field, label in (
+                ("framework_summary", "结构框架"),
+                ("hook_design", "钩子设计"),
+                ("emotion_curve", "情绪曲线"),
+            ):
+                value = self._normalize_public_text_with_limit(report.get(field), limit=180)
+                if value:
+                    report_details.append(f"{label}：{value}")
+            reusable = report.get("reusable_elements") if isinstance(report.get("reusable_elements"), list) else []
+            if reusable:
+                report_details.append(f"可复用元素：{' / '.join(reusable[:6])}")
+            risk_warnings = report.get("risk_warnings") if isinstance(report.get("risk_warnings"), list) else []
+            if risk_warnings:
+                report_details.append(f"风险提醒：{' / '.join(risk_warnings[:4])}")
+            logs.append(
+                self._build_artifact_log_entry(
+                    stage="lead.analysis",
+                    title=f"分析报告 {index}",
+                    summary=self._normalize_public_text_with_limit(report.get("report_title"), limit=120) or f"第 {index} 份分析报告",
+                    details=report_details,
+                    identity_names=identity_names,
+                    created_at=created_at,
+                )
+            )
+        return logs
+
+    def _build_planning_log_entries(self, artifact: dict[str, Any], identity_names: dict[str, str], created_at: Any) -> list[dict[str, Any]]:
+        logs: list[dict[str, Any]] = []
+        summary_entry = self._build_planning_log_entry(artifact, identity_names, created_at)
+        if summary_entry:
+            logs.append(summary_entry)
+
+        keyword_details = []
+        for field, label in (
+            ("core_keywords", "核心词"),
+            ("hook_keywords", "钩子词"),
+            ("visual_keywords", "视觉词"),
+        ):
+            values = artifact.get(field) if isinstance(artifact.get(field), list) else []
+            if values:
+                keyword_details.append(f"{label}：{' / '.join(str(item) for item in values[:8])}")
+        if keyword_details:
+            logs.append(
+                self._build_artifact_log_entry(
+                    stage="lead.research_development",
+                    title="提示词关键词包已归档",
+                    summary="关键词、钩子词和视觉词已经整理完成。",
+                    details=keyword_details,
+                    identity_names=identity_names,
+                    created_at=created_at,
+                )
+            )
+
+        variant_details = []
+        for field, label in (
+            ("title_candidates", "标题候选"),
+            ("script_topic_variants", "主题候选"),
+            ("video_prompt_variants", "视频提示词"),
+            ("image_prompt_variants", "图片提示词"),
+        ):
+            values = artifact.get(field) if isinstance(artifact.get(field), list) else []
+            for index, value in enumerate(values[:6], start=1):
+                variant_details.append(f"{label} {index}：{value}")
+        for item in (artifact.get("validation_warnings") if isinstance(artifact.get("validation_warnings"), list) else [])[:4]:
+            variant_details.append(f"校验提醒：{item}")
+        for item in (artifact.get("validation_issues") if isinstance(artifact.get("validation_issues"), list) else [])[:4]:
+            variant_details.append(f"校验问题：{item}")
+        if variant_details:
+            logs.append(
+                self._build_artifact_log_entry(
+                    stage="lead.research_development",
+                    title="提示词变体与校验结果",
+                    summary="提示词候选、变体和校验结果均已记录。",
+                    details=variant_details,
+                    identity_names=identity_names,
+                    created_at=created_at,
+                )
+            )
+        return logs
+
+    def _build_production_log_entries(self, artifact: dict[str, Any], identity_names: dict[str, str], created_at: Any) -> list[dict[str, Any]]:
+        logs: list[dict[str, Any]] = []
+        summary_entry = self._build_production_log_entry(artifact, identity_names, created_at)
+        if summary_entry:
+            logs.append(summary_entry)
+
+        material_candidates = artifact.get("material_candidates") if isinstance(artifact.get("material_candidates"), list) else []
+        if material_candidates:
+            logs.append(
+                self._build_artifact_log_entry(
+                    stage="lead.production",
+                    title="素材候选已整理",
+                    summary=f"共准备 {len(material_candidates)} 条素材候选。",
+                    details=[
+                        (
+                            f"素材 {index}："
+                            f"{self._normalize_public_text_with_limit(item.get('title'), limit=72) or '-'}"
+                            f" | 来源：{self._normalize_public_text_with_limit(item.get('source'), limit=32) or '-'}"
+                            f" | 类型：{self._normalize_public_text_with_limit(item.get('type'), limit=24) or '-'}"
+                        )
+                        for index, item in enumerate(material_candidates[:8], start=1)
+                    ],
+                    identity_names=identity_names,
+                    created_at=created_at,
+                )
+            )
+
+        asset_details = []
+        if artifact.get("subtitle_file"):
+            asset_details.append(f"字幕文件：{artifact['subtitle_file']}")
+        if artifact.get("subtitle_count") is not None:
+            asset_details.append(f"字幕条数：{artifact['subtitle_count']}")
+        if artifact.get("audio_file"):
+            asset_details.append(f"配音文件：{artifact['audio_file']}")
+        if artifact.get("voice_profile"):
+            asset_details.append(f"音色：{artifact['voice_profile']}")
+        if artifact.get("voice_segment_count") is not None:
+            asset_details.append(f"配音片段：{artifact['voice_segment_count']}")
+        if asset_details:
+            logs.append(
+                self._build_artifact_log_entry(
+                    stage="lead.production",
+                    title="字幕与配音资产已生成",
+                    summary="字幕和配音资产已经落盘，可继续进入合成。",
+                    details=asset_details,
+                    identity_names=identity_names,
+                    created_at=created_at,
+                )
+            )
+
+        compose_details = []
+        composition_inputs = artifact.get("composition_inputs") if isinstance(artifact.get("composition_inputs"), list) else []
+        composition_filters = artifact.get("composition_filters") if isinstance(artifact.get("composition_filters"), list) else []
+        if composition_inputs:
+            compose_details.append(f"合成输入：{' / '.join(composition_inputs[:8])}")
+        if composition_filters:
+            compose_details.append(f"滤镜链：{' / '.join(composition_filters[:8])}")
+        if artifact.get("render_mode"):
+            compose_details.append(f"渲染模式：{artifact['render_mode']}")
+        if artifact.get("delivery_asset_url"):
+            compose_details.append(f"交付地址：{artifact['delivery_asset_url']}")
+        if compose_details:
+            logs.append(
+                self._build_artifact_log_entry(
+                    stage="lead.production",
+                    title="合成与渲染计划已生成",
+                    summary="合成输入、滤镜链和渲染输出已记录。",
+                    details=compose_details,
+                    identity_names=identity_names,
+                    created_at=created_at,
+                )
+            )
+        return logs
+
+    def _build_qa_log_entries(self, artifact: dict[str, Any], identity_names: dict[str, str], created_at: Any) -> list[dict[str, Any]]:
+        logs: list[dict[str, Any]] = []
+        summary_entry = self._build_qa_log_entry(artifact, identity_names, created_at)
+        if summary_entry:
+            logs.append(summary_entry)
+
+        checks = artifact.get("checks") if isinstance(artifact.get("checks"), list) else []
+        if checks:
+            logs.append(
+                self._build_artifact_log_entry(
+                    stage="lead.qa",
+                    title="质检检查项明细",
+                    summary=f"共记录 {len(checks)} 条质检检查项。",
+                    details=[f"检查项 {index}：{check}" for index, check in enumerate(checks[:8], start=1)],
+                    identity_names=identity_names,
+                    created_at=created_at,
+                )
+            )
+        return logs
 
     def _build_research_log_entry(self, artifact: dict[str, Any], identity_names: dict[str, str], created_at: Any) -> dict[str, Any] | None:
         hotspots = artifact.get("selected_hotspots") if isinstance(artifact.get("selected_hotspots"), list) else []
@@ -797,6 +1291,11 @@ class CAOConsoleService:
             value = self._normalize_public_text_with_limit(artifact.get(field), limit=240)
             if value:
                 details.append(f"{label}：{value}")
+        if isinstance(artifact.get("quality_score"), (int, float)):
+            details.append(f"质量分：{round(float(artifact['quality_score']), 4)}")
+        version_label = self._normalize_public_text_with_limit(artifact.get("version_label"), limit=48)
+        if version_label:
+            details.append(f"版本：{version_label}")
         for field, label in (
             ("core_keywords", "核心词"),
             ("hook_keywords", "钩子词"),

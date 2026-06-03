@@ -30,6 +30,27 @@ logger = get_logger(__name__)
 
 class VideoService:
     """Service for AI video generation"""
+    CONTENT_TYPE_LABELS = {
+        "knowledge": "知识讲解类",
+        "news": "热点口播类",
+        "review": "测评对比类",
+        "story": "剧情演绎类",
+        "product": "种草推荐类",
+    }
+    STYLE_LABELS = {
+        "clean": "专业干净",
+        "fast": "快节奏",
+        "story": "剧情感",
+        "dynamic": "动态节奏",
+        "realistic": "写实",
+        "cinematic": "电影感",
+    }
+    PLATFORM_LABELS = {
+        "douyin": "抖音",
+        "xiaohongshu": "小红书",
+        "xigua": "西瓜视频",
+        "bilibili": "B站",
+    }
     
     def __init__(self, session: AsyncSession):
         self.session = session
@@ -45,10 +66,11 @@ class VideoService:
         script: Script,
         style: str,
         size: str = "1080x1920",
+        platform: str | None = None,
     ) -> VideoTask:
         """Create video generation task"""
-        
-        prompt = self._build_video_prompt(script, style)
+
+        prompt = self._build_video_prompt(script, style, platform=platform)
         
         task = VideoTask(
             script_id=script.uuid,
@@ -65,15 +87,21 @@ class VideoService:
         logger.info("Video task created", uuid=task.uuid, script_id=script.uuid)
         return task
     
-    def _build_video_prompt(self, script: Script, style: str) -> str:
+    def _build_video_prompt(self, script: Script, style: str, *, platform: str | None = None) -> str:
         """Build video generation prompt"""
         scenes_desc = "\\n".join([
             f"Scene {i+1}: {scene.get('visuals', '')}"
             for i, scene in enumerate(script.scenes or [])
         ])
-        
+        content_type_label = self.CONTENT_TYPE_LABELS.get(script.content_type or "", script.content_type or "generic")
+        style_label = self.STYLE_LABELS.get(style, style)
+        platform_label = self.PLATFORM_LABELS.get(platform or "", platform or "通用平台")
+        motion_guidance = self._build_motion_guidance(script.content_type or "", style)
+
         return f"""
-Style: {style}
+Platform: {platform_label}
+Content Type: {content_type_label}
+Style: {style_label}
 Duration: {script.duration} seconds
 
 Script: {script.title}
@@ -87,7 +115,24 @@ Requirements:
 - Smooth transitions between scenes
 - Match the emotional tone of the script
 - High quality, professional look
+- Keep pacing and visual grammar aligned with the requested content type
+- {motion_guidance}
 """
+
+    def _build_motion_guidance(self, content_type: str, style: str) -> str:
+        if content_type == "knowledge":
+            return "Use clean framing, legible overlays, and stronger visual emphasis on explanation points."
+        if content_type == "news":
+            return "Use punchy cuts, urgent motion, and stronger headline-style scene transitions."
+        if content_type == "review":
+            return "Use comparison shots, detail close-ups, and clear contrast between options."
+        if content_type == "story":
+            return "Use cinematic framing, emotional pacing, and more expressive scene-to-scene progression."
+        if content_type == "product":
+            return "Use product hero shots, use-case moments, and stronger conversion-oriented visual beats."
+        if style == "fast":
+            return "Keep transitions brisk and visual focus changes frequent."
+        return "Keep motion natural and easy to follow."
     
     async def process_task(self, task_id: str) -> VideoTask:
         """Process video generation task"""

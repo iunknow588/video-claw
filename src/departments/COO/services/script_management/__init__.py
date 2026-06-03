@@ -22,6 +22,21 @@ logger = get_logger(__name__)
 
 class ScriptService:
     """Service for generating video scripts"""
+    CONTENT_TYPE_LABELS = {
+        "knowledge": "知识讲解类",
+        "news": "热点口播类",
+        "review": "测评对比类",
+        "story": "剧情演绎类",
+        "product": "种草推荐类",
+    }
+    STYLE_LABELS = {
+        "clean": "专业干净",
+        "fast": "快节奏",
+        "story": "剧情感",
+        "dynamic": "动态节奏",
+        "realistic": "写实",
+        "cinematic": "电影感",
+    }
     
     def __init__(self, session: AsyncSession):
         self.session = session
@@ -37,10 +52,20 @@ class ScriptService:
         style: str,
         topic: str,
         duration: int = 60,
+        audience: str | None = None,
+        publish_goal: str | None = None,
     ) -> Script:
         """Generate original script based on analysis"""
-        
-        prompt = self._build_script_prompt(analysis, content_type, style, topic, duration)
+
+        prompt = self._build_script_prompt(
+            analysis,
+            content_type,
+            style,
+            topic,
+            duration,
+            audience=audience,
+            publish_goal=publish_goal,
+        )
         
         script_data = await self._call_text_generation(prompt)
         normalized_scenes = self._normalize_scenes(script_data.get("scenes", []))
@@ -88,8 +113,16 @@ class ScriptService:
         style: str,
         topic: str,
         duration: int,
+        *,
+        audience: str | None = None,
+        publish_goal: str | None = None,
     ) -> str:
         """Build script generation prompt"""
+        content_type_label = self.CONTENT_TYPE_LABELS.get(content_type, content_type)
+        style_label = self.STYLE_LABELS.get(style, style)
+        audience_line = f"- Target Audience: {audience}\n" if audience else ""
+        goal_line = f"- Publish Goal: {publish_goal}\n" if publish_goal else ""
+        structure_guidance = self._build_structure_guidance(content_type)
         return f"""
 Based on the following viral content analysis, create an original video script:
 
@@ -97,12 +130,16 @@ Framework: {analysis.framework_summary}
 Reusable Elements: {analysis.reusable_elements}
 
 Requirements:
-- Content Type: {content_type}
-- Style: {style}
+- Content Type: {content_type_label}
+- Style: {style_label}
 - Topic: {topic}
 - Duration: {duration} seconds
+{audience_line}{goal_line}- Keep the script aligned with the requested video type
 - Must be original and distinct from the analyzed content
 - Similarity score should be below 0.3
+
+Creative guidance:
+{structure_guidance}
 
 Provide output in JSON format:
 - title: script title
@@ -112,6 +149,16 @@ Provide output in JSON format:
 - tags: relevant tags
 - similarity_score: estimated similarity to original (0-1)
 """
+
+    def _build_structure_guidance(self, content_type: str) -> str:
+        guidance_map = {
+            "knowledge": "- Use a clear teaching hook, three-step explanation, and a practical takeaway.",
+            "news": "- Start with the newest point first, keep rhythm fast, and summarize the key update clearly.",
+            "review": "- Highlight comparison dimensions, real pros and cons, and a decisive recommendation.",
+            "story": "- Build a conflict, turn, and payoff with stronger emotional continuity between scenes.",
+            "product": "- Emphasize selling points, real use scenarios, and a strong conversion-oriented CTA.",
+        }
+        return guidance_map.get(content_type, "- Keep the structure concise, clear, and easy to follow.")
     
     async def _call_text_generation(self, prompt: str) -> Dict[str, Any]:
         """Call the configured text provider with placeholder fallback when not configured."""

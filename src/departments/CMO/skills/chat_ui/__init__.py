@@ -18,6 +18,7 @@ class ChatUISkill(BaseSkill):
                 "enum": ["interpret_user_message"],
             },
             "message": {"type": "string"},
+            "workflow_params": {"type": "object"},
         },
         "required": ["action"],
     }
@@ -63,6 +64,23 @@ class ChatUISkill(BaseSkill):
     ENABLE_EVOLUTION_KEYWORDS = ("开启进化", "打开进化", "启用进化")
     DISABLE_EVOLUTION_KEYWORDS = ("关闭进化", "停用进化", "禁用进化", "停止进化")
     EVOLUTION_CYCLE_KEYWORDS = ("进化循环", "进化闭环", "触发进化", "手动进化")
+    DEFAULT_WORKFLOW_PROMPT_GUIDE = "请直接说明要创作的视频类型、主题、目标平台、风格和时长。"
+    DEFAULT_WORKFLOW_PROMPT_EXAMPLE = (
+        "例如：做一条知识讲解视频，类型偏知识讲解类，主题是龙虾门店运营，目标平台是小红书，风格专业干净，时长60秒。"
+    )
+    CONTENT_TYPE_MAPPING = {
+        "knowledge": ("知识讲解类", ("知识讲解", "科普", "教程", "教学", "拆解", "干货")),
+        "news": ("热点口播类", ("热点口播", "热点解读", "资讯快讯", "新闻快讯", "快讯", "口播")),
+        "review": ("测评对比类", ("测评对比", "评测", "测评", "对比", "横评")),
+        "story": ("剧情演绎类", ("剧情演绎", "剧情", "故事", "情景短剧", "短剧", "演绎")),
+        "product": ("种草推荐类", ("种草推荐", "种草", "推荐", "带货", "开箱")),
+    }
+    PLATFORM_LABELS = {
+        "douyin": "抖音",
+        "xiaohongshu": "小红书",
+        "xigua": "西瓜视频",
+        "bilibili": "B站",
+    }
 
     LEADER_ALIASES = LEADER_QUERY_ALIASES
 
@@ -72,12 +90,14 @@ class ChatUISkill(BaseSkill):
             raise ValueError(f"Unsupported action for {self.skill_name}: {action}")
 
         message = str(input_data.get("message") or "").strip()
-        if not message:
+        workflow_params = self._normalize_workflow_params(input_data.get("workflow_params"))
+        if not message and not workflow_params:
             return {
                 "intent": "empty",
                 "reply_message": (
                     "宣传部在岗。除了直接派视频任务，你也可以问我："
                     "查看生产状态、查看工作流，或者要求质检组优化合格率。"
+                    f"{self.DEFAULT_WORKFLOW_PROMPT_GUIDE}{self.DEFAULT_WORKFLOW_PROMPT_EXAMPLE}"
                 ),
             }
 
@@ -159,14 +179,15 @@ class ChatUISkill(BaseSkill):
                 "reply_message": "收到，我来手动触发一轮治理演进闭环。",
             }
 
-        if self._looks_like_workflow_command(message):
-            workflow_request = self._build_workflow_request(message)
+        if self._looks_like_workflow_command(message) or self._has_structured_workflow_intent(workflow_params):
+            workflow_request = self._build_workflow_request(message, workflow_params=workflow_params)
             return {
                 "intent": "workflow_request",
                 "workflow_request": workflow_request,
                 "reply_message": (
                     f"收到，我会先代表宣传部接单，再把“{workflow_request['domain']}”"
-                    f"送入当前生产系统，按 {workflow_request['platform']} 平台推进。"
+                    f"送入当前生产系统，按 {self._platform_label(workflow_request['platform'])} 平台推进，"
+                    f"视频类型按 {self._content_type_label(workflow_request['content_type'])} 处理。"
                 ),
             }
 
@@ -174,7 +195,8 @@ class ChatUISkill(BaseSkill):
             "intent": "help",
             "reply_message": (
                 "我现在支持四类指令：\n"
-                "1. 直接派活，例如“给龙虾运营做一条小红书视频”。\n"
+                f"1. 直接派活。{self.DEFAULT_WORKFLOW_PROMPT_GUIDE}"
+                f"例如“{self.DEFAULT_WORKFLOW_PROMPT_EXAMPLE[:-1]}”。\n"
                 "2. 查记录，例如“查看最近任务”或“查看任务 <run_id> 进度”。\n"
                 "3. 查管理面，例如“查看生产状态”“查看工作流”“列出一级 Leader”。\n"
                 "4. 下优化命令，例如“让质检组把合格率提高到95%”。"
@@ -270,28 +292,90 @@ class ChatUISkill(BaseSkill):
     def _leader_label(self, leader_name: str) -> str:
         return LEADER_STAGE_LABELS_CN.get(leader_name, leader_name)
 
-    def _build_workflow_request(self, message: str) -> dict[str, Any]:
-        platform = self._parse_platform(message)
-        duration = self._parse_duration(message)
-        style = self._parse_style(message)
-        domain = self._parse_domain(message, platform)
-        auto_generate_video = "脚本" not in message or "视频" in message or "发布" in message
-        auto_approve_script = auto_generate_video or "自动审核" in message or "直接过审" in message
+    def _build_workflow_request(
+        self,
+        message: str,
+        *,
+        workflow_params: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        workflow_params = workflow_params or {}
+        platform = str(workflow_params.get("platform") or self._parse_platform(message))
+        content_type = str(workflow_params.get("content_type") or self._parse_content_type(message))
+        duration = int(workflow_params.get("duration") or self._parse_duration(message))
+        style = str(workflow_params.get("style") or self._parse_style(message))
+        domain = self._clean_domain(str(workflow_params.get("domain") or "")) or self._parse_domain(message, platform)
+        audience = self._clean_optional_text(workflow_params.get("audience")) or self._parse_audience(message)
+        publish_goal = self._clean_optional_text(workflow_params.get("publish_goal")) or self._parse_publish_goal(message)
+        auto_generate_video = self._resolve_auto_generate_video(message, workflow_params)
+        auto_approve_script = self._resolve_auto_approve_script(message, workflow_params, auto_generate_video)
+        video_style = self._clean_optional_text(workflow_params.get("video_style")) or self._resolve_video_style(
+            content_type=content_type,
+            style=style,
+        )
 
         return {
             "domain": domain,
             "platform": platform,
             "hotspot_count": 12,
             "top_n": 3,
-            "content_type": "knowledge",
+            "content_type": content_type,
             "style": style,
-            "video_style": "realistic" if auto_generate_video else style,
+            "video_style": video_style if auto_generate_video else style,
             "duration": duration,
-            "audience": None,
-            "publish_goal": message[:100],
+            "audience": audience,
+            "publish_goal": publish_goal or self._default_publish_goal(domain, message),
             "auto_approve_script": auto_approve_script,
             "auto_generate_video": auto_generate_video,
         }
+
+    def _normalize_workflow_params(self, workflow_params: Any) -> dict[str, Any]:
+        if not isinstance(workflow_params, dict):
+            return {}
+        normalized: dict[str, Any] = {}
+        for key, value in workflow_params.items():
+            if value is None:
+                continue
+            if isinstance(value, str):
+                cleaned = value.strip()
+                if cleaned:
+                    normalized[key] = cleaned
+                continue
+            normalized[key] = value
+        return normalized
+
+    def _has_structured_workflow_intent(self, workflow_params: dict[str, Any]) -> bool:
+        if not workflow_params:
+            return False
+        return any(
+            workflow_params.get(field)
+            for field in ("domain", "content_type", "platform", "publish_goal", "audience")
+        )
+
+    def _clean_optional_text(self, value: Any) -> str | None:
+        if value is None:
+            return None
+        cleaned = str(value).strip()
+        return cleaned or None
+
+    def _resolve_auto_generate_video(self, message: str, workflow_params: dict[str, Any]) -> bool:
+        if "auto_generate_video" in workflow_params:
+            return bool(workflow_params["auto_generate_video"])
+        return "脚本" not in message or "视频" in message or "发布" in message or not message
+
+    def _resolve_auto_approve_script(
+        self,
+        message: str,
+        workflow_params: dict[str, Any],
+        auto_generate_video: bool,
+    ) -> bool:
+        if "auto_approve_script" in workflow_params:
+            return bool(workflow_params["auto_approve_script"])
+        return auto_generate_video or "自动审核" in message or "直接过审" in message
+
+    def _default_publish_goal(self, domain: str, message: str) -> str:
+        if message:
+            return message[:100]
+        return f"{domain}内容生产"
 
     def _parse_platform(self, message: str) -> str:
         mapping = {
@@ -311,6 +395,14 @@ class ChatUISkill(BaseSkill):
                 return platform
         return "douyin"
 
+    def _parse_content_type(self, message: str) -> str:
+        lowered = message.lower()
+        for content_type, (_label, keywords) in self.CONTENT_TYPE_MAPPING.items():
+            for keyword in keywords:
+                if keyword in message or keyword in lowered:
+                    return content_type
+        return "knowledge"
+
     def _parse_duration(self, message: str) -> int:
         match = re.search(r"(\d{1,3})\s*(秒|s|sec)", message, flags=re.IGNORECASE)
         if not match:
@@ -322,10 +414,56 @@ class ChatUISkill(BaseSkill):
             return "fast"
         if "专业" in message or "干净" in message:
             return "clean"
+        if "剧情" in message or "故事感" in message:
+            return "story"
         return "clean"
+
+    def _parse_audience(self, message: str) -> str | None:
+        patterns = [
+            r"(?:面向|给)(.+?)(?:看|用户|人群|观众|，|,|。|$)",
+            r"(?:受众|人群)(?:是|为)?(.+?)(?:，|,|。|$)",
+        ]
+        for pattern in patterns:
+            match = re.search(pattern, message, flags=re.IGNORECASE)
+            if match:
+                audience = self._clean_domain(match.group(1))
+                if audience:
+                    return audience
+        return None
+
+    def _parse_publish_goal(self, message: str) -> str | None:
+        patterns = [
+            r"(?:目标是|目标为|用于|希望|想要)(.+?)(?:，|,|。|$)",
+            r"(?:提升|提高)(.+?)(?:，|,|。|$)",
+        ]
+        for pattern in patterns:
+            match = re.search(pattern, message, flags=re.IGNORECASE)
+            if match:
+                goal = self._clean_domain(match.group(1))
+                if goal:
+                    if pattern.startswith("(?:提升|提高)"):
+                        return f"提升{goal}"
+                    return goal
+        return None
+
+    def _resolve_video_style(self, *, content_type: str, style: str) -> str:
+        if content_type == "story":
+            return "cinematic"
+        if content_type in {"news", "review"} or style == "fast":
+            return "dynamic"
+        return "realistic"
+
+    def _content_type_label(self, content_type: str) -> str:
+        item = self.CONTENT_TYPE_MAPPING.get(content_type)
+        return item[0] if item else content_type
+
+    def _platform_label(self, platform: str) -> str:
+        return self.PLATFORM_LABELS.get(platform, platform)
 
     def _parse_domain(self, message: str, platform: str) -> str:
         patterns = [
+            r"(?:主题|方向|选题)(?:是|为)?(.+?)(?:，|,|。|$)",
+            r"(?:关于|围绕)(.+?)(?:创作|制作|做一条|生成|发布|视频|脚本|，|,|。|$)",
             r"(?:给|做|围绕|关于)(.+?)(?:做一条|生成|发布|视频|脚本)",
             r"在(.+?)领域",
             r"(.+?)(?:抖音|小红书|西瓜视频|西瓜|b站|bilibili|douyin|xiaohongshu|xigua)",
@@ -343,6 +481,11 @@ class ChatUISkill(BaseSkill):
             .replace("发布", " ")
             .replace("视频", " ")
             .replace("脚本", " ")
+            .replace("知识讲解类", " ")
+            .replace("热点口播类", " ")
+            .replace("测评对比类", " ")
+            .replace("剧情演绎类", " ")
+            .replace("种草推荐类", " ")
             .replace(platform, " ")
         )
         return fallback or "通用内容运营"

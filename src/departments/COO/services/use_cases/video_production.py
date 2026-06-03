@@ -29,6 +29,8 @@ class VideoProductionUseCase:
             style=request.style,
             topic=topic,
             duration=request.duration,
+            audience=request.audience,
+            publish_goal=request.publish_goal,
         )
         script_bundle = (
             await self.assembly.recorder.call_skill(
@@ -99,6 +101,7 @@ class VideoProductionUseCase:
                 video_task = await self.assembly.video_service.create_task(
                     script=script,
                     style=request.video_style or request.style,
+                    platform=request.platform,
                 )
                 video_task = await self.assembly.video_service.process_task(video_task.uuid)
                 video_task_bundle = (

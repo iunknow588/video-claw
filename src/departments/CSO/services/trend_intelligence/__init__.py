@@ -14,6 +14,27 @@ from departments.CIO.models.hotspot import HotspotItem
 
 class TrendIntelligenceService:
     """Transforms hotspots and analysis output into reusable prompt packages."""
+    CONTENT_TYPE_LABELS = {
+        "knowledge": "知识讲解类",
+        "news": "热点口播类",
+        "review": "测评对比类",
+        "story": "剧情演绎类",
+        "product": "种草推荐类",
+    }
+    STYLE_LABELS = {
+        "clean": "专业干净",
+        "fast": "快节奏",
+        "story": "剧情感",
+        "dynamic": "动态节奏",
+        "realistic": "写实",
+        "cinematic": "电影感",
+    }
+    PLATFORM_LABELS = {
+        "douyin": "抖音",
+        "xiaohongshu": "小红书",
+        "xigua": "西瓜视频",
+        "bilibili": "B站",
+    }
 
     def expand_domain_queries(
         self,
@@ -56,6 +77,8 @@ class TrendIntelligenceService:
         domain: str,
         hotspots: List[HotspotItem],
         analyses: List[AnalysisReport],
+        platform: str,
+        duration: int,
         style: str,
         content_type: str,
         audience: str | None = None,
@@ -87,6 +110,10 @@ class TrendIntelligenceService:
             core_keywords=core_keywords,
             hook_keywords=hook_keywords,
             visual_keywords=visual_keywords,
+            platform=platform,
+            duration=duration,
+            style=style,
+            content_type=content_type,
             audience=audience,
             publish_goal=publish_goal,
         )
@@ -99,9 +126,11 @@ class TrendIntelligenceService:
             audience=audience,
         )
 
+        content_type_label = self.CONTENT_TYPE_LABELS.get(content_type, content_type)
+        platform_label = self.PLATFORM_LABELS.get(platform, platform)
         prompt_summary = (
             f"围绕“{domain}”领域，参考当前高热度短视频的结构、关键词和钩子句，"
-            f"输出更适合 {content_type} 类型内容的短视频方案。"
+            f"输出更适合 {platform_label} 平台、时长约 {duration} 秒、偏 {content_type_label} 的短视频方案。"
         )
         script_topic = script_topic_variants[0] if script_topic_variants else domain
         video_prompt = video_prompt_variants[0] if video_prompt_variants else domain
@@ -156,6 +185,57 @@ class TrendIntelligenceService:
             "video",
             "content",
             "CCO",
+            "the",
+            "and",
+            "for",
+            "with",
+            "from",
+            "that",
+            "this",
+            "into",
+            "about",
+            "your",
+            "their",
+            "then",
+            "than",
+            "will",
+            "would",
+            "should",
+            "could",
+            "have",
+            "has",
+            "had",
+            "are",
+            "was",
+            "were",
+            "been",
+            "being",
+            "not",
+            "you",
+            "its",
+            "our",
+            "out",
+            "why",
+            "how",
+            "what",
+            "when",
+            "where",
+            "who",
+            "all",
+            "any",
+            "too",
+            "very",
+            "more",
+            "most",
+            "just",
+            "over",
+            "under",
+            "into",
+            "through",
+            "douyin",
+            "xiaohongshu",
+            "xigua",
+            "bilibili",
         }
         normalized: list[str] = []
         for token in tokens:
@@ -163,6 +243,8 @@ class TrendIntelligenceService:
             if not clean or clean in skip_words:
                 continue
             if len(clean) <= 1:
+                continue
+            if clean.isascii() and len(clean) <= 2:
                 continue
             normalized.append(token.strip())
         return normalized
@@ -177,9 +259,9 @@ class TrendIntelligenceService:
     def _build_visual_keywords(self, *, style: str, content_type: str) -> list[str]:
         base = ["强对比画面", "前3秒抓人", "字幕节奏清晰"]
         if style:
-            base.append(f"{style}风格")
+            base.append(f"{self.STYLE_LABELS.get(style, style)}风格")
         if content_type:
-            base.append(f"{content_type}表达")
+            base.append(f"{self.CONTENT_TYPE_LABELS.get(content_type, content_type)}表达")
         return base[:5]
 
     def _build_title_candidates(self, *, domain: str, hook_keywords: list[str]) -> list[str]:
@@ -219,18 +301,35 @@ class TrendIntelligenceService:
         core_keywords: list[str],
         hook_keywords: list[str],
         visual_keywords: list[str],
+        platform: str,
+        duration: int,
+        style: str,
+        content_type: str,
         audience: str | None,
         publish_goal: str | None,
     ) -> list[str]:
         keyword_text = ", ".join(core_keywords[:6])
         hook_text = ", ".join(hook_keywords[:3])
         visual_text = ", ".join(visual_keywords[:4])
+        platform_label = self.PLATFORM_LABELS.get(platform, platform)
+        style_label = self.STYLE_LABELS.get(style, style)
+        content_type_label = self.CONTENT_TYPE_LABELS.get(content_type, content_type)
         audience_text = f"受众：{audience}；" if audience else ""
         goal_text = f"目标：{publish_goal}；" if publish_goal else ""
         variants = [
-            f"主题：{domain}；{audience_text}{goal_text}核心关键词：{keyword_text}；开头钩子：{hook_text}；视觉风格：{visual_text}。",
-            f"围绕 {domain} 制作 30 秒竖屏短视频，前 3 秒强钩子，突出 {hook_text}，画面强调 {visual_text}，内容围绕 {keyword_text} 展开。",
-            f"生成 {domain} 的节奏型短视频，镜头快速切换、字幕清晰、重点突出，关键词包含 {keyword_text}，风格保持 {visual_text}。",
+            (
+                f"主题：{domain}；平台：{platform_label}；时长：{duration}秒；类型：{content_type_label}；"
+                f"表达风格：{style_label}；{audience_text}{goal_text}核心关键词：{keyword_text}；"
+                f"开头钩子：{hook_text}；视觉风格：{visual_text}。"
+            ),
+            (
+                f"围绕 {domain} 制作 {duration} 秒{platform_label}短视频，前 3 秒强钩子，突出 {hook_text}，"
+                f"整体按 {content_type_label} 的节奏推进，画面强调 {visual_text}，内容围绕 {keyword_text} 展开。"
+            ),
+            (
+                f"生成面向 {platform_label} 发布的 {domain} 短视频，镜头节奏保持 {style_label}，"
+                f"关键词包含 {keyword_text}，重点突出 {hook_text}，整体保持 {visual_text}。"
+            ),
         ]
         return self._deduplicate_phrases(variants, limit=4)
 
@@ -248,7 +347,7 @@ class TrendIntelligenceService:
         visual_text = ", ".join(visual_keywords[:4])
         audience_text = f"，目标受众为 {audience}" if audience else ""
         variants = [
-            f"{domain} 短视频封面图，突出 {keyword_text}，{style} 风格，{content_type} 表达，强对比构图，适合移动端点击{audience_text}。",
+            f"{domain} 短视频封面图，突出 {keyword_text}，{self.STYLE_LABELS.get(style, style)} 风格，{self.CONTENT_TYPE_LABELS.get(content_type, content_type)} 表达，强对比构图，适合移动端点击{audience_text}。",
             f"{domain} 关键视觉海报，包含 {keyword_text}，画面强调 {visual_text}，竖屏 9:16，适合作为视频首帧与封面。",
             f"{domain} 分镜预览图，展示人物或场景核心动作，保留 {visual_text}，适合后续图生视频参考。",
         ]

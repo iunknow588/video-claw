@@ -958,20 +958,22 @@ async def test_workflow_engine_can_reroute_back_to_planning():
         async def create_run(self, **kwargs):
             return SimpleNamespace(id=1, uuid="run-qa-reroute-1")
 
-        async def update_run_status(self, run_id, status, result_payload=None):
+        async def update_run_status(self, run_id, status, result_payload=None, error_message=None):
             if status == "completed":
                 self.completed = {
                     "run_id": run_id,
                     "status": status,
                     "result_payload": result_payload,
+                    "error_message": error_message,
                 }
             if status == "failed":
                 self.failed = {
                     "run_id": run_id,
                     "status": status,
                     "result_payload": result_payload,
+                    "error_message": error_message,
                 }
-            return SimpleNamespace(id=run_id, status=status, result_payload=result_payload)
+            return SimpleNamespace(id=run_id, status=status, result_payload=result_payload, error_message=error_message)
 
     class FakeRecorder:
         def __init__(self):

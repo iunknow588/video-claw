@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from departments.CAO.service import CAOConsoleService
 from departments.CEO.services.orchestration.domain_workflow import DomainWorkflowService
 from departments.CEO.skills.registry import ensure_builtin_skills_registered, registry
 from departments.CIO.db.session import get_db
@@ -135,25 +136,11 @@ async def get_workflow_trace(
     workflow_run_id: str,
     db: AsyncSession = Depends(get_db),
 ):
-    run_service = WorkflowRunService(db)
-    step_service = WorkflowStepLogService(db)
-    run = await run_service.get_by_uuid(workflow_run_id)
-    if not run:
-        raise HTTPException(status_code=404, detail="Workflow run not found")
-
-    trace_id = getattr(run, "trace_id", None)
-    if isinstance(run.result_payload, dict):
-        trace_id = trace_id or run.result_payload.get("trace_id")
-
-    steps = await step_service.list_steps(limit=500, trace_id=trace_id) if trace_id else []
-    summary = await step_service.summarize_trace(trace_id) if trace_id else {"trace_id": None, "step_count": 0}
-    summary = dict(summary or {})
-    summary["trigger_id"] = getattr(run, "trigger_id", None)
-    return {
-        "run": run,
-        "steps": steps,
-        "summary": summary,
-    }
+    service = CAOConsoleService(db)
+    try:
+        return await service.get_public_trace(workflow_run_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail="Workflow run not found") from exc
 
 
 @router.get("/triggers", response_model=List[TriggerResponse])

@@ -18,6 +18,8 @@ class ResearchUseCase:
                 input_bundle={
                     "trace_id": trace_id,
                     "domain": request.domain,
+                    "platform": request.platform,
+                    "content_type": request.content_type,
                     "audience": request.audience,
                     "publish_goal": request.publish_goal,
                 },

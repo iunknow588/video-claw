@@ -144,6 +144,52 @@
       gap: 12px;
     }
 
+    .workflow-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .workflow-toolbar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: end;
+    }
+
+    .workflow-field,
+    .workflow-toggle {
+      display: grid;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .workflow-field--wide {
+      grid-column: span 2;
+    }
+
+    .workflow-toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 40px;
+      padding: 0 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fffdfa;
+      font-size: 14px;
+    }
+
+    .workflow-summary {
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel-soft);
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
     .label {
       display: block;
       margin-bottom: 6px;
@@ -158,6 +204,34 @@
       align-items: end;
     }
 
+    .send-stack {
+      display: grid;
+      gap: 8px;
+      align-items: start;
+    }
+
+    .send-stack button {
+      width: 100%;
+    }
+
+    .enter-send-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 36px;
+      padding: 0 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fffdfa;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .enter-send-toggle label {
+      cursor: pointer;
+    }
+
     textarea {
       width: 100%;
       min-height: 88px;
@@ -168,6 +242,26 @@
       background: #fffdfa;
       color: inherit;
       font: inherit;
+    }
+
+    select,
+    input[type="text"],
+    input[type="number"] {
+      width: 100%;
+      height: 40px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0 12px;
+      background: #fffdfa;
+      color: inherit;
+      font: inherit;
+    }
+
+    input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      margin: 0;
+      accent-color: var(--accent);
     }
 
     button {
@@ -274,16 +368,14 @@
       margin-bottom: 10px;
     }
 
-    .settings-item,
-    .log-item {
+    .settings-item {
       padding: 12px;
       border: 1px solid #e7ddcf;
       border-radius: 8px;
       background: #fff;
     }
 
-    .settings-item strong,
-    .log-item strong {
+    .settings-item strong {
       display: block;
       margin-bottom: 8px;
       font-size: 14px;
@@ -331,25 +423,170 @@
       line-height: 1.5;
     }
 
-    .log-meta,
+    .log-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .log-filter {
+      height: 28px;
+      padding: 0 10px;
+      border: 1px solid #d8dfe8;
+      border-radius: 999px;
+      background: #fff;
+      color: #667085;
+      font-size: 11px;
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .log-filter.active {
+      border-color: var(--accent);
+      background: rgba(58, 110, 165, 0.08);
+      color: var(--accent);
+    }
+
+    .log-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .log-section {
+      display: grid;
+      gap: 4px;
+    }
+
+    .log-section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      color: #98a2b3;
+      font-size: 11px;
+      line-height: 1.4;
+      text-transform: uppercase;
+    }
+
+    .log-section-labels {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      min-width: 0;
+      flex-wrap: wrap;
+    }
+
+    .log-section-head strong {
+      color: #667085;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .log-section-toggle {
+      flex: 0 0 auto;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: #7a8699;
+      cursor: pointer;
+      font-size: 11px;
+      line-height: 1.4;
+      text-transform: none;
+    }
+
+    .log-section-toggle:hover {
+      color: var(--accent);
+    }
+
+    .log-section-body[hidden] {
+      display: none;
+    }
+
+    .log-item {
+      padding: 0;
+      border: 0;
+      background: transparent;
+      font-size: 12px;
+      line-height: 1.45;
+      color: var(--text);
+      overflow-wrap: anywhere;
+      font-family: "Cascadia Code", "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    }
+
+    .log-line {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .log-badge {
+      flex: 0 0 auto;
+      min-width: 42px;
+      color: #a0a9b7;
+      font-size: 11px;
+      line-height: 1.45;
+      text-transform: uppercase;
+    }
+
+    .log-main {
+      min-width: 0;
+      flex: 1;
+      display: grid;
+      gap: 2px;
+    }
+
     .log-summary,
-    .log-detail {
-      margin-top: 6px;
+    .log-detail,
+    .log-inline-meta,
+    .log-expand {
       color: var(--muted);
-      font-size: 13px;
-      line-height: 1.55;
+      font-size: 12px;
+      line-height: 1.45;
       overflow-wrap: anywhere;
     }
 
-    .log-pill {
-      display: inline-flex;
-      align-items: center;
-      padding: 2px 8px;
-      border-radius: 999px;
-      background: #f3efe8;
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.35;
+    .log-summary {
+      color: var(--text);
+    }
+
+    .log-inline-meta {
+      color: #a0a9b7;
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    .log-summary[data-status="failed"] {
+      color: #b42318;
+    }
+
+    .log-detail {
+      color: #72798a;
+      padding-left: 50px;
+    }
+
+    .log-expand {
+      width: fit-content;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: #7a8699;
+      cursor: pointer;
+      font: inherit;
+      text-align: left;
+    }
+
+    .log-expand:hover {
+      color: var(--accent);
+    }
+
+    .log-details[hidden] {
+      display: none;
+    }
+
+    .log-item[data-open="true"] .log-expand {
+      color: var(--accent);
     }
 
     @media (max-width: 1024px) {
@@ -360,6 +597,25 @@
       .shell,
       .rail {
         min-height: auto;
+      }
+
+      .workflow-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .workflow-toolbar {
+        grid-template-columns: minmax(0, 1fr) auto;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .workflow-toolbar,
+      .workflow-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .workflow-field--wide {
+        grid-column: span 1;
       }
     }
   </style>
@@ -383,11 +639,102 @@
         <div>
           <label class="label" for="messageInput" id="messageInputLabel">消息输入</label>
           <div class="composer-row">
-            <textarea id="messageInput" placeholder="输入要发送给 龙虾CMO 的消息。"></textarea>
-            <button id="sendButton" type="button">发送</button>
+            <textarea id="messageInput" placeholder="输入要发送给 龙虾CMO 的消息，例如：做一条知识讲解视频，类型偏知识讲解类，主题是龙虾门店运营，目标平台是小红书，风格专业干净，时长60秒。">做一条知识讲解视频，类型偏知识讲解类，主题是龙虾门店运营，目标平台是小红书，风格专业干净，时长60秒。</textarea>
+            <div class="send-stack">
+              <button id="sendButton" type="button">发送</button>
+              <div class="enter-send-toggle">
+                <input id="enterSendToggle" type="checkbox" />
+                <label for="enterSendToggle">回车直接发送</label>
+              </div>
+            </div>
           </div>
         </div>
-        <div class="meta" id="composerMeta">龙虾CAO 负责对外交付，龙虾CMO 负责接收消息并回传制作进度。</div>
+        <div class="workflow-toolbar">
+          <div class="workflow-field">
+            <label class="label" for="workflowPresetInput">任务模板</label>
+            <select id="workflowPresetInput">
+              <option value="">手动配置</option>
+              <option value="knowledge_xiaohongshu_store_ops">知识讲解 / 小红书 / 门店运营</option>
+              <option value="review_douyin_product_compare">测评对比 / 抖音 / 产品对比</option>
+              <option value="story_bilibili_store_scene">剧情演绎 / B站 / 门店场景</option>
+              <option value="news_douyin_hotspot_followup">热点口播 / 抖音 / 热点跟进</option>
+            </select>
+          </div>
+          <button id="resetWorkflowButton" class="secondary-button" type="button">清空参数</button>
+        </div>
+        <div class="workflow-summary" id="workflowSummary">当前未填写结构化参数，系统会优先按消息文本理解任务。</div>
+        <div class="workflow-grid">
+          <div class="workflow-field workflow-field--wide">
+            <label class="label" for="workflowDomainInput">主题 / 方向</label>
+            <input id="workflowDomainInput" type="text" placeholder="例如：龙虾门店运营" />
+          </div>
+          <div class="workflow-field">
+            <label class="label" for="workflowPlatformInput">目标平台</label>
+            <select id="workflowPlatformInput">
+              <option value="">跟随消息识别</option>
+              <option value="douyin">抖音</option>
+              <option value="xiaohongshu">小红书</option>
+              <option value="xigua">西瓜视频</option>
+              <option value="bilibili">B站</option>
+            </select>
+          </div>
+          <div class="workflow-field">
+            <label class="label" for="workflowContentTypeInput">视频类型</label>
+            <select id="workflowContentTypeInput">
+              <option value="">跟随消息识别</option>
+              <option value="knowledge">知识讲解类</option>
+              <option value="news">热点口播类</option>
+              <option value="review">测评对比类</option>
+              <option value="story">剧情演绎类</option>
+              <option value="product">种草推荐类</option>
+            </select>
+          </div>
+          <div class="workflow-field">
+            <label class="label" for="workflowStyleInput">表达风格</label>
+            <select id="workflowStyleInput">
+              <option value="">跟随消息识别</option>
+              <option value="clean">专业干净</option>
+              <option value="fast">快节奏</option>
+              <option value="story">故事感</option>
+            </select>
+          </div>
+          <div class="workflow-field">
+            <label class="label" for="workflowVideoStyleInput">成片风格</label>
+            <select id="workflowVideoStyleInput">
+              <option value="">自动匹配</option>
+              <option value="realistic">真实感</option>
+              <option value="dynamic">动感快切</option>
+              <option value="cinematic">电影感</option>
+            </select>
+          </div>
+          <div class="workflow-field">
+            <label class="label" for="workflowDurationInput">时长（秒）</label>
+            <input id="workflowDurationInput" type="number" min="5" max="180" step="1" placeholder="30" />
+          </div>
+          <div class="workflow-field workflow-field--wide">
+            <label class="label" for="workflowAudienceInput">目标人群</label>
+            <input id="workflowAudienceInput" type="text" placeholder="例如：餐饮老板 / 门店店长 / 创业者" />
+          </div>
+          <div class="workflow-field workflow-field--wide">
+            <label class="label" for="workflowPublishGoalInput">发布目标</label>
+            <input id="workflowPublishGoalInput" type="text" placeholder="例如：提升到店转化 / 提升完播率" />
+          </div>
+          <div class="workflow-toggle">
+            <span class="label">脚本审核</span>
+            <div class="workflow-toggle-row">
+              <input id="workflowAutoApproveInput" type="checkbox" />
+              <label for="workflowAutoApproveInput">自动通过脚本审核</label>
+            </div>
+          </div>
+          <div class="workflow-toggle">
+            <span class="label">视频生产</span>
+            <div class="workflow-toggle-row">
+              <input id="workflowAutoGenerateInput" type="checkbox" checked />
+              <label for="workflowAutoGenerateInput">直接生成视频</label>
+            </div>
+          </div>
+        </div>
+        <div class="meta" id="composerMeta">龙虾CAO 负责对外交付，龙虾CMO 负责接收消息并回传制作进度。下方参数会直接传入底层工作流，消息文本则用于补充创作要求。示例：做一条知识讲解视频，类型偏知识讲解类，主题是龙虾门店运营，目标平台是小红书，风格专业干净，时长60秒。</div>
       </footer>
     </section>
 
@@ -427,6 +774,12 @@
           <button id="clearDisplayButton" class="secondary-button" type="button">清空展示</button>
         </div>
         <div class="log-meta-bar" id="logDisplayMeta">默认展示最新任务的日志资料。</div>
+        <div class="log-toolbar" id="logToolbar">
+          <button class="log-filter active" type="button" data-log-filter="all">全部</button>
+          <button class="log-filter" type="button" data-log-filter="failed">失败</button>
+          <button class="log-filter" type="button" data-log-filter="skill">技能</button>
+          <button class="log-filter" type="button" data-log-filter="artifact">产物</button>
+        </div>
         <div class="log-window">
           <div class="log-list" id="logGrid">
             <div class="empty">点击最近任务中的条目即可查看日志记录。</div>
@@ -439,6 +792,20 @@
   <script>
     const messageList = document.getElementById("messageList");
     const messageInput = document.getElementById("messageInput");
+    const enterSendToggle = document.getElementById("enterSendToggle");
+    const workflowPresetInput = document.getElementById("workflowPresetInput");
+    const resetWorkflowButton = document.getElementById("resetWorkflowButton");
+    const workflowDomainInput = document.getElementById("workflowDomainInput");
+    const workflowPlatformInput = document.getElementById("workflowPlatformInput");
+    const workflowContentTypeInput = document.getElementById("workflowContentTypeInput");
+    const workflowStyleInput = document.getElementById("workflowStyleInput");
+    const workflowVideoStyleInput = document.getElementById("workflowVideoStyleInput");
+    const workflowDurationInput = document.getElementById("workflowDurationInput");
+    const workflowAudienceInput = document.getElementById("workflowAudienceInput");
+    const workflowPublishGoalInput = document.getElementById("workflowPublishGoalInput");
+    const workflowAutoApproveInput = document.getElementById("workflowAutoApproveInput");
+    const workflowAutoGenerateInput = document.getElementById("workflowAutoGenerateInput");
+    const workflowSummary = document.getElementById("workflowSummary");
     const sendButton = document.getElementById("sendButton");
     const toggleSettingsButton = document.getElementById("toggleSettingsButton");
     const saveSettingsButton = document.getElementById("saveSettingsButton");
@@ -452,6 +819,7 @@
     const settingsPanel = document.getElementById("settingsPanel");
     const settingsGrid = document.getElementById("settingsGrid");
     const logDisplayMeta = document.getElementById("logDisplayMeta");
+    const logToolbar = document.getElementById("logToolbar");
     const logGrid = document.getElementById("logGrid");
 
     const defaultIdentityNames = {
@@ -467,10 +835,93 @@
       cso: "龙虾CSO",
       cco: "龙虾CCO",
     };
+    const defaultWorkflowPromptExample = "做一条知识讲解视频，类型偏知识讲解类，主题是龙虾门店运营，目标平台是小红书，风格专业干净，时长60秒。";
+    const contentTypeLabels = {
+      knowledge: "知识讲解类",
+      news: "热点口播类",
+      review: "测评对比类",
+      story: "剧情演绎类",
+      product: "种草推荐类",
+    };
+    const platformLabels = {
+      douyin: "抖音",
+      xiaohongshu: "小红书",
+      xigua: "西瓜视频",
+      bilibili: "B站",
+    };
+    const styleLabels = {
+      clean: "专业干净",
+      fast: "快节奏",
+      story: "故事感",
+    };
+    const videoStyleLabels = {
+      realistic: "真实感",
+      dynamic: "动感快切",
+      cinematic: "电影感",
+    };
+    const workflowPresetDefinitions = {
+      knowledge_xiaohongshu_store_ops: {
+        domain: "龙虾门店运营",
+        platform: "xiaohongshu",
+        content_type: "knowledge",
+        style: "clean",
+        video_style: "realistic",
+        duration: 60,
+        audience: "餐饮老板和门店店长",
+        publish_goal: "提升专业感知与咨询转化",
+        auto_approve_script: false,
+        auto_generate_video: true,
+        message: "做一条知识讲解视频，围绕龙虾门店运营，突出可落地方法。",
+      },
+      review_douyin_product_compare: {
+        domain: "龙虾半成品与现炒方案对比",
+        platform: "douyin",
+        content_type: "review",
+        style: "fast",
+        video_style: "dynamic",
+        duration: 35,
+        audience: "餐饮创业者",
+        publish_goal: "提升到店转化",
+        auto_approve_script: false,
+        auto_generate_video: true,
+        message: "做一条测评对比视频，突出成本、出餐和复购差异。",
+      },
+      story_bilibili_store_scene: {
+        domain: "夜宵门店高峰期服务冲突",
+        platform: "bilibili",
+        content_type: "story",
+        style: "story",
+        video_style: "cinematic",
+        duration: 50,
+        audience: "门店管理者与内容用户",
+        publish_goal: "提升完播率与账号记忆点",
+        auto_approve_script: false,
+        auto_generate_video: true,
+        message: "做一条剧情演绎视频，体现门店高峰期的真实冲突与解决办法。",
+      },
+      news_douyin_hotspot_followup: {
+        domain: "龙虾餐饮行业最新热点",
+        platform: "douyin",
+        content_type: "news",
+        style: "fast",
+        video_style: "dynamic",
+        duration: 25,
+        audience: "餐饮从业者",
+        publish_goal: "快速跟进热点并提升互动率",
+        auto_approve_script: true,
+        auto_generate_video: true,
+        message: "做一条热点口播视频，快速跟进龙虾餐饮相关的新热点。",
+      },
+    };
 
     const identityState = { ...defaultIdentityNames };
     const displayStateStorageKey = "cao_display_state_v1";
     const clearedDisplayMarkerStorageKey = "cao_display_cleared_marker_v1";
+    const enterSendPreferenceStorageKey = "cao_enter_send_enabled_v1";
+    const templateNoteMarker = "【补充说明】";
+    const logExpandState = new Map();
+    const logSectionState = new Map();
+    let currentLogFilter = "all";
     let latestRunsState = [];
     let currentDisplayedRunId = null;
     let currentDisplayedTrace = null;
@@ -563,12 +1014,40 @@
       }
     }
 
+    function readEnterSendPreference() {
+      try {
+        const raw = localStorage.getItem(enterSendPreferenceStorageKey);
+        if (raw === null) return false;
+        return raw === "true";
+      } catch {
+        return false;
+      }
+    }
+
+    function writeEnterSendPreference(enabled) {
+      try {
+        localStorage.setItem(enterSendPreferenceStorageKey, enabled ? "true" : "false");
+      } catch {
+        // ignore storage failures in constrained browsers
+      }
+    }
+
+    function applyEnterSendPreference() {
+      enterSendToggle.checked = readEnterSendPreference();
+    }
+
     function applyIdentityNames() {
       frontdeskLine.textContent = `${identityState.cao} 正在值班。`;
       statusChip.textContent = `${identityState.ceo} 正在默默关注视频制作流程。`;
       welcomeMessage.textContent = `欢迎来到龙虾视频制作前台，${identityState.cao} 会持续同步生产链路、交付进度与结果。`;
-      composerMeta.textContent = `${identityState.cao} 负责对外交付，${identityState.cmo} 负责接收消息并回传制作进度。`;
-      messageInput.placeholder = `输入要发送给 ${identityState.cmo} 的消息。`;
+      composerMeta.textContent = `${identityState.cao} 负责对外交付，${identityState.cmo} 负责接收消息并回传制作进度。下方参数会直接传入底层工作流，消息文本则用于补充创作要求。示例：${defaultWorkflowPromptExample}`;
+      messageInput.placeholder = `输入要发送给 ${identityState.cmo} 的消息，例如：${defaultWorkflowPromptExample}`;
+    }
+
+    function applyDefaultMessageDraft({ force = false } = {}) {
+      if (force || !messageInput.value.trim()) {
+        messageInput.value = defaultWorkflowPromptExample;
+      }
     }
 
     function updateIdentityState(names) {
@@ -640,12 +1119,15 @@
     function renderDisplayMeta(run, { fromCache = false } = {}) {
       if (!run) {
         logDisplayMeta.textContent = "默认展示最新任务的日志资料。";
+        logDisplayMeta.dataset.baseText = "默认展示最新任务的日志资料。";
         return;
       }
       const taskName = run.display_domain || run.domain || "未命名任务";
       const platform = run.platform || "-";
       const sourceLabel = fromCache ? "已恢复上次未清空的展示资料" : "当前展示任务";
-      logDisplayMeta.textContent = `${sourceLabel}：${taskName} / 平台：${platform} / 时间：${formatDateTime(run.created_at)}`;
+      const baseText = `${sourceLabel}：${taskName} / 平台：${platform} / 时间：${formatDateTime(run.created_at)}`;
+      logDisplayMeta.textContent = baseText;
+      logDisplayMeta.dataset.baseText = baseText;
     }
 
     function getCachedTraceForRun(runId) {
@@ -717,6 +1199,161 @@
       return node;
     }
 
+    function setWorkflowFormValues(values = {}) {
+      workflowDomainInput.value = values.domain || "";
+      workflowPlatformInput.value = values.platform || "";
+      workflowContentTypeInput.value = values.content_type || "";
+      workflowStyleInput.value = values.style || "";
+      workflowVideoStyleInput.value = values.video_style || "";
+      workflowDurationInput.value = values.duration ? String(values.duration) : "";
+      workflowAudienceInput.value = values.audience || "";
+      workflowPublishGoalInput.value = values.publish_goal || "";
+      workflowAutoApproveInput.checked = Boolean(values.auto_approve_script);
+      workflowAutoGenerateInput.checked = values.auto_generate_video !== false;
+    }
+
+    function collectWorkflowParams() {
+      const durationValue = workflowDurationInput.value.trim();
+      const workflowParams = {};
+
+      if (workflowDomainInput.value.trim()) workflowParams.domain = workflowDomainInput.value.trim();
+      if (workflowPlatformInput.value) workflowParams.platform = workflowPlatformInput.value;
+      if (workflowContentTypeInput.value) workflowParams.content_type = workflowContentTypeInput.value;
+      if (workflowStyleInput.value) workflowParams.style = workflowStyleInput.value;
+      if (workflowVideoStyleInput.value) workflowParams.video_style = workflowVideoStyleInput.value;
+      if (durationValue) workflowParams.duration = Number(durationValue);
+      if (workflowAudienceInput.value.trim()) workflowParams.audience = workflowAudienceInput.value.trim();
+      if (workflowPublishGoalInput.value.trim()) workflowParams.publish_goal = workflowPublishGoalInput.value.trim();
+      workflowParams.auto_approve_script = workflowAutoApproveInput.checked;
+      workflowParams.auto_generate_video = workflowAutoGenerateInput.checked;
+
+      return workflowParams;
+    }
+
+    function summarizeWorkflowParams(workflowParams) {
+      if (!hasMeaningfulWorkflowParams(workflowParams)) {
+        return "当前未填写结构化参数，系统会优先按消息文本理解任务。";
+      }
+
+      const parts = [];
+      if (workflowParams.content_type) parts.push(`视频类型 ${contentTypeLabels[workflowParams.content_type] || workflowParams.content_type}`);
+      if (workflowParams.domain) parts.push(`主题 ${workflowParams.domain}`);
+      if (workflowParams.platform) parts.push(`平台 ${platformLabels[workflowParams.platform] || workflowParams.platform}`);
+      if (workflowParams.style) parts.push(`表达风格 ${styleLabels[workflowParams.style] || workflowParams.style}`);
+      if (workflowParams.video_style) parts.push(`成片风格 ${videoStyleLabels[workflowParams.video_style] || workflowParams.video_style}`);
+      if (workflowParams.duration) parts.push(`时长 ${workflowParams.duration} 秒`);
+      if (workflowParams.audience) parts.push(`面向 ${workflowParams.audience}`);
+      if (workflowParams.publish_goal) parts.push(`目标 ${workflowParams.publish_goal}`);
+      parts.push(workflowParams.auto_approve_script ? "脚本自动审核" : "脚本需人工审核");
+      parts.push(workflowParams.auto_generate_video ? "直接生成视频" : "仅生成脚本与方案");
+      return `当前结构化任务：${parts.join("，")}。`;
+    }
+
+    function buildWorkflowMessageFromParams(workflowParams) {
+      if (!workflowParams || !Object.keys(workflowParams).length) {
+        return "";
+      }
+
+      const parts = ["请按界面参数发起视频生产任务"];
+      if (workflowParams.content_type) parts.push(`视频类型：${contentTypeLabels[workflowParams.content_type] || workflowParams.content_type}`);
+      if (workflowParams.domain) parts.push(`主题：${workflowParams.domain}`);
+      if (workflowParams.platform) parts.push(`平台：${platformLabels[workflowParams.platform] || workflowParams.platform}`);
+      if (workflowParams.style) parts.push(`表达风格：${styleLabels[workflowParams.style] || workflowParams.style}`);
+      if (workflowParams.video_style) parts.push(`成片风格：${workflowParams.video_style}`);
+      if (workflowParams.duration) parts.push(`时长：${workflowParams.duration}秒`);
+      if (workflowParams.audience) parts.push(`目标人群：${workflowParams.audience}`);
+      if (workflowParams.publish_goal) parts.push(`发布目标：${workflowParams.publish_goal}`);
+      if (workflowParams.auto_approve_script) parts.push("脚本自动审核");
+      if (workflowParams.auto_generate_video) parts.push("直接生成视频");
+      return `${parts.join("，")}。`;
+    }
+
+    function hasMeaningfulWorkflowParams(workflowParams) {
+      if (!workflowParams) return false;
+      return [
+        workflowParams.domain,
+        workflowParams.platform,
+        workflowParams.content_type,
+        workflowParams.style,
+        workflowParams.video_style,
+        workflowParams.duration,
+        workflowParams.audience,
+        workflowParams.publish_goal,
+      ].some((value) => value !== undefined && value !== null && value !== "");
+    }
+
+    function renderWorkflowSummary() {
+      workflowSummary.textContent = summarizeWorkflowParams(collectWorkflowParams());
+    }
+
+    function buildPresetMessageDraft(preset) {
+      const params = {
+        domain: preset.domain,
+        platform: preset.platform,
+        content_type: preset.content_type,
+        style: preset.style,
+        video_style: preset.video_style,
+        duration: preset.duration,
+        audience: preset.audience,
+        publish_goal: preset.publish_goal,
+        auto_approve_script: preset.auto_approve_script,
+        auto_generate_video: preset.auto_generate_video,
+      };
+      const parts = [];
+      if (preset.message) {
+        parts.push(preset.message);
+      }
+      parts.push(buildWorkflowMessageFromParams(params));
+      return parts.filter(Boolean).join("\n");
+    }
+
+    function extractUserSupplement(text) {
+      const rawText = String(text || "").trim();
+      if (!rawText) return "";
+      const markerIndex = rawText.indexOf(templateNoteMarker);
+      if (markerIndex === -1) return "";
+      return rawText.slice(markerIndex).trim();
+    }
+
+    function clearTemplateMessageDraft() {
+      const preservedNote = extractUserSupplement(messageInput.value);
+      messageInput.value = preservedNote || defaultWorkflowPromptExample;
+    }
+
+    function syncMessageInputWithPreset(preset) {
+      const preservedNote = extractUserSupplement(messageInput.value);
+      const templateDraft = buildPresetMessageDraft(preset);
+      messageInput.value = preservedNote ? `${templateDraft}\n\n${preservedNote}` : templateDraft;
+    }
+
+    function applySelectedPreset() {
+      const presetKey = workflowPresetInput.value;
+      if (!presetKey || !workflowPresetDefinitions[presetKey]) {
+        clearTemplateMessageDraft();
+        renderWorkflowSummary();
+        return;
+      }
+
+      const preset = workflowPresetDefinitions[presetKey];
+      setWorkflowFormValues(preset);
+      syncMessageInputWithPreset(preset);
+      renderWorkflowSummary();
+    }
+
+    function resetWorkflowForm({ keepMessage = true } = {}) {
+      workflowPresetInput.value = "";
+      setWorkflowFormValues({
+        auto_approve_script: false,
+        auto_generate_video: true,
+      });
+      if (keepMessage) {
+        clearTemplateMessageDraft();
+      } else {
+        messageInput.value = defaultWorkflowPromptExample;
+      }
+      renderWorkflowSummary();
+    }
+
     function renderSummary(status) {
       const metrics = status.pipeline_metrics || {};
       const items = [
@@ -773,31 +1410,239 @@
       }
     }
 
+    function buildLogItemKey(runId, item, index) {
+      return [
+        runId || "trace",
+        item?.created_at || "no-time",
+        item?.stage || "no-stage",
+        item?.title || "no-title",
+        index,
+      ].join("::");
+    }
+
+    function buildLogSectionKey(runId, stageKey, filterKey) {
+      return [runId || "trace", stageKey || "workflow", filterKey || "all"].join("::");
+    }
+
+    function isLogItemExpanded(item, logKey) {
+      if (logExpandState.has(logKey)) {
+        return Boolean(logExpandState.get(logKey));
+      }
+      return String(item?.status || "").toLowerCase() === "failed";
+    }
+
+    function resolveLogBadge(item) {
+      const status = String(item?.status || "").toLowerCase();
+      if (status === "failed") return "FAIL";
+      if (status === "running") return "RUN";
+      if (status === "success") return "DONE";
+      if (String(item?.type || "").toLowerCase() === "artifact") return "DATA";
+      return "LOG";
+    }
+
+    function isSkillDiagnosticLog(item) {
+      return typeof item?.title === "string" && item.title.startsWith("技能执行：");
+    }
+
+    function isArtifactLog(item) {
+      return String(item?.type || "").toLowerCase() === "artifact" || isSkillDiagnosticLog(item);
+    }
+
+    function applyLogFilter(logs) {
+      switch (currentLogFilter) {
+        case "failed":
+          return logs.filter((item) => String(item?.status || "").toLowerCase() === "failed");
+        case "skill":
+          return logs.filter((item) => isSkillDiagnosticLog(item));
+        case "artifact":
+          return logs.filter((item) => isArtifactLog(item) && !isSkillDiagnosticLog(item));
+        default:
+          return logs;
+      }
+    }
+
+    function getLogFilterLabel() {
+      switch (currentLogFilter) {
+        case "failed":
+          return "仅失败";
+        case "skill":
+          return "仅技能";
+        case "artifact":
+          return "仅产物";
+        default:
+          return "全部";
+      }
+    }
+
+    function updateLogFilterButtons() {
+      Array.from(logToolbar.querySelectorAll("[data-log-filter]")).forEach((button) => {
+        button.classList.toggle("active", button.dataset.logFilter === currentLogFilter);
+      });
+    }
+
+    function bindLogFilterHandlers() {
+      Array.from(logToolbar.querySelectorAll("[data-log-filter]")).forEach((button) => {
+        button.addEventListener("click", () => {
+          const nextFilter = button.dataset.logFilter || "all";
+          if (currentLogFilter === nextFilter) return;
+          currentLogFilter = nextFilter;
+          updateLogFilterButtons();
+          renderLogs(currentDisplayedTrace);
+        });
+      });
+    }
+
+    function updateLogMetaSummary(logs) {
+      const baseText = logDisplayMeta.dataset.baseText || "当前展示日志";
+      if (!logs.length) {
+        const emptySuffix = currentLogFilter === "all" ? "" : ` / 筛选：${getLogFilterLabel()}`;
+        logDisplayMeta.textContent = `${baseText}${emptySuffix}`;
+        return;
+      }
+      const detailCount = logs.filter((item) => Array.isArray(item?.details) && item.details.length > 0).length;
+      const failedCount = logs.filter((item) => String(item?.status || "").toLowerCase() === "failed").length;
+      let suffix = ` / 日志：${logs.length}`;
+      if (detailCount) suffix += ` / 明细：${detailCount}`;
+      if (failedCount) suffix += ` / 失败：${failedCount}`;
+      if (currentLogFilter !== "all") suffix += ` / 筛选：${getLogFilterLabel()}`;
+      logDisplayMeta.textContent = `${baseText}${suffix}`;
+    }
+
+    function bindLogExpandHandlers() {
+      Array.from(logGrid.querySelectorAll(".log-expand")).forEach((button) => {
+        button.addEventListener("click", () => {
+          const logItem = button.closest(".log-item");
+          if (!logItem) return;
+          const detailPanel = logItem.querySelector(".log-details");
+          if (!detailPanel) return;
+          const nextOpen = detailPanel.hidden;
+          detailPanel.hidden = !nextOpen;
+          logItem.dataset.open = nextOpen ? "true" : "false";
+          button.textContent = nextOpen ? button.dataset.collapseLabel || "收起明细" : button.dataset.expandLabel || "展开明细";
+          if (logItem.dataset.logKey) {
+            logExpandState.set(logItem.dataset.logKey, nextOpen);
+          }
+        });
+      });
+    }
+
+    function bindLogSectionHandlers() {
+      Array.from(logGrid.querySelectorAll(".log-section-toggle")).forEach((button) => {
+        button.addEventListener("click", () => {
+          const section = button.closest(".log-section");
+          if (!section) return;
+          const body = section.querySelector(".log-section-body");
+          if (!body) return;
+          const nextOpen = body.hidden;
+          body.hidden = !nextOpen;
+          section.dataset.open = nextOpen ? "true" : "false";
+          button.textContent = nextOpen ? button.dataset.collapseLabel || "收起阶段" : button.dataset.expandLabel || "展开阶段";
+          if (section.dataset.sectionKey) {
+            logSectionState.set(section.dataset.sectionKey, nextOpen);
+          }
+        });
+      });
+    }
+
+    function groupLogsByStage(logs) {
+      const sections = [];
+      let currentSection = null;
+      logs.forEach((item) => {
+        const stageKey = item?.stage || "workflow";
+        const stageLabel = item?.stage_label || stageKey || "阶段";
+        if (!currentSection || currentSection.stageKey !== stageKey) {
+          currentSection = {
+            stageKey,
+            stageLabel,
+            items: [],
+          };
+          sections.push(currentSection);
+        }
+        currentSection.items.push(item);
+      });
+      return sections;
+    }
+
+    function isLogSectionExpanded(section, sectionKey, sectionIndex) {
+      if (logSectionState.has(sectionKey)) {
+        return Boolean(logSectionState.get(sectionKey));
+      }
+      const hasFailedItem = section.items.some((item) => String(item?.status || "").toLowerCase() === "failed");
+      return hasFailedItem || sectionIndex === 0;
+    }
+
     function renderLogs(trace) {
       currentDisplayedTrace = trace || null;
-      const logs = Array.isArray(trace.public_logs) ? trace.public_logs : [];
-      if (!logs.length) {
+      const sourceLogs = Array.isArray(trace?.public_logs) ? trace.public_logs : [];
+      if (!sourceLogs.length) {
         const hasSteps = Number(trace?.summary?.step_count || 0) > 0;
         logGrid.innerHTML = hasSteps
           ? '<div class="empty">当前任务已有内部步骤记录，前台日志正在整理中。</div>'
           : '<div class="empty">暂无日志记录。</div>';
+        updateLogMetaSummary([]);
         return;
       }
 
-      logGrid.innerHTML = logs.map((item) => `
-        <article class="log-item">
-          <strong>${escapeHtml(item.title || "日志记录")}</strong>
-          <div class="log-meta">
-            <span class="log-pill">${escapeHtml(resolveLogActorName(item))}</span>
-            <span class="log-pill">${escapeHtml(item.stage_label || item.stage || "阶段")}</span>
-            <span class="log-pill">${escapeHtml(formatDateTime(item.created_at))}</span>
+      const orderedLogs = [...sourceLogs].reverse();
+      const filteredLogs = applyLogFilter(orderedLogs);
+      if (!filteredLogs.length) {
+        logGrid.innerHTML = '<div class="empty">当前筛选下暂无日志记录。</div>';
+        updateLogMetaSummary([]);
+        return;
+      }
+
+      const groupedLogs = groupLogsByStage(filteredLogs);
+      const runId = trace?.run?.uuid || currentDisplayedRunId || "trace";
+      let globalIndex = 0;
+      logGrid.innerHTML = groupedLogs.map((section, sectionIndex) => `
+        ${(() => {
+          const sectionKey = buildLogSectionKey(runId, section.stageKey, currentLogFilter);
+          const sectionExpanded = isLogSectionExpanded(section, sectionKey, sectionIndex);
+          const failedInSection = section.items.filter((item) => String(item?.status || "").toLowerCase() === "failed").length;
+          const expandLabel = `展开 ${section.stageLabel}`;
+          const collapseLabel = `收起 ${section.stageLabel}`;
+          return `
+        <section class="log-section" data-section-key="${escapeHtml(sectionKey)}" data-open="${sectionExpanded ? "true" : "false"}">
+          <div class="log-section-head">
+            <div class="log-section-labels">
+              <strong>${escapeHtml(section.stageLabel)}</strong>
+              <span>${escapeHtml(`${section.items.length} 条`)}</span>
+              ${failedInSection ? `<span>${escapeHtml(`失败 ${failedInSection}`)}</span>` : ""}
+            </div>
+            <button class="log-section-toggle" type="button" data-expand-label="${escapeHtml(expandLabel)}" data-collapse-label="${escapeHtml(collapseLabel)}">${escapeHtml(sectionExpanded ? collapseLabel : expandLabel)}</button>
           </div>
-          <div class="log-summary">${escapeHtml(item.summary || "")}</div>
-          ${(Array.isArray(item.details) ? item.details : []).map((detail) => `
+          <div class="log-section-body" ${sectionExpanded ? "" : "hidden"}>
+          ${section.items.map((item) => {
+          const index = globalIndex++;
+          const details = Array.isArray(item.details) ? item.details : [];
+          const logKey = buildLogItemKey(runId, item, index);
+          const expanded = details.length ? isLogItemExpanded(item, logKey) : false;
+          const expandLabel = `展开 ${details.length} 条细节`;
+          const collapseLabel = `收起 ${details.length} 条细节`;
+          return `
+        <article class="log-item" data-log-key="${escapeHtml(logKey)}" data-open="${expanded ? "true" : "false"}">
+          <div class="log-line">
+            <div class="log-badge">${escapeHtml(resolveLogBadge(item))}</div>
+            <div class="log-main">
+              <div class="log-summary" data-status="${escapeHtml(String(item.status || "").toLowerCase())}">${escapeHtml(item.title || "日志记录")}：${escapeHtml(item.summary || "")}</div>
+              <div class="log-inline-meta">${escapeHtml(resolveLogActorName(item))} ${escapeHtml(item.stage_label || item.stage || "阶段")}，${escapeHtml(formatDateTime(item.created_at))}</div>
+              ${details.length ? `<button class="log-expand" type="button" data-expand-label="${escapeHtml(expandLabel)}" data-collapse-label="${escapeHtml(collapseLabel)}">${escapeHtml(expanded ? collapseLabel : expandLabel)}</button>` : ""}
+            </div>
+          </div>
+          ${details.length ? `<div class="log-details" ${expanded ? "" : "hidden"}>${details.map((detail) => `
             <div class="log-detail">${escapeHtml(detail)}</div>
-          `).join("")}
+          `).join("")}</div>` : ""}
         </article>
+          `;
+        }).join("")}
+          </div>
+        </section>
+          `;
+        })()}
       `).join("");
+      updateLogMetaSummary(filteredLogs);
+      bindLogExpandHandlers();
+      bindLogSectionHandlers();
     }
 
     function resolveLogActorName(item) {
@@ -828,7 +1673,7 @@
       { updateMetaFromCache = false, persistDisplayState = true, suppressErrorUI = false, allowRetry = true } = {},
     ) {
       if (!workflowRunId) return;
-      const response = await fetch(`/api/cao/runs/${encodeURIComponent(workflowRunId)}/trace`);
+      const response = await fetch(`/api/cao/workflows/runs/${encodeURIComponent(workflowRunId)}/trace`);
       if (!response.ok) {
         if (allowRetry) {
           await new Promise((resolve) => window.setTimeout(resolve, 400));
@@ -946,21 +1791,27 @@
       setActiveRunCard(null);
       renderDisplayMeta(null);
       logGrid.innerHTML = '<div class="empty">暂无日志记录。</div>';
+      updateLogMetaSummary([]);
     }
 
     async function sendMessage() {
-      const message = messageInput.value.trim();
+      const workflowParams = collectWorkflowParams();
+      const requestWorkflowParams = hasMeaningfulWorkflowParams(workflowParams) ? workflowParams : {};
+      const message =
+        messageInput.value.trim() ||
+        buildWorkflowMessageFromParams(requestWorkflowParams) ||
+        defaultWorkflowPromptExample;
       if (!message) return;
       sendButton.disabled = true;
       liveTraceRunId = null;
       appendMessage("user", "你", message);
-      messageInput.value = "";
+      messageInput.value = defaultWorkflowPromptExample;
 
       try {
         const response = await fetch("/api/cmo/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message }),
+          body: JSON.stringify({ message, workflow_params: requestWorkflowParams }),
         });
 
         if (!response.ok || !response.body) {
@@ -1020,6 +1871,12 @@
     }
 
     sendButton.addEventListener("click", sendMessage);
+    enterSendToggle.addEventListener("change", () => {
+      writeEnterSendPreference(enterSendToggle.checked);
+    });
+    resetWorkflowButton.addEventListener("click", () => {
+      resetWorkflowForm();
+    });
     toggleSettingsButton.addEventListener("click", () => {
       setSettingsPanelOpen(settingsPanel.hidden);
     });
@@ -1030,13 +1887,45 @@
       });
     });
     messageInput.addEventListener("keydown", (event) => {
-      if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+      const enterSendEnabled = enterSendToggle.checked;
+      const shouldSendWithShortcut = event.ctrlKey || event.metaKey;
+      const shouldSendWithEnter =
+        enterSendEnabled &&
+        !event.shiftKey &&
+        !event.altKey &&
+        !event.ctrlKey &&
+        !event.metaKey;
+
+      if (event.key === "Enter" && (shouldSendWithShortcut || shouldSendWithEnter)) {
         event.preventDefault();
         sendMessage();
       }
     });
 
+    [
+      workflowDomainInput,
+      workflowPlatformInput,
+      workflowContentTypeInput,
+      workflowStyleInput,
+      workflowVideoStyleInput,
+      workflowDurationInput,
+      workflowAudienceInput,
+      workflowPublishGoalInput,
+      workflowAutoApproveInput,
+      workflowAutoGenerateInput,
+    ].forEach((element) => {
+      element.addEventListener("input", renderWorkflowSummary);
+      element.addEventListener("change", renderWorkflowSummary);
+    });
+
+    workflowPresetInput.addEventListener("change", applySelectedPreset);
+
+    bindLogFilterHandlers();
+    updateLogFilterButtons();
     applyIdentityNames();
+    applyDefaultMessageDraft();
+    applyEnterSendPreference();
+    resetWorkflowForm({ keepMessage: true });
     setSettingsPanelOpen(false);
     restoreDisplayState();
     loadStatus().catch((error) => {

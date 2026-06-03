@@ -3,6 +3,10 @@
 import pytest
 
 from departments.CEO.core.config import settings
+from departments.CEO.services.orchestration.domain_workflow import DomainWorkflowService
+from departments.CIO.schemas.video import DomainWorkflowRequest
+from departments.CIO.services.workflow_runs import WorkflowRunService
+from departments.CQO.skills.qa_report import QAReportSkill
 
 
 @pytest.mark.asyncio
@@ -286,6 +290,15 @@ async def test_workflow_trace_endpoint_returns_summary(api_client):
 
 
 @pytest.mark.asyncio
+async def test_legacy_cao_run_endpoints_are_removed(api_client):
+    response = await api_client.get("/api/cao/runs")
+    assert response.status_code == 404
+
+    trace_response = await api_client.get("/api/cao/runs/demo-run/trace")
+    assert trace_response.status_code == 404
+
+
+@pytest.mark.asyncio
 async def test_workflow_skill_catalog_is_discoverable(api_client):
     response = await api_client.get("/api/cao/workflows/skills")
     assert response.status_code == 200
@@ -376,7 +389,7 @@ async def test_cao_public_trace_hides_ceo_stage(api_client):
     assert create_resp.status_code == 200
     workflow_run_id = create_resp.json()["workflow_run_id"]
 
-    trace_resp = await api_client.get(f"/api/cao/runs/{workflow_run_id}/trace")
+    trace_resp = await api_client.get(f"/api/cao/workflows/runs/{workflow_run_id}/trace")
     assert trace_resp.status_code == 200
     trace = trace_resp.json()
     assert trace["run"]["uuid"] == workflow_run_id
@@ -397,7 +410,63 @@ async def test_cao_public_trace_hides_ceo_stage(api_client):
     assert any("预算校验" in item["summary"] for item in cfo_status_logs)
     assert all("lead.cfo" not in item["summary"] for item in cfo_status_logs)
     assert any(item["title"] == "已找到热门视频" for item in trace["public_logs"])
+    assert any(item["title"] == "检索词已展开" for item in trace["public_logs"])
+    assert any(item["title"] == "热点候选池已归档" for item in trace["public_logs"])
+    assert any(item["title"] == "分析报告 1" for item in trace["public_logs"])
     assert any(item["title"] == "新提示词已生成" for item in trace["public_logs"])
+    assert any(item["title"] == "提示词变体与校验结果" for item in trace["public_logs"])
+    assert any(item["title"] == "素材候选已整理" for item in trace["public_logs"])
+    assert any(item["title"] == "字幕与配音资产已生成" for item in trace["public_logs"])
+    assert any(item["title"] == "合成与渲染计划已生成" for item in trace["public_logs"])
+    assert any(item["title"] == "质检检查项明细" for item in trace["public_logs"])
+    assert any(item["title"] == "技能执行：检索词扩展" for item in trace["public_logs"])
+    assert any(item["title"] == "技能执行：提示词校验" for item in trace["public_logs"])
+    assert any(item["title"] == "技能执行：渲染执行" for item in trace["public_logs"])
+    query_skill_log = next(item for item in trace["public_logs"] if item["title"] == "技能执行：检索词扩展")
+    assert any("技能标识：lead.research.domain_query_expansion" == detail for detail in query_skill_log["details"])
+
+
+@pytest.mark.asyncio
+async def test_cao_public_trace_exposes_failed_skill_diagnostics(api_client, session, monkeypatch):
+    def fail_qa_report(self, input_data):
+        raise RuntimeError("forced qa report failure")
+
+    monkeypatch.setattr(QAReportSkill, "execute", fail_qa_report)
+
+    service = DomainWorkflowService(session)
+    request = DomainWorkflowRequest(
+        domain="failure-trace-check",
+        platform="douyin",
+        hotspot_count=6,
+        top_n=2,
+        content_type="knowledge",
+        style="clean",
+        duration=20,
+        auto_approve_script=False,
+        auto_generate_video=False,
+    )
+
+    with pytest.raises(RuntimeError, match="forced qa report failure"):
+        await service.run(request)
+
+    failed_run = (await WorkflowRunService(session).list_runs(limit=1))[0]
+    assert failed_run.status == "failed"
+
+    trace_resp = await api_client.get(f"/api/cao/workflows/runs/{failed_run.uuid}/trace")
+    assert trace_resp.status_code == 200
+    trace = trace_resp.json()
+
+    assert trace["run"]["status"] == "failed"
+    assert trace["summary"]["stage_statuses"]["lead.qa"] == "failed"
+    assert any(item["title"] == "任务执行失败" for item in trace["public_logs"])
+    assert any(item["title"] == "技能执行：质检报告生成" for item in trace["public_logs"])
+
+    qa_skill_log = next(item for item in trace["public_logs"] if item["title"] == "技能执行：质检报告生成")
+    assert "forced qa report failure" in qa_skill_log["summary"]
+    assert any("执行 1 错误：forced qa report failure" == detail for detail in qa_skill_log["details"])
+
+    failure_log = next(item for item in trace["public_logs"] if item["title"] == "任务执行失败")
+    assert "forced qa report failure" in failure_log["summary"]
 
 
 @pytest.mark.asyncio

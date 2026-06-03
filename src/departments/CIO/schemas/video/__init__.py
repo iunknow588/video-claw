@@ -282,8 +282,22 @@ class DomainWorkflowRequest(BaseModel):
     auto_generate_video: bool = False
 
 
+class ChatWorkflowParams(BaseModel):
+    domain: Optional[str] = Field(default=None, min_length=1, max_length=100)
+    platform: Optional[str] = None
+    content_type: Optional[str] = None
+    style: Optional[str] = None
+    video_style: Optional[str] = None
+    duration: Optional[int] = Field(default=None, ge=5, le=180)
+    audience: Optional[str] = Field(default=None, max_length=100)
+    publish_goal: Optional[str] = Field(default=None, max_length=200)
+    auto_approve_script: Optional[bool] = None
+    auto_generate_video: Optional[bool] = None
+
+
 class ChatMessageRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=2000)
+    workflow_params: Optional[ChatWorkflowParams] = None
 
 
 class GovernanceLeaderCreateRequest(BaseModel):
@@ -371,6 +385,10 @@ class PromptPackageResponse(BaseModel):
     video_prompt: str
     video_prompt_variants: List[str]
     image_prompt_variants: List[str]
+    quality_score: Optional[float] = None
+    version: Optional[int] = None
+    version_label: Optional[str] = None
+    fingerprint: Optional[str] = None
 
 
 class DomainWorkflowResponse(BaseModel):
@@ -429,5 +447,10 @@ class WorkflowRunResponse(BaseModel):
 
 class WorkflowTraceResponse(BaseModel):
     run: WorkflowRunResponse
-    steps: List[WorkflowStepLogResponse]
     summary: Dict[str, Any]
+    steps: Optional[List[WorkflowStepLogResponse]] = None
+    identity_settings: Optional[Dict[str, Any]] = None
+    public_stage_statuses: Optional[List[Dict[str, Any]]] = None
+    public_steps: Optional[List[Dict[str, Any]]] = None
+    public_artifacts: Optional[Dict[str, Any]] = None
+    public_logs: Optional[List[Dict[str, Any]]] = None
