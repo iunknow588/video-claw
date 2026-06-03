@@ -29,15 +29,22 @@ class PromptValidationSkill:
             if len(values) < minimum:
                 issues.append(f"{field} 至少需要 {minimum} 项。")
 
-        noise_words = {"the", "and", "for", "to", "or", "if", "of", "in", "on", "with"}
-        noisy_keywords = [item for item in prompt_bundle.get("core_keywords", []) if item.lower() in noise_words]
+        stop_words = {"the", "and", "for", "to", "or", "if", "of", "in", "on", "with"}
+        noisy_keywords = [item for item in prompt_bundle.get("core_keywords", []) if item.lower() in stop_words]
         if noisy_keywords:
-            warnings.append(f"core_keywords 含低价值词：{', '.join(noisy_keywords[:4])}。")
+            warnings.append(f"core_keywords 含低价值停用词：{', '.join(noisy_keywords[:4])}。")
+
+        blocked_noise = {"mock", "placeholder", "analysis", "mvp", "ai-video"}
+        dirty_keywords = [item for item in prompt_bundle.get("core_keywords", []) if item.lower() in blocked_noise]
+        if dirty_keywords:
+            issues.append(f"core_keywords 含占位噪音词：{', '.join(dirty_keywords[:4])}。")
 
         first_video_prompt = str(prompt_bundle.get("video_prompt") or "")
         for marker in ("平台：", "时长：", "类型：", "视觉风格："):
             if marker not in first_video_prompt:
                 warnings.append(f"video_prompt 缺少关键信息：{marker}")
+        if any(marker in first_video_prompt.lower() for marker in blocked_noise):
+            issues.append("video_prompt 含占位或调试噪音词。")
 
         quality_score = 1.0
         quality_score -= min(len(issues) * 0.2, 0.6)

@@ -28,16 +28,26 @@ class ContentComplianceCheckSkill(BaseSkill):
     def execute(self, input_data: dict[str, Any]) -> dict[str, Any]:
         script = input_data.get("script") or {}
         task = input_data.get("video_task") or {}
+        scenes = list(script.get("scenes") or [])
+        tags = list(script.get("tags") or [])
         text_fields = [
             str(script.get("title") or ""),
             str(script.get("hook") or ""),
             str(script.get("cta") or ""),
+            " ".join(str(scene.get("text") or "") for scene in scenes),
+            " ".join(str(scene.get("audio") or "") for scene in scenes),
+            " ".join(str(item) for item in tags),
         ]
         flattened = "\n".join(text_fields)
 
         issues: list[str] = []
         blocked = [term for term in self.BLOCKED_TERMS if term in flattened]
         warned = [term for term in self.WARNING_TERMS if term in flattened]
+        placeholder_markers = [
+            marker
+            for marker in ("Generated Script", "Placeholder", "Follow for more", "Review Feedback", "mvp", "ai-video")
+            if marker.lower() in flattened.lower()
+        ]
         score = 1.0
 
         if blocked:
@@ -46,6 +56,9 @@ class ContentComplianceCheckSkill(BaseSkill):
         if warned:
             issues.append(f"存在高风险营销措辞：{', '.join(warned)}。")
             score -= 0.15
+        if placeholder_markers:
+            issues.append(f"检测到占位或调试文案：{', '.join(placeholder_markers)}。")
+            score -= 0.45
         if task and "watermark" in str(task.get("video_url") or "").lower():
             issues.append("检测到疑似平台水印残留。")
             score -= 0.2

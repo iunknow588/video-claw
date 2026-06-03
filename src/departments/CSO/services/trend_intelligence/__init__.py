@@ -177,8 +177,15 @@ class TrendIntelligenceService:
     def _normalize_tokens(self, tokens: Iterable[str]) -> list[str]:
         skip_words = {
             "mvp",
+            "mock",
+            "placeholder",
+            "analysis",
             "creator",
+            "operator",
             "general",
+            "business",
+            "guide",
+            "growth",
             "copyright",
             "check",
             "required",

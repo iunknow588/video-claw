@@ -33,7 +33,7 @@ class AIAnalysisService:
 
     async def analyze_content(self, hotspot: HotspotItem) -> AnalysisReport:
         prompt = self._build_analysis_prompt(hotspot)
-        analysis_data = await self._call_text_analysis(prompt)
+        analysis_data = await self._call_text_analysis(prompt, hotspot)
 
         report = await self.repository.create(
             {
@@ -87,10 +87,10 @@ Provide analysis in JSON format with these keys:
 - risk_warnings: potential copyright/ethical risks
 """
 
-    async def _call_text_analysis(self, prompt: str) -> Dict[str, Any]:
+    async def _call_text_analysis(self, prompt: str, hotspot: HotspotItem) -> Dict[str, Any]:
         logger.info("Calling XFYun MaaS API", model=self.model, configured=self.client.is_configured)
         if should_use_placeholder(self.provider):
-            return self._placeholder_response()
+            return self._placeholder_response(hotspot)
 
         try:
             response = await self.client.chat_json(
@@ -114,22 +114,40 @@ Provide analysis in JSON format with these keys:
         except (AIProviderError, KeyError, TypeError, ValueError) as exc:
             logger.warning("XFYun MaaS call fallback to placeholder", error=str(exc))
             if should_use_placeholder(self.provider):
-                return self._placeholder_response()
+                return self._placeholder_response(hotspot)
             raise
 
-    def _placeholder_response(self) -> Dict[str, Any]:
+    def _placeholder_response(self, hotspot: HotspotItem) -> Dict[str, Any]:
+        title = str(hotspot.title or "当前热点内容").strip()
+        category = str(hotspot.category or "通用内容").strip()
         return {
-            "content_structure": {},
-            "emotion_curve": {},
-            "hook_design": {},
-            "framework_summary": "Placeholder analysis",
-            "reusable_elements": [],
-            "risk_warnings": ["Copyright check required"],
+            "content_structure": {
+                "opening": "前3秒先抛出门店经营痛点或反常识问题，快速建立停留理由。",
+                "middle": "用2到3个步骤拆解解决办法，给出明确动作或判断标准。",
+                "closing": "总结可执行结论，并引导收藏、咨询或继续查看。",
+            },
+            "emotion_curve": {
+                "start": "问题感",
+                "middle": "理解感",
+                "end": "获得感",
+            },
+            "hook_design": {
+                "type": "问题切入",
+                "pattern": f"围绕《{title}》先讲常见误区，再给出可执行办法。",
+            },
+            "framework_summary": f"该内容更适合做成“痛点切入 - 步骤拆解 - 结果总结”的 {category} 短视频结构。",
+            "reusable_elements": [
+                "前3秒抛出痛点",
+                "步骤化表达",
+                "数字或案例强化说服力",
+                "结尾给出行动建议",
+            ],
+            "risk_warnings": ["注意避免直接搬运原视频镜头、原句和封面表达。"],
             "cost": 0.05,
             "token_usage": self.client.normalize_usage(
                 None,
                 prompt="placeholder-analysis",
-                completion_text="Placeholder analysis",
+                completion_text="structured placeholder analysis",
             ).to_dict(),
         }
 

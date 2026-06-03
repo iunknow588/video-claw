@@ -405,6 +405,8 @@ async def test_cao_public_trace_hides_ceo_stage(api_client):
     assert trace["public_artifacts"]["production"]["title"]
     assert trace["public_artifacts"]["production"]["scenes"]
     assert "recommendation" in trace["public_artifacts"]["qa"]
+    assert trace["public_artifacts"]["publish"]["platform"] == "douyin"
+    assert trace["public_artifacts"]["publish"]["status"] == "submitted"
     cfo_status_logs = [item for item in trace["public_logs"] if item["type"] == "status" and item["stage"] == "lead.cfo"]
     assert cfo_status_logs
     assert any("预算校验" in item["summary"] for item in cfo_status_logs)
@@ -419,9 +421,14 @@ async def test_cao_public_trace_hides_ceo_stage(api_client):
     assert any(item["title"] == "字幕与配音资产已生成" for item in trace["public_logs"])
     assert any(item["title"] == "合成与渲染计划已生成" for item in trace["public_logs"])
     assert any(item["title"] == "质检检查项明细" for item in trace["public_logs"])
+    assert any(item["title"] == "对外交付结果已归档" for item in trace["public_logs"])
+    assert any(item["title"] == "发布计划已生成" for item in trace["public_logs"])
+    assert any(item["title"] == "平台适配结果已归档" for item in trace["public_logs"])
+    assert any(item["title"] == "发布结果已记录" for item in trace["public_logs"])
     assert any(item["title"] == "技能执行：检索词扩展" for item in trace["public_logs"])
     assert any(item["title"] == "技能执行：提示词校验" for item in trace["public_logs"])
     assert any(item["title"] == "技能执行：渲染执行" for item in trace["public_logs"])
+    assert any(item["title"] == "技能执行：发布执行" for item in trace["public_logs"])
     query_skill_log = next(item for item in trace["public_logs"] if item["title"] == "技能执行：检索词扩展")
     assert any("技能标识：lead.research.domain_query_expansion" == detail for detail in query_skill_log["details"])
 

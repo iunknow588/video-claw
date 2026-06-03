@@ -483,6 +483,13 @@ class CAOConsoleService:
         if qa_artifact:
             public_artifacts["qa"] = qa_artifact
 
+        publish_bundle = result_payload.get("publish_bundle") if isinstance(result_payload.get("publish_bundle"), dict) else {}
+        if failure_context:
+            publish_bundle = publish_bundle or failure_context.get("publish_bundle", {})
+        publish_artifact = self._serialize_public_publish_bundle(publish_bundle)
+        if publish_artifact:
+            public_artifacts["publish"] = publish_artifact
+
         return public_artifacts
 
     def _serialize_public_hotspot(self, item: Any) -> dict[str, Any] | None:
@@ -721,6 +728,57 @@ class CAOConsoleService:
 
         return payload
 
+    def _serialize_public_publish_bundle(self, item: dict[str, Any]) -> dict[str, Any]:
+        bundle = item.get("bundle") if isinstance(item.get("bundle"), dict) else item
+        if not isinstance(bundle, dict):
+            return {}
+
+        payload: dict[str, Any] = {}
+
+        publish_plan = bundle.get("publish_plan") if isinstance(bundle.get("publish_plan"), dict) else {}
+        for field in ("platform", "publish_goal", "audience", "video_url", "video_task_id", "target_status"):
+            limit = 240 if field == "video_url" else 120
+            value = self._normalize_public_text_with_limit(publish_plan.get(field), limit=limit)
+            if value:
+                payload[field] = value
+        publish_steps = self._normalize_public_list(publish_plan.get("publish_steps"), limit=8, max_length=48)
+        if publish_steps:
+            payload["publish_steps"] = publish_steps
+
+        platform_payload = bundle.get("platform_payload") if isinstance(bundle.get("platform_payload"), dict) else {}
+        for field in ("adapter_name", "mode"):
+            value = self._normalize_public_text_with_limit(platform_payload.get(field), limit=64)
+            if value:
+                payload[field] = value
+
+        publish_result = bundle.get("publish_result") if isinstance(bundle.get("publish_result"), dict) else {}
+        for field in ("publish_id", "status"):
+            value = self._normalize_public_text_with_limit(publish_result.get(field), limit=120)
+            if value:
+                payload[field] = value
+
+        callback = bundle.get("callback") if isinstance(bundle.get("callback"), dict) else {}
+        callback_status = self._normalize_public_text_with_limit(callback.get("callback_status"), limit=64)
+        if callback_status:
+            payload["callback_status"] = callback_status
+        callback_ref = self._normalize_public_text_with_limit(callback.get("callback_ref"), limit=120)
+        if callback_ref:
+            payload["callback_ref"] = callback_ref
+
+        history = bundle.get("history") if isinstance(bundle.get("history"), dict) else {}
+        history_status = self._normalize_public_text_with_limit(history.get("history_status"), limit=64)
+        if history_status:
+            payload["history_status"] = history_status
+        history_ref = self._normalize_public_text_with_limit(history.get("history_ref"), limit=120)
+        if history_ref:
+            payload["history_ref"] = history_ref
+
+        retry = bundle.get("retry") if isinstance(bundle.get("retry"), dict) else {}
+        if "retry" in retry:
+            payload["retry"] = bool(retry.get("retry"))
+
+        return payload
+
     def _normalize_public_list(self, value: Any, *, limit: int, max_length: int) -> list[str]:
         if not isinstance(value, list):
             return []
@@ -786,6 +844,7 @@ class CAOConsoleService:
         logs.extend(self._build_planning_log_entries(public_artifacts.get("planning") or {}, identity_names, stage_timestamps.get("lead.research_development")))
         logs.extend(self._build_production_log_entries(public_artifacts.get("production") or {}, identity_names, stage_timestamps.get("lead.production")))
         logs.extend(self._build_qa_log_entries(public_artifacts.get("qa") or {}, identity_names, stage_timestamps.get("lead.qa")))
+        logs.extend(self._build_publish_log_entries(public_artifacts.get("publish") or {}, identity_names, stage_timestamps.get("lead.publish")))
 
         failure_log = self._build_run_failure_log_entry(run=run, created_at=max(stage_timestamps.values(), default=getattr(run, "created_at", None)))
         if failure_log:
@@ -1228,6 +1287,86 @@ class CAOConsoleService:
             )
         return logs
 
+    def _build_publish_log_entries(self, artifact: dict[str, Any], identity_names: dict[str, str], created_at: Any) -> list[dict[str, Any]]:
+        logs: list[dict[str, Any]] = []
+        summary_entry = self._build_publish_log_entry(artifact, identity_names, created_at)
+        if summary_entry:
+            logs.append(summary_entry)
+
+        plan_details = []
+        for field, label in (
+            ("platform", "平台"),
+            ("publish_goal", "发布目标"),
+            ("audience", "受众"),
+            ("video_url", "交付视频"),
+            ("video_task_id", "视频任务"),
+            ("target_status", "目标状态"),
+        ):
+            value = self._normalize_public_text_with_limit(artifact.get(field), limit=240)
+            if value:
+                plan_details.append(f"{label}：{value}")
+        publish_steps = artifact.get("publish_steps") if isinstance(artifact.get("publish_steps"), list) else []
+        if publish_steps:
+            plan_details.append(f"发布步骤：{' / '.join(str(item) for item in publish_steps[:8])}")
+        if plan_details:
+            logs.append(
+                self._build_artifact_log_entry(
+                    stage="lead.publish",
+                    title="发布计划已生成",
+                    summary="平台、受众、交付视频和发布步骤已经整理完成。",
+                    details=plan_details,
+                    identity_names=identity_names,
+                    created_at=created_at,
+                )
+            )
+
+        adapter_details = []
+        for field, label in (
+            ("adapter_name", "适配器"),
+            ("mode", "适配模式"),
+        ):
+            value = self._normalize_public_text_with_limit(artifact.get(field), limit=120)
+            if value:
+                adapter_details.append(f"{label}：{value}")
+        if adapter_details:
+            logs.append(
+                self._build_artifact_log_entry(
+                    stage="lead.publish",
+                    title="平台适配结果已归档",
+                    summary="平台适配参数已经记录，可用于复盘投递行为。",
+                    details=adapter_details,
+                    identity_names=identity_names,
+                    created_at=created_at,
+                )
+            )
+
+        result_details = []
+        for field, label in (
+            ("publish_id", "发布单号"),
+            ("status", "发布状态"),
+            ("callback_status", "回调状态"),
+            ("callback_ref", "回调引用"),
+            ("history_status", "历史归档"),
+            ("history_ref", "历史引用"),
+        ):
+            value = self._normalize_public_text_with_limit(artifact.get(field), limit=160)
+            if value:
+                result_details.append(f"{label}：{value}")
+        if "retry" in artifact:
+            result_details.append(f"是否重试：{'是' if artifact.get('retry') else '否'}")
+        if result_details:
+            logs.append(
+                self._build_artifact_log_entry(
+                    stage="lead.publish",
+                    title="发布结果已记录",
+                    summary="发布执行结果、回调状态和归档信息已经记录。",
+                    details=result_details,
+                    identity_names=identity_names,
+                    created_at=created_at,
+                )
+            )
+        return logs
+
     def _build_research_log_entry(self, artifact: dict[str, Any], identity_names: dict[str, str], created_at: Any) -> dict[str, Any] | None:
         hotspots = artifact.get("selected_hotspots") if isinstance(artifact.get("selected_hotspots"), list) else []
         queries = artifact.get("expanded_queries") if isinstance(artifact.get("expanded_queries"), list) else []
@@ -1368,6 +1507,41 @@ class CAOConsoleService:
             stage="lead.qa",
             title="质检结果已归档",
             summary=" / ".join(summary_parts) or "质检已完成。",
+            details=details,
+            identity_names=identity_names,
+            created_at=created_at,
+        )
+
+    def _build_publish_log_entry(self, artifact: dict[str, Any], identity_names: dict[str, str], created_at: Any) -> dict[str, Any] | None:
+        if not artifact:
+            return None
+
+        details = []
+        for field, label in (
+            ("platform", "平台"),
+            ("publish_goal", "发布目标"),
+            ("audience", "受众"),
+            ("publish_id", "发布单号"),
+        ):
+            value = self._normalize_public_text_with_limit(artifact.get(field), limit=180)
+            if value:
+                details.append(f"{label}：{value}")
+
+        summary_parts = []
+        status = self._normalize_public_text_with_limit(artifact.get("status"), limit=64)
+        if status:
+            summary_parts.append(f"发布状态 {status}")
+        callback_status = self._normalize_public_text_with_limit(artifact.get("callback_status"), limit=64)
+        if callback_status:
+            summary_parts.append(f"回调 {callback_status}")
+        history_status = self._normalize_public_text_with_limit(artifact.get("history_status"), limit=64)
+        if history_status:
+            summary_parts.append(f"归档 {history_status}")
+
+        return self._build_artifact_log_entry(
+            stage="lead.publish",
+            title="对外交付结果已归档",
+            summary=" / ".join(summary_parts) or "发布链路已完成。",
             details=details,
             identity_names=identity_names,
             created_at=created_at,

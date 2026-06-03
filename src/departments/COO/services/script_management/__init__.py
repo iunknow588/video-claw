@@ -67,7 +67,14 @@ class ScriptService:
             publish_goal=publish_goal,
         )
         
-        script_data = await self._call_text_generation(prompt)
+        script_data = await self._call_text_generation(
+            prompt,
+            topic=topic,
+            content_type=content_type,
+            duration=duration,
+            audience=audience,
+            publish_goal=publish_goal,
+        )
         normalized_scenes = self._normalize_scenes(script_data.get("scenes", []))
         
         script = Script(
@@ -137,6 +144,7 @@ Requirements:
 {audience_line}{goal_line}- Keep the script aligned with the requested video type
 - Must be original and distinct from the analyzed content
 - Similarity score should be below 0.3
+- Return title, hook, CTA, scene text, and narration in Simplified Chinese
 
 Creative guidance:
 {structure_guidance}
@@ -160,11 +168,26 @@ Provide output in JSON format:
         }
         return guidance_map.get(content_type, "- Keep the structure concise, clear, and easy to follow.")
     
-    async def _call_text_generation(self, prompt: str) -> Dict[str, Any]:
+    async def _call_text_generation(
+        self,
+        prompt: str,
+        *,
+        topic: str,
+        content_type: str,
+        duration: int,
+        audience: str | None,
+        publish_goal: str | None,
+    ) -> Dict[str, Any]:
         """Call the configured text provider with placeholder fallback when not configured."""
         logger.info("Calling XFYun MaaS API", model=self.model, configured=self.client.is_configured)
         if should_use_placeholder(self.provider):
-            return self._placeholder_response()
+            return self._placeholder_response(
+                topic=topic,
+                content_type=content_type,
+                duration=duration,
+                audience=audience,
+                publish_goal=publish_goal,
+            )
 
         try:
             response = await self.client.chat_json(
@@ -186,38 +209,69 @@ Provide output in JSON format:
         except (AIProviderError, KeyError, TypeError, ValueError) as exc:
             logger.warning("XFYun MaaS call fallback to placeholder", error=str(exc))
             if should_use_placeholder(self.provider):
-                return self._placeholder_response()
+                return self._placeholder_response(
+                    topic=topic,
+                    content_type=content_type,
+                    duration=duration,
+                    audience=audience,
+                    publish_goal=publish_goal,
+                )
             raise
 
-    def _placeholder_response(self) -> Dict[str, Any]:
+    def _placeholder_response(
+        self,
+        *,
+        topic: str,
+        content_type: str,
+        duration: int,
+        audience: str | None,
+        publish_goal: str | None,
+    ) -> Dict[str, Any]:
+        title_map = {
+            "knowledge": f"{topic}，先抓这3个关键动作",
+            "news": f"{topic}，最新变化先看这3点",
+            "review": f"{topic}，到底该怎么选",
+            "story": f"{topic}，一线门店最真实的冲突",
+            "product": f"{topic}，为什么更容易被顾客记住",
+        }
+        audience_text = audience or "目标用户"
+        goal_text = publish_goal or "提升内容转化"
+        first_scene_end = max(8, min(12, max(duration // 5, 8)))
+        second_scene_end = max(first_scene_end + 12, min(duration - 10, int(duration * 0.7)))
+        if second_scene_end >= duration:
+            second_scene_end = max(first_scene_end + 8, duration - 8)
         return {
-            "title": "Generated Script",
+            "title": title_map.get(content_type, f"{topic}内容拆解"),
             "scenes": self._normalize_scenes([
                 {
-                    "timing": "0-8s",
-                    "visuals": "Open with an eye-catching close-up and fast pacing",
-                    "audio": "Narration sets the problem and promise",
-                    "text": "Hook and problem statement",
+                    "timing": f"0-{first_scene_end}s",
+                    "visuals": f"门店现场或问题场景快速切入，突出“{topic}”里最常见的误区。",
+                    "audio": f"先抛出问题：为什么很多人做{topic}，看起来很忙，结果却不稳定？",
+                    "text": f"{topic}最容易做错的，往往不是努力不够，而是顺序没排对。",
                 },
                 {
-                    "timing": "8-35s",
-                    "visuals": "Explain the core workflow with concrete examples",
-                    "audio": "Narration breaks down the method step by step",
-                    "text": "Main value delivery",
+                    "timing": f"{first_scene_end}-{second_scene_end}s",
+                    "visuals": "用步骤卡点、数字提示和前后对比，拆出2到3个可执行动作。",
+                    "audio": f"第二段给方法：先讲关键动作，再讲常见坑点，最后补充一个适合{audience_text}落地的判断标准。",
+                    "text": "拆成步骤讲清楚，观众才会愿意看完，也更容易记住重点。",
                 },
                 {
-                    "timing": "35-60s",
-                    "visuals": "Summarize takeaways and call for follow-up action",
-                    "audio": "Narration closes with a memorable CTA",
-                    "text": "Summary and CTA",
+                    "timing": f"{second_scene_end}-{duration}s",
+                    "visuals": "收束到结果感和行动建议，镜头回到门店经营核心画面。",
+                    "audio": f"最后总结：围绕“{goal_text}”，真正该先优化的，不是做更多内容，而是把每个动作讲得更具体。",
+                    "text": "先收藏这条，后面继续拆更细的执行动作。",
                 },
             ]),
-            "hook": "Three steps to turn a hot topic into a usable video idea.",
-            "cta": "Follow for more!",
-            "tags": ["mvp", "ai-video"],
+            "hook": f"{topic}这件事，很多门店不是不会做，而是一开始就做反了。",
+            "cta": "先收藏这条，后面继续拆更细的执行动作。",
+            "tags": [self.CONTENT_TYPE_LABELS.get(content_type, content_type), "实操拆解", "门店运营"],
             "similarity_score": 0.2,
             "cost": 0.08,
-            "token_usage": self.client.normalize_usage(None, prompt="placeholder-script", completion_text="Generated Script").to_dict(),
+            "token_usage": self.client.normalize_usage(
+                None,
+                prompt="placeholder-script",
+                completion_text="structured placeholder script",
+            ).to_dict(),
         }
 
     @staticmethod
@@ -253,7 +307,7 @@ Provide output in JSON format:
 
         status_before = script.status
         script.status = "approved" if approved else "rejected"
-        if feedback:
+        if feedback and feedback.strip() != "Auto-approved by workflow.":
             script.cta = f"{script.cta}\n\nReview Feedback:\n{feedback}".strip()
         await self.audit_service.record_review(
             item_type="script",

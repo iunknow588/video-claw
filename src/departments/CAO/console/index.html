@@ -639,7 +639,7 @@
         <div>
           <label class="label" for="messageInput" id="messageInputLabel">消息输入</label>
           <div class="composer-row">
-            <textarea id="messageInput" placeholder="输入要发送给 龙虾CMO 的消息，例如：做一条知识讲解视频，类型偏知识讲解类，主题是龙虾门店运营，目标平台是小红书，风格专业干净，时长60秒。">做一条知识讲解视频，类型偏知识讲解类，主题是龙虾门店运营，目标平台是小红书，风格专业干净，时长60秒。</textarea>
+            <textarea id="messageInput" placeholder="输入要发送给 龙虾CMO 的消息，例如：做一条知识讲解视频，类型偏知识讲解类，主题是龙虾门店运营，目标平台是小红书，面向餐饮老板和门店店长，目标是提升专业感知与咨询转化，风格专业干净，时长60秒。">做一条知识讲解视频，类型偏知识讲解类，主题是龙虾门店运营，目标平台是小红书，面向餐饮老板和门店店长，目标是提升专业感知与咨询转化，风格专业干净，时长60秒。</textarea>
             <div class="send-stack">
               <button id="sendButton" type="button">发送</button>
               <div class="enter-send-toggle">
@@ -734,7 +734,7 @@
             </div>
           </div>
         </div>
-        <div class="meta" id="composerMeta">龙虾CAO 负责对外交付，龙虾CMO 负责接收消息并回传制作进度。下方参数会直接传入底层工作流，消息文本则用于补充创作要求。示例：做一条知识讲解视频，类型偏知识讲解类，主题是龙虾门店运营，目标平台是小红书，风格专业干净，时长60秒。</div>
+        <div class="meta" id="composerMeta">龙虾CAO 负责对外交付，龙虾CMO 负责接收消息并回传制作进度。下方参数会直接传入底层工作流，消息文本则用于补充创作要求。示例：做一条知识讲解视频，类型偏知识讲解类，主题是龙虾门店运营，目标平台是小红书，面向餐饮老板和门店店长，目标是提升专业感知与咨询转化，风格专业干净，时长60秒。</div>
       </footer>
     </section>
 
@@ -835,7 +835,7 @@
       cso: "龙虾CSO",
       cco: "龙虾CCO",
     };
-    const defaultWorkflowPromptExample = "做一条知识讲解视频，类型偏知识讲解类，主题是龙虾门店运营，目标平台是小红书，风格专业干净，时长60秒。";
+    const defaultWorkflowPromptExample = "做一条知识讲解视频，类型偏知识讲解类，主题是龙虾门店运营，目标平台是小红书，面向餐饮老板和门店店长，目标是提升专业感知与咨询转化，风格专业干净，时长60秒。";
     const contentTypeLabels = {
       knowledge: "知识讲解类",
       news: "热点口播类",
@@ -871,7 +871,7 @@
         publish_goal: "提升专业感知与咨询转化",
         auto_approve_script: false,
         auto_generate_video: true,
-        message: "做一条知识讲解视频，围绕龙虾门店运营，突出可落地方法。",
+        message: "做一条知识讲解视频，围绕龙虾门店运营，面向餐饮老板和门店店长，目标是提升专业感知与咨询转化，突出可落地方法。",
       },
       review_douyin_product_compare: {
         domain: "龙虾半成品与现炒方案对比",

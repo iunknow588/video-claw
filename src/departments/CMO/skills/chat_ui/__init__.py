@@ -66,7 +66,8 @@ class ChatUISkill(BaseSkill):
     EVOLUTION_CYCLE_KEYWORDS = ("进化循环", "进化闭环", "触发进化", "手动进化")
     DEFAULT_WORKFLOW_PROMPT_GUIDE = "请直接说明要创作的视频类型、主题、目标平台、风格和时长。"
     DEFAULT_WORKFLOW_PROMPT_EXAMPLE = (
-        "例如：做一条知识讲解视频，类型偏知识讲解类，主题是龙虾门店运营，目标平台是小红书，风格专业干净，时长60秒。"
+        "例如：做一条知识讲解视频，类型偏知识讲解类，主题是龙虾门店运营，目标平台是小红书，"
+        "面向餐饮老板和门店店长，目标是提升专业感知与咨询转化，风格专业干净，时长60秒。"
     )
     CONTENT_TYPE_MAPPING = {
         "knowledge": ("知识讲解类", ("知识讲解", "科普", "教程", "教学", "拆解", "干货")),
@@ -323,7 +324,7 @@ class ChatUISkill(BaseSkill):
             "video_style": video_style if auto_generate_video else style,
             "duration": duration,
             "audience": audience,
-            "publish_goal": publish_goal or self._default_publish_goal(domain, message),
+            "publish_goal": publish_goal or self._default_publish_goal(domain, message, content_type=content_type),
             "auto_approve_script": auto_approve_script,
             "auto_generate_video": auto_generate_video,
         }
@@ -370,12 +371,38 @@ class ChatUISkill(BaseSkill):
     ) -> bool:
         if "auto_approve_script" in workflow_params:
             return bool(workflow_params["auto_approve_script"])
-        return auto_generate_video or "自动审核" in message or "直接过审" in message
+        lowered = message.lower()
+        if any(keyword in message or keyword in lowered for keyword in ("自动审核", "直接过审", "自动过审", "无需审核")):
+            return True
+        # 简单派活默认直接推进到成片，详细创作简报则默认保留人工脚本审核。
+        detailed_brief_markers = (
+            "类型",
+            "目标平台",
+            "风格",
+            "面向",
+            "目标是",
+            "目标为",
+            "知识讲解类",
+            "热点口播类",
+            "测评对比类",
+            "剧情演绎类",
+            "种草推荐类",
+        )
+        if any(marker in message for marker in detailed_brief_markers):
+            return False
+        return auto_generate_video
 
-    def _default_publish_goal(self, domain: str, message: str) -> str:
-        if message:
-            return message[:100]
-        return f"{domain}内容生产"
+    def _default_publish_goal(self, domain: str, message: str, *, content_type: str) -> str:
+        goal_map = {
+            "knowledge": "提升专业感知与咨询转化",
+            "news": "提升互动率与热点跟进效率",
+            "review": "提升对比转化与咨询意向",
+            "story": "提升完播率与账号记忆点",
+            "product": "提升种草转化与私信咨询",
+        }
+        if domain and "门店" in domain and content_type == "knowledge":
+            return "提升专业感知与咨询转化"
+        return goal_map.get(content_type, f"{domain}内容生产" if domain else "提升内容转化")
 
     def _parse_platform(self, message: str) -> str:
         mapping = {
@@ -420,6 +447,7 @@ class ChatUISkill(BaseSkill):
 
     def _parse_audience(self, message: str) -> str | None:
         patterns = [
+            r"(?:面向)(.+?)(?:，|,|。|$)",
             r"(?:面向|给)(.+?)(?:看|用户|人群|观众|，|,|。|$)",
             r"(?:受众|人群)(?:是|为)?(.+?)(?:，|,|。|$)",
         ]
