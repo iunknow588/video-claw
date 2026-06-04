@@ -328,10 +328,19 @@ class GovernanceConditionalEdgeRequest(BaseModel):
     mapping: Dict[str, str]
 
 
-class GovernanceOptimizeCommandRequest(BaseModel):
-    target_metric: str
-    goal_value: Any
-    note: Optional[str] = None
+class GovernanceConfigActionCreateRequest(BaseModel):
+    leader_name: str = Field(..., min_length=1, max_length=100)
+    action_type: str = Field(..., min_length=1, max_length=100)
+    target_metric: str = Field(..., min_length=1, max_length=100)
+    goal_value: Any = None
+    note: Optional[str] = Field(default=None, max_length=500)
+    payload: Dict[str, Any] = Field(default_factory=dict)
+    source: str = Field(default="ceo_manual", min_length=1, max_length=100)
+
+
+class GovernanceConfigActionDecisionRequest(BaseModel):
+    reviewed_by: str = Field(default="ceo", min_length=1, max_length=100)
+    decision_note: Optional[str] = Field(default=None, max_length=500)
 
 
 class GovernanceLeaderProposalRequest(BaseModel):

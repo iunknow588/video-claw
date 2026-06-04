@@ -35,8 +35,16 @@ class CEOWorkflowSkill:
             "router_func": {"type": "string"},
             "mapping": {"type": "object"},
             "leader_name": {"type": "string"},
+            "action_id": {"type": "string"},
+            "action_type": {"type": "string"},
             "target_metric": {"type": "string"},
             "goal_value": {},
+            "payload": {"type": "object"},
+            "source": {"type": "string"},
+            "reviewed_by": {"type": "string"},
+            "decision_note": {"type": "string"},
+            "status": {"type": "string"},
+            "limit": {"type": "integer"},
             "proposal": {"type": "object"},
             "token_limit": {"type": "integer"},
             "resource_type": {"type": "string"},
@@ -154,6 +162,51 @@ class CEOWorkflowSkill:
         )
         return {"workflow": workflow}
 
+    def get_config_action_capabilities(self, input_bundle: dict[str, Any] | None = None) -> dict[str, Any]:
+        return self.control_plane.get_config_action_capabilities()
+
+    def list_config_actions(self, input_bundle: dict[str, Any] | None = None) -> dict[str, Any]:
+        bundle = dict(input_bundle or {})
+        return self.control_plane.list_config_actions(
+            status=str(bundle.get("status") or "") or None,
+            leader_name=str(bundle.get("leader_name") or "") or None,
+            limit=int(bundle.get("limit") or 50),
+        )
+
+    def get_config_action(self, input_bundle: dict[str, Any]) -> dict[str, Any]:
+        return {"config_action": self.control_plane.get_config_action(action_id=str(input_bundle.get("action_id") or ""))}
+
+    def create_config_action(self, input_bundle: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "config_action": self.control_plane.create_config_action(
+                leader_name=str(input_bundle.get("leader_name") or ""),
+                action_type=str(input_bundle.get("action_type") or ""),
+                target_metric=str(input_bundle.get("target_metric") or ""),
+                goal_value=input_bundle.get("goal_value"),
+                note=str(input_bundle.get("note") or "") or None,
+                payload=dict(input_bundle.get("payload") or {}),
+                source=str(input_bundle.get("source") or "ceo_manual"),
+            )
+        }
+
+    def apply_config_action(self, input_bundle: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "config_action": self.control_plane.apply_config_action(
+                action_id=str(input_bundle.get("action_id") or ""),
+                reviewed_by=str(input_bundle.get("reviewed_by") or "ceo"),
+                decision_note=str(input_bundle.get("decision_note") or "") or None,
+            )
+        }
+
+    def reject_config_action(self, input_bundle: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "config_action": self.control_plane.reject_config_action(
+                action_id=str(input_bundle.get("action_id") or ""),
+                reviewed_by=str(input_bundle.get("reviewed_by") or "ceo"),
+                decision_note=str(input_bundle.get("decision_note") or "") or None,
+            )
+        }
+
     def get_company_status(self, input_bundle: dict[str, Any] | None = None) -> dict[str, Any]:
         return {
             "company_status": dict((input_bundle or {}).get("company_status") or {}),
@@ -164,15 +217,6 @@ class CEOWorkflowSkill:
         return {
             "task_progress": dict((input_bundle or {}).get("task_progress") or {}),
         }
-
-    def issue_optimize_command(self, input_bundle: dict[str, Any]) -> dict[str, Any]:
-        command = self.control_plane.issue_optimize_command(
-            leader_name=str(input_bundle.get("leader_name") or ""),
-            target_metric=str(input_bundle.get("target_metric") or ""),
-            goal_value=input_bundle.get("goal_value"),
-            note=str(input_bundle.get("note") or "") or None,
-        )
-        return {"command": command}
 
     def request_leader_report(self, input_bundle: dict[str, Any]) -> dict[str, Any]:
         request = self.control_plane.request_leader_report(

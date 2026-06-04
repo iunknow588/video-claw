@@ -1,5 +1,5 @@
 param(
-    [int]$Port = 8000
+    [int]$Port = 8010
 )
 
 $ErrorActionPreference = "Stop"
@@ -59,6 +59,7 @@ function Test-IsRepoLocalService {
         [Parameter(Mandatory = $true)]
         [string]$RepoRoot,
         [Parameter(Mandatory = $true)]
+        [AllowEmptyString()]
         [string]$CommandLine
     )
 
@@ -87,6 +88,7 @@ function Test-IsRepoLocalService {
 function Test-ReloadEnabled {
     param(
         [Parameter(Mandatory = $true)]
+        [AllowEmptyString()]
         [string]$CommandLine
     )
 

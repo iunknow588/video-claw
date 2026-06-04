@@ -3,6 +3,7 @@
 import pytest
 
 from departments.CEO.core.config import settings
+from departments.CEO.services.control_plane import control_plane
 from departments.CEO.services.orchestration.domain_workflow import DomainWorkflowService
 from departments.CIO.schemas.video import DomainWorkflowRequest
 from departments.CIO.services.workflow_runs import WorkflowRunService
@@ -321,7 +322,6 @@ async def test_workflow_skill_catalog_is_discoverable(api_client):
     assert "lead.promotion" in ceo_skill["dependencies"]
     assert "list_leaders" in ceo_skill["methods"]
     assert "set_workflow" in ceo_skill["methods"]
-    assert "issue_optimize_command" in ceo_skill["methods"]
     assert "evolution_cycle" in ceo_skill["methods"]
     assert "finance" in cfo_skill["tags"]
     assert "platform" in cfo_skill["parameters_schema"]["properties"]
@@ -346,10 +346,15 @@ async def test_cao_console_page_is_served(api_client):
     assert "龙虾CAO 正在值班" in cao_response.text
     assert "龙虾CEO 正在默默关注视频制作流程" in cao_response.text
     assert "/api/cmo/chat" in cao_response.text
-    assert "称呼设置" in cao_response.text
+    assert "系统配置" in cao_response.text
+    assert "名称配置" in cao_response.text
+    assert "CEO 配置" in cao_response.text
+    assert "API 配置" in cao_response.text
     assert "主链路状态" in cao_response.text
+    assert "CEO 配置动作" in cao_response.text
     assert "最近任务" in cao_response.text
     assert "日志记录" in cao_response.text
+    assert "/api/cao/governance/config-actions" in cao_response.text
     assert "CEO 治理总览" not in cao_response.text
 
 
@@ -478,18 +483,24 @@ async def test_cao_public_trace_exposes_failed_skill_diagnostics(api_client, ses
 
 @pytest.mark.asyncio
 async def test_cao_identity_settings_can_be_saved_and_reused(api_client):
-    get_resp = await api_client.get("/api/cao/identity-settings")
+    get_resp = await api_client.get("/api/cao/system-settings")
     assert get_resp.status_code == 200
-    settings = get_resp.json()
-    assert settings["names"]["ceo"] == "龙虾CEO"
-    assert settings["names"]["cao"] == "龙虾CAO"
+    payload = get_resp.json()
+    identity_settings = payload["identity"]
+    assert identity_settings["console_title"] == "龙虾宝宝视频制作平台"
+    assert identity_settings["names"]["ceo"] == "龙虾CEO"
+    assert identity_settings["names"]["cao"] == "龙虾CAO"
 
     patch_resp = await api_client.patch(
-        "/api/cao/identity-settings",
-        json={"names": {"ceo": "阿甲", "cao": "小龙虾前台", "cmo": "小龙虾传播官"}},
+        "/api/cao/system-settings/identity",
+        json={
+            "console_title": "龙虾作战中台",
+            "names": {"ceo": "阿甲", "cao": "小龙虾前台", "cmo": "小龙虾传播官"},
+        },
     )
     assert patch_resp.status_code == 200
     updated = patch_resp.json()
+    assert updated["console_title"] == "龙虾作战中台"
     assert updated["names"]["ceo"] == "阿甲"
     assert updated["names"]["cao"] == "小龙虾前台"
     assert updated["names"]["cmo"] == "小龙虾传播官"
@@ -497,9 +508,123 @@ async def test_cao_identity_settings_can_be_saved_and_reused(api_client):
     status_resp = await api_client.get("/api/cao/pipeline-status")
     assert status_resp.status_code == 200
     status_data = status_resp.json()
+    assert status_data["console_title"] == "龙虾作战中台"
     assert status_data["console_subtitle"] == "阿甲 正在默默关注视频制作流程。"
     assert status_data["console_frontdesk_name"] == "小龙虾前台"
     assert status_data["identity_settings"]["names"]["cmo"] == "小龙虾传播官"
+
+
+@pytest.mark.asyncio
+async def test_cao_ceo_runtime_settings_can_be_updated(api_client):
+    control_plane.reset_defaults()
+    try:
+        get_resp = await api_client.get("/api/cao/system-settings/ceo-runtime")
+        assert get_resp.status_code == 200
+        current = get_resp.json()
+        assert current["dispatch_mode"] == "graph"
+        assert "balanced" in current["qa_reroute_strategy_options"]
+
+        patch_resp = await api_client.patch(
+            "/api/cao/system-settings/ceo-runtime",
+            json={
+                "evolution_enabled": True,
+                "dispatch_mode": "graph",
+                "qa_rework_max_attempts": 3,
+                "qa_reroute_strategy": "conservative",
+            },
+        )
+        assert patch_resp.status_code == 200
+        updated = patch_resp.json()
+        assert updated["evolution_enabled"] is True
+        assert updated["qa_rework_max_attempts"] == 3
+        assert updated["qa_reroute_strategy"] == "conservative"
+
+        company_status_resp = await api_client.get("/api/cao/governance/company-status")
+        assert company_status_resp.status_code == 200
+        company_status = company_status_resp.json()
+        assert company_status["evolution_enabled"] is True
+        assert company_status["workflow"]["dispatch_mode"] == "graph"
+    finally:
+        control_plane.reset_defaults()
+
+
+@pytest.mark.asyncio
+async def test_cao_api_provider_settings_can_be_updated(api_client):
+    original_payload = (await api_client.get("/api/cao/system-settings/api-providers")).json()
+    restore_payload = {
+        "deepseek": {key: original_payload["deepseek"][key] for key in ("api_key", "base_url", "model", "resource_id")},
+        "glm": {key: original_payload["glm"][key] for key in ("api_key", "base_url", "model", "resource_id")},
+        "xfyun_maas": {
+            key: original_payload["xfyun_maas"][key] for key in ("api_key", "base_url", "model", "resource_id")
+        },
+        "hidream": {
+            key: original_payload["hidream"][key] for key in ("app_id", "api_key", "api_secret", "create_url", "query_url")
+        },
+        "seedance": {key: original_payload["seedance"][key] for key in ("api_key", "base_url", "model", "resource_id")},
+        "runtime": {
+            key: original_payload["runtime"][key]
+            for key in ("http_timeout", "max_retries", "use_placeholder_when_unconfigured")
+        },
+    }
+    try:
+        patch_resp = await api_client.patch(
+            "/api/cao/system-settings/api-providers",
+            json={
+                "deepseek": {
+                    "api_key": "deepseek-test-key",
+                    "base_url": "https://deepseek.example.test",
+                    "model": "deepseek-chat-test",
+                    "resource_id": "",
+                },
+                "glm": {
+                    "api_key": "glm-test-key",
+                    "base_url": "https://glm.example.test",
+                    "model": "glm-4-test",
+                    "resource_id": "glm-resource-test",
+                },
+                "xfyun_maas": {
+                    "api_key": "xfyun-test-key",
+                    "base_url": "https://xfyun.example.test",
+                    "model": "spark-test",
+                    "resource_id": "xfyun-resource-test",
+                },
+                "hidream": {
+                    "app_id": "hidream-app-test",
+                    "api_key": "hidream-key-test",
+                    "api_secret": "hidream-secret-test",
+                    "create_url": "https://hidream.example.test/create",
+                    "query_url": "https://hidream.example.test/query",
+                },
+                "seedance": {
+                    "api_key": "seedance-test-key",
+                    "base_url": "https://seedance.example.test",
+                    "model": "seedance-v-test",
+                    "resource_id": "seedance-resource-test",
+                },
+                "runtime": {
+                    "http_timeout": 45,
+                    "max_retries": 5,
+                    "use_placeholder_when_unconfigured": False,
+                },
+            },
+        )
+        assert patch_resp.status_code == 200
+        updated = patch_resp.json()
+        assert updated["deepseek"]["api_key"] == "deepseek-test-key"
+        assert updated["glm"]["resource_id"] == "glm-resource-test"
+        assert updated["hidream"]["app_id"] == "hidream-app-test"
+        assert updated["runtime"]["http_timeout"] == 45
+        assert updated["runtime"]["max_retries"] == 5
+        assert updated["runtime"]["use_placeholder_when_unconfigured"] is False
+        assert settings.ai_providers.deepseek.api_key == "deepseek-test-key"
+        assert settings.ai_providers.hidream.app_id == "hidream-app-test"
+        assert settings.ai_providers.runtime.max_retries == 5
+    finally:
+        restore_resp = await api_client.patch(
+            "/api/cao/system-settings/api-providers",
+            json=restore_payload,
+        )
+        assert restore_resp.status_code == 200
 
 @pytest.mark.asyncio
 async def test_cmo_chat_request_streams_status_and_result(api_client):
@@ -678,6 +803,87 @@ async def test_cao_governance_blocks_external_optimize_command_and_manage_evolut
     assert disable_resp.status_code == 200
     assert disable_resp.json()["evolution_enabled"] is False
 
+
+@pytest.mark.asyncio
+async def test_cao_governance_config_actions_support_capabilities_and_approval_loop(api_client):
+    capability_resp = await api_client.get("/api/cao/governance/config-actions/capabilities")
+    assert capability_resp.status_code == 200
+    capability_data = capability_resp.json()
+    assert any(item["action_type"] == "update_leader_config" for item in capability_data["capabilities"])
+    assert any(item["action_type"] == "set_budget" for item in capability_data["capabilities"])
+    assert capability_data["status_flow"] == ["proposed", "applied", "rejected"]
+    assert "leader_name" in capability_data["command_format"]
+
+    create_resp = await api_client.post(
+        "/api/cao/governance/config-actions",
+        json={
+            "leader_name": "lead.production",
+            "action_type": "set_budget",
+            "target_metric": "workflow_success_rate",
+            "goal_value": 0.92,
+            "note": "Raise budget for a production stability trial.",
+            "payload": {"token_limit": 23456},
+        },
+    )
+    assert create_resp.status_code == 200
+    created = create_resp.json()["config_action"]
+    assert created["status"] == "proposed"
+    assert created["action_type"] == "set_budget"
+
+    action_id = created["action_id"]
+    detail_resp = await api_client.get(f"/api/cao/governance/config-actions/{action_id}")
+    assert detail_resp.status_code == 200
+    assert detail_resp.json()["config_action"]["action_id"] == action_id
+
+    list_resp = await api_client.get("/api/cao/governance/config-actions", params={"status": "proposed"})
+    assert list_resp.status_code == 200
+    list_data = list_resp.json()
+    assert any(item["action_id"] == action_id for item in list_data["config_actions"])
+    assert list_data["status_summary"]["proposed"] >= 1
+    assert "proposed" in list_data["available_statuses"]
+
+    apply_resp = await api_client.post(
+        f"/api/cao/governance/config-actions/{action_id}/apply",
+        json={"reviewed_by": "ceo", "decision_note": "Approved for this cycle."},
+    )
+    assert apply_resp.status_code == 200
+    applied = apply_resp.json()["config_action"]
+    assert applied["status"] == "applied"
+    assert applied["reviewed_by"] == "ceo"
+    assert applied["applied_snapshot"]["token_limit"] == 23456
+
+    leader_resp = await api_client.get("/api/cao/governance/leaders/lead.production")
+    assert leader_resp.status_code == 200
+    assert leader_resp.json()["leader"]["token_limit"] == 23456
+
+    reject_create_resp = await api_client.post(
+        "/api/cao/governance/config-actions",
+        json={
+            "leader_name": "lead.qa",
+            "action_type": "adjust_resource_allocation",
+            "target_metric": "qa_pass_rate",
+            "goal_value": 0.97,
+            "payload": {"resource_type": "review_priority", "amount": "critical"},
+        },
+    )
+    assert reject_create_resp.status_code == 200
+    reject_action_id = reject_create_resp.json()["config_action"]["action_id"]
+
+    reject_resp = await api_client.post(
+        f"/api/cao/governance/config-actions/{reject_action_id}/reject",
+        json={"reviewed_by": "ceo", "decision_note": "Rejected after review."},
+    )
+    assert reject_resp.status_code == 200
+    rejected = reject_resp.json()["config_action"]
+    assert rejected["status"] == "rejected"
+    assert rejected["decision_note"] == "Rejected after review."
+
+    closed_list_resp = await api_client.get("/api/cao/governance/config-actions", params={"limit": 10})
+    assert closed_list_resp.status_code == 200
+    closed_list_data = closed_list_resp.json()
+    assert closed_list_data["status_summary"]["applied"] >= 1
+    assert closed_list_data["status_summary"]["rejected"] >= 1
+
     optimize_resp = await api_client.post(
         "/api/cao/governance/leaders/lead.qa/optimize",
         json={"target_metric": "qa_pass_rate", "goal_value": 0.95},
@@ -692,7 +898,7 @@ async def test_cao_governance_blocks_external_optimize_command_and_manage_evolut
     assert cycle_resp.status_code == 200
     cycle = cycle_resp.json()
     assert "company_status" in cycle
-    assert "issued_commands" in cycle
+    assert "issued_config_actions" in cycle
 
     disable_resp = await api_client.post("/api/cao/governance/evolution/disable")
     assert disable_resp.status_code == 200

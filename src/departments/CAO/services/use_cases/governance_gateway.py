@@ -82,6 +82,68 @@ class GovernanceGatewayUseCase:
     ) -> dict:
         return await self.service.adjust_resource_allocation(leader_name, resource_type, amount)
 
+    async def get_config_action_capabilities(self) -> dict:
+        return await self.service.get_config_action_capabilities()
+
+    async def list_config_actions(
+        self,
+        *,
+        status: str | None = None,
+        leader_name: str | None = None,
+        limit: int = 50,
+    ) -> dict:
+        return await self.service.list_config_actions(status=status, leader_name=leader_name, limit=limit)
+
+    async def get_config_action(self, action_id: str) -> dict:
+        return await self.service.get_config_action(action_id)
+
+    async def create_config_action(
+        self,
+        *,
+        leader_name: str,
+        action_type: str,
+        target_metric: str,
+        goal_value: float | int | str | None,
+        note: str | None = None,
+        payload: dict | None = None,
+        source: str = "ceo_manual",
+    ) -> dict:
+        return await self.service.create_config_action(
+            leader_name=leader_name,
+            action_type=action_type,
+            target_metric=target_metric,
+            goal_value=goal_value,
+            note=note,
+            payload=payload,
+            source=source,
+        )
+
+    async def apply_config_action(
+        self,
+        *,
+        action_id: str,
+        reviewed_by: str = "ceo",
+        decision_note: str | None = None,
+    ) -> dict:
+        return await self.service.apply_config_action(
+            action_id=action_id,
+            reviewed_by=reviewed_by,
+            decision_note=decision_note,
+        )
+
+    async def reject_config_action(
+        self,
+        *,
+        action_id: str,
+        reviewed_by: str = "ceo",
+        decision_note: str | None = None,
+    ) -> dict:
+        return await self.service.reject_config_action(
+            action_id=action_id,
+            reviewed_by=reviewed_by,
+            decision_note=decision_note,
+        )
+
     async def get_task_progress(self, workflow_run_id: str) -> dict:
         return await self.service.get_task_progress(workflow_run_id)
 

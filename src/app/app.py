@@ -11,13 +11,16 @@ from fastapi.staticfiles import StaticFiles
 from app.router import api_router
 from departments.CEO.core.logging import setup_logging
 from departments.CEO.services.application_runtime import get_application_runtime
-from departments.CIO.db.session import ensure_database_ready
+from departments.CIO.db.session import database_runtime, ensure_database_ready
+from departments.CIO.services.system_settings import SystemSettingsService
 from departments.CIO.services.storage import get_storage_runtime
 
 
 @asynccontextmanager
 async def application_lifespan(_: FastAPI):
     await ensure_database_ready()
+    async with database_runtime.session_factory()() as session:
+        await SystemSettingsService(session).apply_runtime_overrides()
     yield
 
 

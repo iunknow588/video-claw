@@ -7,6 +7,8 @@ from departments.CAO.services.use_cases.governance_gateway import GovernanceGate
 from departments.CIO.db.session import get_db
 from departments.CIO.schemas.video import (
     GovernanceBudgetRequest,
+    GovernanceConfigActionCreateRequest,
+    GovernanceConfigActionDecisionRequest,
     GovernanceConditionalEdgeRequest,
     GovernanceLeaderCreateRequest,
     GovernanceLeaderProposalRequest,
@@ -19,6 +21,89 @@ from departments.CIO.schemas.video import (
 )
 
 router = APIRouter(prefix="/governance")
+
+
+@router.get("/config-actions/capabilities")
+async def get_config_action_capabilities(
+    db: AsyncSession = Depends(get_db),
+):
+    return await GovernanceGatewayUseCase(db).get_config_action_capabilities()
+
+
+@router.get("/config-actions")
+async def list_config_actions(
+    status: str | None = None,
+    leader_name: str | None = None,
+    limit: int = 50,
+    db: AsyncSession = Depends(get_db),
+):
+    return await GovernanceGatewayUseCase(db).list_config_actions(
+        status=status,
+        leader_name=leader_name,
+        limit=limit,
+    )
+
+
+@router.post("/config-actions")
+async def create_config_action(
+    data: GovernanceConfigActionCreateRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    try:
+        return await GovernanceGatewayUseCase(db).create_config_action(
+            leader_name=data.leader_name,
+            action_type=data.action_type,
+            target_metric=data.target_metric,
+            goal_value=data.goal_value,
+            note=data.note,
+            payload=data.payload,
+            source=data.source,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.get("/config-actions/{action_id}")
+async def get_config_action(
+    action_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    try:
+        return await GovernanceGatewayUseCase(db).get_config_action(action_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.post("/config-actions/{action_id}/apply")
+async def apply_config_action(
+    action_id: str,
+    data: GovernanceConfigActionDecisionRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    try:
+        return await GovernanceGatewayUseCase(db).apply_config_action(
+            action_id=action_id,
+            reviewed_by=data.reviewed_by,
+            decision_note=data.decision_note,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post("/config-actions/{action_id}/reject")
+async def reject_config_action(
+    action_id: str,
+    data: GovernanceConfigActionDecisionRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    try:
+        return await GovernanceGatewayUseCase(db).reject_config_action(
+            action_id=action_id,
+            reviewed_by=data.reviewed_by,
+            decision_note=data.decision_note,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @router.get("/company-status")

@@ -23,7 +23,7 @@ class BaseLeader(ABC):
     token_limit: int
     resource_allocations: dict[str, Any]
     organization_profile: dict[str, Any]
-    last_optimize_command: dict[str, Any] | None
+    last_config_action: dict[str, Any] | None
     lifecycle_events: list[dict[str, Any]]
     version_history: list[dict[str, Any]]
 
@@ -113,8 +113,8 @@ class BaseLeader(ABC):
             "created_at": datetime.now(UTC),
         }
         self.lifecycle_events.append({"event_type": "command", "payload": event, "created_at": datetime.now(UTC)})
-        if command_type == "optimize":
-            self.last_optimize_command = deepcopy(payload or {})
+        if command_type == "config_action":
+            self.last_config_action = deepcopy(payload or {})
         return event
 
     def build_report(self) -> dict[str, Any]:
@@ -126,7 +126,7 @@ class BaseLeader(ABC):
             "bound_tools": list(self.bound_tools),
             "resource_allocations": dict(self.resource_allocations),
             "organization_profile": deepcopy(self.organization_profile),
-            "last_optimize_command": deepcopy(self.last_optimize_command),
+            "last_config_action": deepcopy(self.last_config_action),
         }
 
     def build_periodic_report(self, context: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -165,6 +165,6 @@ class ManagedLeader(BaseLeader):
     token_limit: int = 10000
     resource_allocations: dict[str, Any] = field(default_factory=dict)
     organization_profile: dict[str, Any] = field(default_factory=dict)
-    last_optimize_command: dict[str, Any] | None = None
+    last_config_action: dict[str, Any] | None = None
     lifecycle_events: list[dict[str, Any]] = field(default_factory=list)
     version_history: list[dict[str, Any]] = field(default_factory=list)

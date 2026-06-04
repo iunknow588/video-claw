@@ -367,6 +367,148 @@
       gap: 10px;
     }
 
+    .settings-tabbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .settings-tab {
+      height: 32px;
+      padding: 0 12px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .settings-tab.active {
+      background: var(--accent-soft);
+      color: var(--accent);
+      border-color: #b7e4dc;
+    }
+
+    .settings-section[hidden] {
+      display: none;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .form-grid .settings-item--wide {
+      grid-column: span 2;
+    }
+
+    .compact-textarea {
+      min-height: 132px;
+      font-family: "Cascadia Code", "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .config-action-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .config-action-item {
+      padding: 12px;
+      border: 1px solid #e7ddcf;
+      border-radius: 8px;
+      background: #fff;
+      display: grid;
+      gap: 8px;
+    }
+
+    .config-action-head,
+    .config-action-meta,
+    .config-action-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .config-action-head strong {
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .config-action-status {
+      display: inline-flex;
+      align-items: center;
+      height: 22px;
+      padding: 0 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      line-height: 1;
+      border: 1px solid transparent;
+    }
+
+    .config-action-status[data-status="proposed"] {
+      color: var(--warning);
+      background: var(--warning-soft);
+      border-color: #eed38a;
+    }
+
+    .config-action-status[data-status="applied"] {
+      color: var(--success);
+      background: var(--success-soft);
+      border-color: #b7e4c2;
+    }
+
+    .config-action-status[data-status="rejected"] {
+      color: var(--error);
+      background: var(--error-soft);
+      border-color: #f1c3bf;
+    }
+
+    .config-action-meta,
+    .config-action-body,
+    .config-action-note {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+      overflow-wrap: anywhere;
+    }
+
+    .config-action-body {
+      color: var(--text);
+      white-space: pre-wrap;
+      font-family: "Cascadia Code", "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    }
+
+    .config-action-actions {
+      justify-content: flex-end;
+    }
+
+    .config-action-actions button {
+      height: 34px;
+      padding: 0 12px;
+    }
+
+    .config-action-actions .reject-button {
+      background: #fff;
+      color: var(--error);
+      border: 1px solid #f1c3bf;
+    }
+
+    .config-action-capability {
+      padding: 10px 12px;
+      border: 1px dashed #d8d0c2;
+      border-radius: 8px;
+      background: #fff;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+      white-space: pre-wrap;
+    }
+
     .rail-head {
       display: flex;
       align-items: center;
@@ -387,6 +529,21 @@
       margin-bottom: 8px;
       font-size: 14px;
       line-height: 1.4;
+    }
+
+    .settings-note {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .settings-subgrid {
+      display: grid;
+      gap: 10px;
+    }
+
+    .settings-subgrid + .settings-subgrid {
+      margin-top: 2px;
     }
 
     .settings-input {
@@ -748,16 +905,42 @@
     <aside class="rail">
       <section class="rail-block">
         <div class="rail-head">
-          <h2 class="rail-title">称呼设置</h2>
+          <h2 class="rail-title">系统配置</h2>
           <button id="toggleSettingsButton" class="secondary-button" type="button">打开设置</button>
         </div>
         <div class="settings-panel" id="settingsPanel" hidden>
-          <div class="settings-grid" id="settingsGrid">
-            <div class="empty">正在加载称呼设置。</div>
+          <div class="settings-tabbar" id="settingsTabbar">
+            <button class="settings-tab active" type="button" data-settings-tab="identity">名称配置</button>
+            <button class="settings-tab" type="button" data-settings-tab="ceo">CEO 配置</button>
+            <button class="settings-tab" type="button" data-settings-tab="api">API 配置</button>
           </div>
-          <div class="settings-actions">
-            <button id="saveSettingsButton" type="button">保存称呼</button>
-          </div>
+
+          <section class="settings-section" id="settingsIdentitySection">
+            <div class="settings-grid" id="settingsIdentityGrid">
+              <div class="empty">正在加载名称配置。</div>
+            </div>
+            <div class="settings-actions">
+              <button id="saveIdentitySettingsButton" type="button">保存名称配置</button>
+            </div>
+          </section>
+
+          <section class="settings-section" id="settingsCeoSection" hidden>
+            <div class="settings-grid" id="settingsCeoGrid">
+              <div class="empty">正在加载 CEO 配置。</div>
+            </div>
+            <div class="settings-actions">
+              <button id="saveCeoSettingsButton" type="button">保存 CEO 配置</button>
+            </div>
+          </section>
+
+          <section class="settings-section" id="settingsApiSection" hidden>
+            <div class="settings-grid" id="settingsApiGrid">
+              <div class="empty">正在加载 API 配置。</div>
+            </div>
+            <div class="settings-actions">
+              <button id="saveApiSettingsButton" type="button">保存 API 配置</button>
+            </div>
+          </section>
         </div>
       </section>
 
@@ -765,6 +948,60 @@
         <h2 class="rail-title">主链路状态</h2>
         <div class="summary-grid" id="summaryGrid">
           <div class="card"><strong>正在准备</strong><span>龙虾CAO 正在整理当前制作链路。</span></div>
+        </div>
+      </section>
+
+      <section class="rail-block">
+        <div class="rail-head">
+          <h2 class="rail-title">CEO 配置动作</h2>
+          <button id="refreshConfigActionsButton" class="secondary-button" type="button">刷新</button>
+        </div>
+        <div class="summary-grid" id="configActionSummaryGrid">
+          <div class="card"><strong>待审批</strong><span>正在加载</span></div>
+          <div class="card"><strong>已应用</strong><span>正在加载</span></div>
+        </div>
+        <div class="form-grid">
+          <label class="settings-item">
+            <strong>目标 Leader</strong>
+            <select class="settings-input" id="configActionLeaderInput">
+              <option value="">请选择</option>
+            </select>
+          </label>
+          <label class="settings-item">
+            <strong>动作类型</strong>
+            <select class="settings-input" id="configActionTypeInput">
+              <option value="">请选择</option>
+            </select>
+          </label>
+          <label class="settings-item">
+            <strong>目标指标</strong>
+            <input class="settings-input" id="configActionMetricInput" type="text" placeholder="例如：workflow_success_rate" />
+          </label>
+          <label class="settings-item">
+            <strong>目标值</strong>
+            <input class="settings-input" id="configActionGoalInput" type="text" placeholder="例如：0.92" />
+          </label>
+          <label class="settings-item settings-item--wide">
+            <strong>说明</strong>
+            <input class="settings-input" id="configActionNoteInput" type="text" placeholder="补充审批背景或变更原因" />
+          </label>
+          <label class="settings-item settings-item--wide">
+            <strong>Payload(JSON)</strong>
+            <textarea class="compact-textarea" id="configActionPayloadInput" placeholder='{"token_limit":24000}'></textarea>
+          </label>
+        </div>
+        <div class="settings-actions">
+          <button id="createConfigActionButton" type="button">创建动作</button>
+        </div>
+        <div class="config-action-capability" id="configActionHint">正在加载动作格式。</div>
+        <div class="log-toolbar" id="configActionFilterToolbar">
+          <button class="log-filter active" type="button" data-config-filter="all">全部</button>
+          <button class="log-filter" type="button" data-config-filter="proposed">待审批</button>
+          <button class="log-filter" type="button" data-config-filter="applied">已应用</button>
+          <button class="log-filter" type="button" data-config-filter="rejected">已拒绝</button>
+        </div>
+        <div class="config-action-list" id="configActionList">
+          <div class="empty">正在加载配置动作队列。</div>
         </div>
       </section>
 
@@ -815,19 +1052,42 @@
     const workflowSummary = document.getElementById("workflowSummary");
     const sendButton = document.getElementById("sendButton");
     const toggleSettingsButton = document.getElementById("toggleSettingsButton");
-    const saveSettingsButton = document.getElementById("saveSettingsButton");
+    const consoleTitle = document.getElementById("consoleTitle");
+    const saveIdentitySettingsButton = document.getElementById("saveIdentitySettingsButton");
+    const saveCeoSettingsButton = document.getElementById("saveCeoSettingsButton");
+    const saveApiSettingsButton = document.getElementById("saveApiSettingsButton");
     const clearDisplayButton = document.getElementById("clearDisplayButton");
     const statusChip = document.getElementById("statusChip");
     const frontdeskLine = document.getElementById("frontdeskLine");
     const welcomeMessage = document.getElementById("welcomeMessage");
     const composerMeta = document.getElementById("composerMeta");
     const summaryGrid = document.getElementById("summaryGrid");
+    const configActionSummaryGrid = document.getElementById("configActionSummaryGrid");
+    const configActionLeaderInput = document.getElementById("configActionLeaderInput");
+    const configActionTypeInput = document.getElementById("configActionTypeInput");
+    const configActionMetricInput = document.getElementById("configActionMetricInput");
+    const configActionGoalInput = document.getElementById("configActionGoalInput");
+    const configActionNoteInput = document.getElementById("configActionNoteInput");
+    const configActionPayloadInput = document.getElementById("configActionPayloadInput");
+    const configActionHint = document.getElementById("configActionHint");
+    const configActionFilterToolbar = document.getElementById("configActionFilterToolbar");
+    const configActionList = document.getElementById("configActionList");
+    const createConfigActionButton = document.getElementById("createConfigActionButton");
+    const refreshConfigActionsButton = document.getElementById("refreshConfigActionsButton");
     const runGrid = document.getElementById("runGrid");
     const settingsPanel = document.getElementById("settingsPanel");
-    const settingsGrid = document.getElementById("settingsGrid");
+    const settingsIdentityGrid = document.getElementById("settingsIdentityGrid");
+    const settingsCeoGrid = document.getElementById("settingsCeoGrid");
+    const settingsApiGrid = document.getElementById("settingsApiGrid");
     const logDisplayMeta = document.getElementById("logDisplayMeta");
     const logToolbar = document.getElementById("logToolbar");
     const logGrid = document.getElementById("logGrid");
+    const settingsSections = {
+      identity: document.getElementById("settingsIdentitySection"),
+      ceo: document.getElementById("settingsCeoSection"),
+      api: document.getElementById("settingsApiSection"),
+    };
+    const settingsTabButtons = Array.from(document.querySelectorAll("[data-settings-tab]"));
 
     const defaultIdentityNames = {
       ceo: "龙虾CEO",
@@ -842,6 +1102,7 @@
       cso: "龙虾CSO",
       cco: "龙虾CCO",
     };
+    const defaultConsoleTitle = "龙虾宝宝视频制作平台";
     const defaultWorkflowPromptExample = "做一条知识讲解视频，类型偏知识讲解类，主题是龙虾门店运营，目标平台是小红书，面向餐饮老板和门店店长，目标是提升专业感知与咨询转化，风格专业干净，时长60秒。";
     const contentTypeLabels = {
       knowledge: "知识讲解类",
@@ -922,6 +1183,7 @@
     };
 
     const identityState = { ...defaultIdentityNames };
+    const consoleProfileState = { console_title: defaultConsoleTitle };
     const displayStateStorageKey = "cao_display_state_v1";
     const clearedDisplayMarkerStorageKey = "cao_display_cleared_marker_v1";
     const enterSendPreferenceStorageKey = "cao_enter_send_enabled_v1";
@@ -929,6 +1191,7 @@
     const logExpandState = new Map();
     const logSectionState = new Map();
     let currentLogFilter = "all";
+    let currentConfigActionFilter = "all";
     let latestRunsState = [];
     let currentDisplayedRunId = null;
     let currentDisplayedTrace = null;
@@ -937,6 +1200,10 @@
     const mirroredRunIds = new Set();
     const mirroredLogKeysByRun = new Map();
     const streamedArtifactRunIds = new Set();
+    let currentSettingsTab = "identity";
+    let configActionCapabilities = [];
+    let configActionExamples = [];
+    let configActionCommandFormat = null;
 
     const escapeHtml = (value) =>
       String(value ?? "")
@@ -1047,6 +1314,7 @@
     }
 
     function applyIdentityNames() {
+      consoleTitle.textContent = consoleProfileState.console_title || defaultConsoleTitle;
       frontdeskLine.textContent = `${identityState.cao} 正在值班。`;
       statusChip.textContent = `${identityState.ceo} 正在默默关注视频制作流程。`;
       welcomeMessage.textContent = `欢迎来到龙虾视频制作前台，${identityState.cao} 会持续同步生产链路、交付进度与结果。`;
@@ -1061,6 +1329,9 @@
     }
 
     function updateIdentityState(names) {
+      if (typeof names?.console_title === "string" && names.console_title.trim()) {
+        consoleProfileState.console_title = names.console_title.trim();
+      }
       if (!names || typeof names !== "object") return;
       for (const [key, value] of Object.entries(names)) {
         if (key in identityState && typeof value === "string" && value.trim()) {
@@ -1162,11 +1433,23 @@
     function renderIdentitySettings(settings) {
       const profiles = Array.isArray(settings?.profiles) ? settings.profiles : [];
       if (!profiles.length) {
-        settingsGrid.innerHTML = '<div class="empty">暂无称呼设置。</div>';
+        settingsIdentityGrid.innerHTML = '<div class="empty">暂无名称配置。</div>';
         return;
       }
 
-      settingsGrid.innerHTML = profiles.map((profile) => `
+      const consoleTitleValue = settings?.console_title || consoleProfileState.console_title || defaultConsoleTitle;
+      settingsIdentityGrid.innerHTML = `
+        <label class="settings-item settings-item--wide">
+          <strong>平台名称</strong>
+          <input
+            class="settings-input"
+            type="text"
+            id="consoleTitleSettingInput"
+            value="${escapeHtml(consoleTitleValue)}"
+            placeholder="${escapeHtml(settings?.console_title_default || defaultConsoleTitle)}"
+          />
+        </label>
+      ` + profiles.map((profile) => `
         <label class="settings-item">
           <strong>${escapeHtml(profile.code)}</strong>
           <input
@@ -1180,9 +1463,135 @@
       `).join("");
     }
 
+    function renderCeoRuntimeSettings(settings) {
+      if (!settings || typeof settings !== "object") {
+        settingsCeoGrid.innerHTML = '<div class="empty">暂无 CEO 配置。</div>';
+        return;
+      }
+
+      const dispatchOptions = Array.isArray(settings.dispatch_mode_options) ? settings.dispatch_mode_options : ["graph"];
+      const rerouteOptions = Array.isArray(settings.qa_reroute_strategy_options) ? settings.qa_reroute_strategy_options : ["balanced"];
+      const rerouteMapping = settings.qa_reroute_mapping && typeof settings.qa_reroute_mapping === "object"
+        ? Object.entries(settings.qa_reroute_mapping).map(([key, value]) => `${key} -> ${value}`).join("\n")
+        : "";
+
+      settingsCeoGrid.innerHTML = `
+        <label class="settings-item">
+          <strong>演进优化开关</strong>
+          <div class="workflow-toggle-row">
+            <input id="ceoEvolutionEnabledInput" type="checkbox" ${settings.evolution_enabled ? "checked" : ""} />
+            <label for="ceoEvolutionEnabledInput">允许 CEO 通过配置通道进入优化循环</label>
+          </div>
+        </label>
+        <label class="settings-item">
+          <strong>流程调度模式</strong>
+          <select class="settings-input" id="ceoDispatchModeInput">
+            ${dispatchOptions.map((item) => `
+              <option value="${escapeHtml(item)}" ${item === settings.dispatch_mode ? "selected" : ""}>${escapeHtml(item)}</option>
+            `).join("")}
+          </select>
+        </label>
+        <label class="settings-item">
+          <strong>QA 最大返工次数</strong>
+          <input
+            class="settings-input"
+            id="ceoQaReworkMaxAttemptsInput"
+            type="number"
+            min="0"
+            step="1"
+            value="${escapeHtml(String(settings.qa_rework_max_attempts ?? 1))}"
+          />
+        </label>
+        <label class="settings-item">
+          <strong>QA 回流策略</strong>
+          <select class="settings-input" id="ceoQaRerouteStrategyInput">
+            ${rerouteOptions.map((item) => `
+              <option value="${escapeHtml(item)}" ${item === settings.qa_reroute_strategy ? "selected" : ""}>${escapeHtml(item)}</option>
+            `).join("")}
+          </select>
+        </label>
+        <div class="settings-item settings-item--wide">
+          <strong>当前 QA 回流映射</strong>
+          <div class="settings-note">${escapeHtml(rerouteMapping || "暂无回流映射。").replaceAll("\n", "<br />")}</div>
+        </div>
+      `;
+    }
+
+    function renderApiProviderSettings(settings) {
+      if (!settings || typeof settings !== "object") {
+        settingsApiGrid.innerHTML = '<div class="empty">暂无 API 配置。</div>';
+        return;
+      }
+
+      const renderProviderFields = (providerKey, providerLabel, provider, { includeResourceId = true, hiddenSecrets = ["api_key"] } = {}) => `
+        <div class="settings-item settings-item--wide">
+          <strong>${escapeHtml(providerLabel)}</strong>
+          <div class="settings-subgrid">
+            ${provider.configured ? '<div class="settings-note">当前状态：已配置</div>' : '<div class="settings-note">当前状态：未配置</div>'}
+            ${hiddenSecrets.includes("api_key") ? `
+              <input class="settings-input" type="password" data-provider="${escapeHtml(providerKey)}" data-field="api_key" value="${escapeHtml(provider.api_key || "")}" placeholder="API Key" />
+            ` : ""}
+            <input class="settings-input" type="text" data-provider="${escapeHtml(providerKey)}" data-field="base_url" value="${escapeHtml(provider.base_url || "")}" placeholder="Base URL" />
+            <input class="settings-input" type="text" data-provider="${escapeHtml(providerKey)}" data-field="model" value="${escapeHtml(provider.model || "")}" placeholder="Model" />
+            ${includeResourceId ? `<input class="settings-input" type="text" data-provider="${escapeHtml(providerKey)}" data-field="resource_id" value="${escapeHtml(provider.resource_id || "")}" placeholder="Resource ID（可选）" />` : ""}
+          </div>
+        </div>
+      `;
+
+      settingsApiGrid.innerHTML = `
+        ${renderProviderFields("deepseek", "DeepSeek", settings.deepseek, { includeResourceId: false })}
+        ${renderProviderFields("glm", "GLM", settings.glm)}
+        ${renderProviderFields("xfyun_maas", "讯飞 MaaS", settings.xfyun_maas)}
+        ${renderProviderFields("seedance", "Seedance", settings.seedance)}
+        <div class="settings-item settings-item--wide">
+          <strong>HiDream</strong>
+          <div class="settings-subgrid">
+            ${settings.hidream?.configured ? '<div class="settings-note">当前状态：已配置</div>' : '<div class="settings-note">当前状态：未配置</div>'}
+            <input class="settings-input" type="text" data-provider="hidream" data-field="app_id" value="${escapeHtml(settings.hidream?.app_id || "")}" placeholder="App ID" />
+            <input class="settings-input" type="password" data-provider="hidream" data-field="api_key" value="${escapeHtml(settings.hidream?.api_key || "")}" placeholder="API Key" />
+            <input class="settings-input" type="password" data-provider="hidream" data-field="api_secret" value="${escapeHtml(settings.hidream?.api_secret || "")}" placeholder="API Secret" />
+            <input class="settings-input" type="text" data-provider="hidream" data-field="create_url" value="${escapeHtml(settings.hidream?.create_url || "")}" placeholder="Create URL" />
+            <input class="settings-input" type="text" data-provider="hidream" data-field="query_url" value="${escapeHtml(settings.hidream?.query_url || "")}" placeholder="Query URL" />
+          </div>
+        </div>
+        <div class="settings-item settings-item--wide">
+          <strong>运行时参数</strong>
+          <div class="settings-subgrid">
+            <input class="settings-input" id="apiRuntimeHttpTimeoutInput" type="number" min="1" step="1" value="${escapeHtml(String(settings.runtime?.http_timeout ?? 60))}" placeholder="HTTP Timeout" />
+            <input class="settings-input" id="apiRuntimeMaxRetriesInput" type="number" min="0" step="1" value="${escapeHtml(String(settings.runtime?.max_retries ?? 2))}" placeholder="Max Retries" />
+            <div class="workflow-toggle-row">
+              <input id="apiRuntimePlaceholderToggle" type="checkbox" ${settings.runtime?.use_placeholder_when_unconfigured ? "checked" : ""} />
+              <label for="apiRuntimePlaceholderToggle">未配置时允许使用占位产物</label>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderSystemSettings(settingsBundle) {
+      renderIdentitySettings(settingsBundle?.identity || {});
+      renderCeoRuntimeSettings(settingsBundle?.ceo_runtime || {});
+      renderApiProviderSettings(settingsBundle?.api_providers || {});
+    }
+
+    function setActiveSettingsTab(tabKey) {
+      currentSettingsTab = settingsSections[tabKey] ? tabKey : "identity";
+      settingsTabButtons.forEach((button) => {
+        const isActive = button.dataset.settingsTab === currentSettingsTab;
+        button.classList.toggle("active", isActive);
+      });
+      Object.entries(settingsSections).forEach(([key, element]) => {
+        if (!element) return;
+        element.hidden = key !== currentSettingsTab;
+      });
+    }
+
     function setSettingsPanelOpen(isOpen) {
       settingsPanel.hidden = !isOpen;
       toggleSettingsButton.textContent = isOpen ? "收起设置" : "打开设置";
+      if (isOpen) {
+        setActiveSettingsTab(currentSettingsTab);
+      }
     }
 
     function setActiveRunCard(runId) {
@@ -1452,6 +1861,295 @@
           </div>
         `)
         .join("");
+    }
+
+    function getConfigActionStatusLabel(status) {
+      switch (String(status || "").toLowerCase()) {
+        case "proposed":
+          return "待审批";
+        case "applied":
+          return "已应用";
+        case "rejected":
+          return "已拒绝";
+        default:
+          return status || "未知";
+      }
+    }
+
+    function parseGoalValueInput(value) {
+      const raw = String(value || "").trim();
+      if (!raw) return null;
+      const numeric = Number(raw);
+      return Number.isFinite(numeric) ? numeric : raw;
+    }
+
+    function getSelectedConfigCapability() {
+      const actionType = configActionTypeInput.value;
+      return configActionCapabilities.find((item) => item.action_type === actionType) || null;
+    }
+
+    function getCapabilityExample(actionType) {
+      return configActionExamples.find((item) => item.action_type === actionType) || null;
+    }
+
+    function updateConfigActionFilterButtons() {
+      Array.from(configActionFilterToolbar.querySelectorAll("[data-config-filter]")).forEach((button) => {
+        button.classList.toggle("active", button.dataset.configFilter === currentConfigActionFilter);
+      });
+    }
+
+    function renderConfigActionSummary(summary = {}) {
+      const items = [
+        ["待审批", summary.proposed ?? 0],
+        ["已应用", summary.applied ?? 0],
+        ["已拒绝", summary.rejected ?? 0],
+        ["总数", summary.total ?? 0],
+      ];
+      configActionSummaryGrid.innerHTML = items.map(([label, value]) => `
+        <div class="card">
+          <strong>${escapeHtml(label)}</strong>
+          <span>${escapeHtml(value)}</span>
+        </div>
+      `).join("");
+    }
+
+    function renderConfigActionHint() {
+      const capability = getSelectedConfigCapability();
+      const example = capability ? getCapabilityExample(capability.action_type) : null;
+      if (!capability) {
+        configActionHint.textContent = "请选择动作类型，系统会展示命令格式、payload 要求和示例。";
+        return;
+      }
+      const schemaLines = Object.entries(capability.payload_schema || {}).map(([key, value]) => {
+        if (value && typeof value === "object" && !Array.isArray(value)) {
+          return `${key}: ${JSON.stringify(value, null, 2)}`;
+        }
+        return `${key}: ${JSON.stringify(value)}`;
+      });
+      const formatLine = configActionCommandFormat
+        ? `命令格式：${JSON.stringify(configActionCommandFormat, null, 2)}`
+        : "";
+      const exampleLine = example ? `示例：${JSON.stringify(example, null, 2)}` : "";
+      configActionHint.textContent = [
+        `${capability.label} / ${capability.description}`,
+        `Payload schema：${schemaLines.join(" / ") || "{}"}`,
+        formatLine,
+        exampleLine,
+      ].filter(Boolean).join("\n\n");
+    }
+
+    function populateConfigActionLeaderOptions(leaders = []) {
+      const currentValue = configActionLeaderInput.value;
+      configActionLeaderInput.innerHTML = [
+        '<option value="">请选择</option>',
+        ...leaders.map((leader) => {
+          const label = leader.display_name || leader.name || "未命名 Leader";
+          return `<option value="${escapeHtml(leader.name || "")}">${escapeHtml(label)} (${escapeHtml(leader.name || "")})</option>`;
+        }),
+      ].join("");
+      if (currentValue && leaders.some((leader) => leader.name === currentValue)) {
+        configActionLeaderInput.value = currentValue;
+      }
+    }
+
+    function populateConfigActionTypeOptions(capabilities = []) {
+      const currentValue = configActionTypeInput.value;
+      configActionTypeInput.innerHTML = [
+        '<option value="">请选择</option>',
+        ...capabilities.map((item) => (
+          `<option value="${escapeHtml(item.action_type)}">${escapeHtml(item.label || item.action_type)}</option>`
+        )),
+      ].join("");
+      if (currentValue && capabilities.some((item) => item.action_type === currentValue)) {
+        configActionTypeInput.value = currentValue;
+      } else if (!configActionTypeInput.value && capabilities[0]?.action_type) {
+        configActionTypeInput.value = capabilities[0].action_type;
+      }
+    }
+
+    function applyConfigActionDefaults({ force = false } = {}) {
+      const capability = getSelectedConfigCapability();
+      if (!capability) {
+        renderConfigActionHint();
+        return;
+      }
+      const example = getCapabilityExample(capability.action_type);
+      if (!example) {
+        renderConfigActionHint();
+        return;
+      }
+      if (force || !configActionMetricInput.value.trim()) {
+        configActionMetricInput.value = example.target_metric || "";
+      }
+      if (force || !configActionGoalInput.value.trim()) {
+        configActionGoalInput.value = example.goal_value === null || example.goal_value === undefined ? "" : String(example.goal_value);
+      }
+      if (force || !configActionPayloadInput.value.trim()) {
+        configActionPayloadInput.value = JSON.stringify(example.payload || {}, null, 2);
+      }
+      renderConfigActionHint();
+    }
+
+    function renderConfigActionList(actions = []) {
+      if (!actions.length) {
+        const filterLabel = currentConfigActionFilter === "all" ? "" : `（${getConfigActionStatusLabel(currentConfigActionFilter)}）`;
+        configActionList.innerHTML = `<div class="empty">当前没有配置动作${escapeHtml(filterLabel)}。</div>`;
+        return;
+      }
+      configActionList.innerHTML = actions.map((action) => {
+        const status = String(action.status || "").toLowerCase();
+        const payloadText = JSON.stringify(action.payload || {}, null, 2);
+        const decisionMeta = action.reviewed_at
+          ? `审批：${action.reviewed_by || "ceo"} / ${formatDateTime(action.reviewed_at)}`
+          : "审批：待处理";
+        const decisionNote = action.decision_note ? `审批备注：${action.decision_note}` : "";
+        const bodyLines = [
+          `action_type: ${action.action_type || "-"}`,
+          `target_metric: ${action.target_metric || "-"}`,
+          `goal_value: ${action.goal_value === null || action.goal_value === undefined ? "-" : action.goal_value}`,
+          `source: ${action.source || "-"}`,
+          `payload: ${payloadText}`,
+        ];
+        const actionButtons = status === "proposed"
+          ? `
+            <button type="button" data-config-decision="apply" data-action-id="${escapeHtml(action.action_id || "")}">批准并应用</button>
+            <button class="reject-button" type="button" data-config-decision="reject" data-action-id="${escapeHtml(action.action_id || "")}">拒绝</button>
+          `
+          : "";
+        return `
+          <article class="config-action-item">
+            <div class="config-action-head">
+              <strong>${escapeHtml(action.leader_display_name || action.leader_name || "未命名 Leader")}</strong>
+              <span class="config-action-status" data-status="${escapeHtml(status)}">${escapeHtml(getConfigActionStatusLabel(status))}</span>
+            </div>
+            <div class="config-action-meta">
+              <span>${escapeHtml(action.leader_name || "-")}</span>
+              <span>${escapeHtml(formatDateTime(action.created_at))}</span>
+              <span>${escapeHtml(decisionMeta)}</span>
+            </div>
+            ${action.note ? `<div class="config-action-note">任务说明：${escapeHtml(action.note)}</div>` : ""}
+            ${decisionNote ? `<div class="config-action-note">${escapeHtml(decisionNote)}</div>` : ""}
+            <div class="config-action-body">${escapeHtml(bodyLines.join("\n"))}</div>
+            ${actionButtons ? `<div class="config-action-actions">${actionButtons}</div>` : ""}
+          </article>
+        `;
+      }).join("");
+    }
+
+    function bindConfigActionDecisionHandlers() {
+      Array.from(configActionList.querySelectorAll("[data-config-decision]")).forEach((button) => {
+        button.addEventListener("click", async () => {
+          const actionId = button.dataset.actionId;
+          const decision = button.dataset.configDecision;
+          if (!actionId || !decision) return;
+          const defaultPrompt = decision === "apply" ? "Approved by CEO manual review." : "Rejected by CEO manual review.";
+          const decisionNote = window.prompt(
+            decision === "apply" ? "请输入批准说明：" : "请输入拒绝原因：",
+            defaultPrompt,
+          );
+          if (decisionNote === null) return;
+          await handleConfigActionDecision(actionId, decision, decisionNote);
+        });
+      });
+    }
+
+    async function loadConfigActionsPanel() {
+      const params = new URLSearchParams({ limit: "20" });
+      if (currentConfigActionFilter !== "all") {
+        params.set("status", currentConfigActionFilter);
+      }
+      const [capabilityResponse, listResponse, leaderResponse] = await Promise.all([
+        fetch("/api/cao/governance/config-actions/capabilities"),
+        fetch(`/api/cao/governance/config-actions?${params.toString()}`),
+        fetch("/api/cao/governance/leaders"),
+      ]);
+      if (!capabilityResponse.ok || !listResponse.ok || !leaderResponse.ok) {
+        throw new Error("配置动作面板加载失败。");
+      }
+      const capabilityData = await capabilityResponse.json();
+      const listData = await listResponse.json();
+      const leaderData = await leaderResponse.json();
+      configActionCapabilities = Array.isArray(capabilityData.capabilities) ? capabilityData.capabilities : [];
+      configActionExamples = Array.isArray(capabilityData.examples) ? capabilityData.examples : [];
+      configActionCommandFormat = capabilityData.command_format || null;
+      populateConfigActionLeaderOptions(Array.isArray(leaderData.leaders) ? leaderData.leaders : []);
+      populateConfigActionTypeOptions(configActionCapabilities);
+      renderConfigActionSummary(listData.status_summary || {});
+      applyConfigActionDefaults();
+      renderConfigActionList(Array.isArray(listData.config_actions) ? listData.config_actions : []);
+      bindConfigActionDecisionHandlers();
+    }
+
+    async function createConfigAction() {
+      const leaderName = configActionLeaderInput.value.trim();
+      const actionType = configActionTypeInput.value.trim();
+      const targetMetric = configActionMetricInput.value.trim();
+      if (!leaderName || !actionType || !targetMetric) {
+        appendMessage("error", "治理", "请先填写 Leader、动作类型和目标指标。");
+        return;
+      }
+
+      let payload = {};
+      const payloadText = configActionPayloadInput.value.trim();
+      if (payloadText) {
+        try {
+          payload = JSON.parse(payloadText);
+        } catch {
+          appendMessage("error", "治理", "Payload 不是合法 JSON，请先修正。");
+          return;
+        }
+      }
+
+      createConfigActionButton.disabled = true;
+      try {
+        const response = await fetch("/api/cao/governance/config-actions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            leader_name: leaderName,
+            action_type: actionType,
+            target_metric: targetMetric,
+            goal_value: parseGoalValueInput(configActionGoalInput.value),
+            note: configActionNoteInput.value.trim() || null,
+            payload,
+            source: "ceo_manual",
+          }),
+        });
+        if (!response.ok) {
+          const errorPayload = await response.json().catch(() => ({}));
+          throw new Error(errorPayload?.detail || `HTTP ${response.status}`);
+        }
+        const data = await response.json();
+        appendMessage("status", "治理", `已创建配置动作：${data?.config_action?.action_type || actionType} -> ${leaderName}`);
+        configActionNoteInput.value = "";
+        await loadConfigActionsPanel();
+      } catch (error) {
+        appendMessage("error", "治理", error instanceof Error ? error.message : "创建配置动作失败。");
+      } finally {
+        createConfigActionButton.disabled = false;
+      }
+    }
+
+    async function handleConfigActionDecision(actionId, decision, decisionNote) {
+      try {
+        const response = await fetch(`/api/cao/governance/config-actions/${encodeURIComponent(actionId)}/${decision}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            reviewed_by: "ceo",
+            decision_note: decisionNote || null,
+          }),
+        });
+        if (!response.ok) {
+          const errorPayload = await response.json().catch(() => ({}));
+          throw new Error(errorPayload?.detail || `HTTP ${response.status}`);
+        }
+        appendMessage("status", "治理", decision === "apply" ? "配置动作已批准并应用。" : "配置动作已拒绝。");
+        await loadConfigActionsPanel();
+        await loadStatus().catch(() => {});
+      } catch (error) {
+        appendMessage("error", "治理", error instanceof Error ? error.message : "配置动作审批失败。");
+      }
     }
 
     function renderRuns(status) {
@@ -1739,12 +2437,27 @@
     }
 
     async function loadStatus() {
-      const response = await fetch("/api/cao/pipeline-status");
-      const status = await response.json();
-      updateIdentityState(status.identity_settings?.names || {});
-      renderIdentitySettings(status.identity_settings);
+      const [statusResponse, settingsResponse] = await Promise.all([
+        fetch("/api/cao/pipeline-status"),
+        fetch("/api/cao/system-settings"),
+      ]);
+      const status = await statusResponse.json();
+      const systemSettings = await settingsResponse.json();
+      updateIdentityState(systemSettings?.identity || status.identity_settings || {});
+      renderSystemSettings(systemSettings);
+      if (typeof status?.console_title === "string" && status.console_title.trim()) {
+        consoleProfileState.console_title = status.console_title.trim();
+        applyIdentityNames();
+      }
       renderSummary(status);
       renderRuns(status);
+      try {
+        await loadConfigActionsPanel();
+      } catch {
+        renderConfigActionSummary({});
+        configActionHint.textContent = "配置动作面板暂时不可用，请稍后刷新。";
+        configActionList.innerHTML = '<div class="empty">配置动作队列暂时不可用。</div>';
+      }
     }
 
     async function loadTrace(
@@ -1817,20 +2530,22 @@
     }
 
     async function saveIdentitySettings() {
-      const inputs = Array.from(settingsGrid.querySelectorAll("[data-identity-key]"));
+      const inputs = Array.from(settingsIdentityGrid.querySelectorAll("[data-identity-key]"));
       const names = {};
       for (const input of inputs) {
         const key = input.dataset.identityKey;
         if (!key) continue;
         names[key] = input.value.trim();
       }
+      const consoleTitleInput = document.getElementById("consoleTitleSettingInput");
+      const consoleTitleValue = consoleTitleInput?.value?.trim() || defaultConsoleTitle;
 
-      saveSettingsButton.disabled = true;
+      saveIdentitySettingsButton.disabled = true;
       try {
-        const response = await fetch("/api/cao/identity-settings", {
+        const response = await fetch("/api/cao/system-settings/identity", {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ names }),
+          body: JSON.stringify({ console_title: consoleTitleValue, names }),
         });
         if (!response.ok) {
           let detail = "";
@@ -1845,20 +2560,101 @@
             }
           }
           const message = detail
-            ? `称呼保存失败：${String(detail).slice(0, 160)}`
-            : `称呼保存失败（HTTP ${response.status}）。`;
+            ? `名称配置保存失败：${String(detail).slice(0, 160)}`
+            : `名称配置保存失败（HTTP ${response.status}）。`;
           appendMessage("error", "设置", message);
           return;
         }
         const settings = await response.json();
-        updateIdentityState(settings.names || {});
+        updateIdentityState(settings);
         renderIdentitySettings(settings);
         await loadStatus().catch(() => {});
-        appendMessage("status", "设置", "CXO 称呼已更新。");
+        appendMessage("status", "设置", "名称配置已更新。");
       } catch (error) {
-        appendMessage("error", "设置", error instanceof Error ? error.message : "称呼保存失败。");
+        appendMessage("error", "设置", error instanceof Error ? error.message : "名称配置保存失败。");
       } finally {
-        saveSettingsButton.disabled = false;
+        saveIdentitySettingsButton.disabled = false;
+      }
+    }
+
+    async function saveCeoRuntimeSettings() {
+      const evolutionEnabledInput = document.getElementById("ceoEvolutionEnabledInput");
+      const dispatchModeInput = document.getElementById("ceoDispatchModeInput");
+      const qaReworkMaxAttemptsInput = document.getElementById("ceoQaReworkMaxAttemptsInput");
+      const qaRerouteStrategyInput = document.getElementById("ceoQaRerouteStrategyInput");
+
+      const payload = {
+        evolution_enabled: Boolean(evolutionEnabledInput?.checked),
+        dispatch_mode: dispatchModeInput?.value || "graph",
+        qa_rework_max_attempts: Number(qaReworkMaxAttemptsInput?.value || 0),
+        qa_reroute_strategy: qaRerouteStrategyInput?.value || "balanced",
+      };
+
+      saveCeoSettingsButton.disabled = true;
+      try {
+        const response = await fetch("/api/cao/system-settings/ceo-runtime", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (!response.ok) {
+          const detail = await response.text().catch(() => "");
+          appendMessage("error", "设置", detail ? `CEO 配置保存失败：${detail}` : `CEO 配置保存失败（HTTP ${response.status}）。`);
+          return;
+        }
+        const settings = await response.json();
+        renderCeoRuntimeSettings(settings);
+        await loadStatus().catch(() => {});
+        appendMessage("status", "设置", "CEO 配置已更新。");
+      } catch (error) {
+        appendMessage("error", "设置", error instanceof Error ? error.message : "CEO 配置保存失败。");
+      } finally {
+        saveCeoSettingsButton.disabled = false;
+      }
+    }
+
+    function collectApiProviderSection(providerKey, fields) {
+      const payload = {};
+      fields.forEach((fieldName) => {
+        const input = settingsApiGrid.querySelector(`[data-provider="${providerKey}"][data-field="${fieldName}"]`);
+        payload[fieldName] = input?.value?.trim?.() || "";
+      });
+      return payload;
+    }
+
+    async function saveApiProviderSettings() {
+      const payload = {
+        deepseek: collectApiProviderSection("deepseek", ["api_key", "base_url", "model"]),
+        glm: collectApiProviderSection("glm", ["api_key", "base_url", "model", "resource_id"]),
+        xfyun_maas: collectApiProviderSection("xfyun_maas", ["api_key", "base_url", "model", "resource_id"]),
+        hidream: collectApiProviderSection("hidream", ["app_id", "api_key", "api_secret", "create_url", "query_url"]),
+        seedance: collectApiProviderSection("seedance", ["api_key", "base_url", "model", "resource_id"]),
+        runtime: {
+          http_timeout: Number(document.getElementById("apiRuntimeHttpTimeoutInput")?.value || 60),
+          max_retries: Number(document.getElementById("apiRuntimeMaxRetriesInput")?.value || 2),
+          use_placeholder_when_unconfigured: Boolean(document.getElementById("apiRuntimePlaceholderToggle")?.checked),
+        },
+      };
+
+      saveApiSettingsButton.disabled = true;
+      try {
+        const response = await fetch("/api/cao/system-settings/api-providers", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (!response.ok) {
+          const detail = await response.text().catch(() => "");
+          appendMessage("error", "设置", detail ? `API 配置保存失败：${detail}` : `API 配置保存失败（HTTP ${response.status}）。`);
+          return;
+        }
+        const settings = await response.json();
+        renderApiProviderSettings(settings);
+        appendMessage("status", "设置", "API 配置已更新，并已刷新运行时。");
+      } catch (error) {
+        appendMessage("error", "设置", error instanceof Error ? error.message : "API 配置保存失败。");
+      } finally {
+        saveApiSettingsButton.disabled = false;
       }
     }
 
@@ -1978,10 +2774,17 @@
     toggleSettingsButton.addEventListener("click", () => {
       setSettingsPanelOpen(settingsPanel.hidden);
     });
-    saveSettingsButton.addEventListener("click", saveIdentitySettings);
+    saveIdentitySettingsButton.addEventListener("click", saveIdentitySettings);
+    saveCeoSettingsButton.addEventListener("click", saveCeoRuntimeSettings);
+    saveApiSettingsButton.addEventListener("click", saveApiProviderSettings);
     clearDisplayButton.addEventListener("click", () => {
       clearDisplayedLogs().catch((error) => {
         appendMessage("error", "展示", error instanceof Error ? error.message : "清空展示失败。");
+      });
+    });
+    settingsTabButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        setActiveSettingsTab(button.dataset.settingsTab || "identity");
       });
     });
     messageInput.addEventListener("keydown", (event) => {
@@ -2017,13 +2820,37 @@
     });
 
     workflowPresetInput.addEventListener("change", applySelectedPreset);
+    configActionTypeInput.addEventListener("change", () => {
+      applyConfigActionDefaults({ force: true });
+    });
+    createConfigActionButton.addEventListener("click", () => {
+      createConfigAction();
+    });
+    refreshConfigActionsButton.addEventListener("click", () => {
+      loadConfigActionsPanel().catch((error) => {
+        appendMessage("error", "治理", error instanceof Error ? error.message : "刷新配置动作失败。");
+      });
+    });
+    Array.from(configActionFilterToolbar.querySelectorAll("[data-config-filter]")).forEach((button) => {
+      button.addEventListener("click", () => {
+        const nextFilter = button.dataset.configFilter || "all";
+        if (nextFilter === currentConfigActionFilter) return;
+        currentConfigActionFilter = nextFilter;
+        updateConfigActionFilterButtons();
+        loadConfigActionsPanel().catch((error) => {
+          appendMessage("error", "治理", error instanceof Error ? error.message : "切换配置动作筛选失败。");
+        });
+      });
+    });
 
     bindLogFilterHandlers();
     updateLogFilterButtons();
+    updateConfigActionFilterButtons();
     applyIdentityNames();
     applyDefaultMessageDraft();
     applyEnterSendPreference();
     resetWorkflowForm({ keepMessage: true });
+    setActiveSettingsTab("identity");
     setSettingsPanelOpen(false);
     restoreDisplayState();
     loadStatus().catch((error) => {

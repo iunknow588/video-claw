@@ -1,5 +1,5 @@
 param(
-    [int]$Port = 8000,
+    [int]$Port = 8010,
     [switch]$Force
 )
 
@@ -60,6 +60,7 @@ function Test-IsRepoLocalService {
         [Parameter(Mandatory = $true)]
         [string]$RepoRoot,
         [Parameter(Mandatory = $true)]
+        [AllowEmptyString()]
         [string]$CommandLine
     )
 

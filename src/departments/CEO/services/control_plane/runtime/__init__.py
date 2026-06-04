@@ -19,6 +19,46 @@ from departments.CEO.services.control_plane.defaults import (
 class CEOControlPlane:
     mission = ""
     managed_scope = ""
+    DISPATCH_MODE_OPTIONS = ["graph"]
+    QA_REROUTE_STRATEGY_OPTIONS = ["aggressive", "balanced", "conservative"]
+    CONFIG_ACTION_CAPABILITIES = [
+        {
+            "action_type": "update_leader_config",
+            "label": "Update Leader Config",
+            "description": "Patch a leader configuration block, including model, prompt, aliases, tags, and resource allocations.",
+            "payload_schema": {
+                "config": {
+                    "display_name": "optional string",
+                    "description": "optional string",
+                    "model": "optional string",
+                    "system_prompt": "optional string",
+                    "bound_tools": ["optional tool ids"],
+                    "aliases": ["optional aliases"],
+                    "tags": ["optional tags"],
+                    "token_limit": "optional integer",
+                    "resource_allocations": {"any_key": "any_value"},
+                    "organization_profile": {"any_key": "any_value"},
+                }
+            },
+        },
+        {
+            "action_type": "set_budget",
+            "label": "Set Token Budget",
+            "description": "Change the token budget owned by a leader.",
+            "payload_schema": {
+                "token_limit": "required integer",
+            },
+        },
+        {
+            "action_type": "adjust_resource_allocation",
+            "label": "Adjust Resource Allocation",
+            "description": "Change a single resource allocation key without replacing the whole leader config.",
+            "payload_schema": {
+                "resource_type": "required string",
+                "amount": "required any",
+            },
+        },
+    ]
 
     def __init__(self) -> None:
         self.reset_defaults()
@@ -34,7 +74,7 @@ class CEOControlPlane:
         }
         self._workflow = deepcopy(default_workflow)
         self.evolution_enabled = False
-        self.optimize_commands: list[dict[str, Any]] = []
+        self.config_actions: list[dict[str, Any]] = []
         self.report_requests: list[dict[str, Any]] = []
         self.change_approvals: list[dict[str, Any]] = []
 
@@ -176,29 +216,167 @@ class CEOControlPlane:
             self._workflow["conditional_edges"].append(edge)
         return self.get_workflow()
 
-    def issue_optimize_command(
+    def get_config_action_capabilities(self) -> dict[str, Any]:
+        return {
+            "capabilities": deepcopy(self.CONFIG_ACTION_CAPABILITIES),
+            "command_format": {
+                "leader_name": "required string, managed leader id such as lead.production",
+                "action_type": "required string, supported values: update_leader_config / set_budget / adjust_resource_allocation",
+                "target_metric": "required string, governance metric to optimize",
+                "goal_value": "optional number|string, target value for approval review",
+                "note": "optional string, manual review note",
+                "payload": "required object, shape depends on action_type",
+                "source": "optional string, defaults to ceo_manual",
+            },
+            "status_flow": ["proposed", "applied", "rejected"],
+            "review_policy": {
+                "proposed": "action has been created and is waiting for CEO review",
+                "applied": "action has been approved and applied to leader configuration",
+                "rejected": "action has been reviewed and rejected",
+            },
+            "examples": [
+                {
+                    "leader_name": "lead.production",
+                    "action_type": "set_budget",
+                    "target_metric": "workflow_success_rate",
+                    "goal_value": 0.92,
+                    "note": "Raise production budget for a stability trial.",
+                    "payload": {"token_limit": 24000},
+                    "source": "ceo_manual",
+                },
+                {
+                    "leader_name": "lead.qa",
+                    "action_type": "adjust_resource_allocation",
+                    "target_metric": "qa_pass_rate",
+                    "goal_value": 0.97,
+                    "note": "Increase QA review priority for the next cycle.",
+                    "payload": {"resource_type": "review_priority", "amount": "critical"},
+                    "source": "ceo_manual",
+                },
+            ],
+        }
+
+    def list_config_actions(
+        self,
+        *,
+        status: str | None = None,
+        leader_name: str | None = None,
+        limit: int = 50,
+    ) -> dict[str, Any]:
+        items = list(self.config_actions)
+        if status:
+            items = [item for item in items if str(item.get("status") or "") == status]
+        if leader_name:
+            normalized = self._normalize_leader_name(leader_name)
+            items = [item for item in items if item.get("leader_name") == normalized]
+        items.sort(key=lambda item: item.get("created_at") or datetime.min.replace(tzinfo=UTC), reverse=True)
+        limited_items = deepcopy(items[: max(1, int(limit))])
+        return {
+            "config_actions": limited_items,
+            "count": len(limited_items),
+            "status_summary": self._summarize_config_actions(),
+            "available_statuses": ["proposed", "applied", "rejected"],
+        }
+
+    def get_config_action(self, *, action_id: str) -> dict[str, Any]:
+        for item in self.config_actions:
+            if item.get("action_id") == action_id:
+                return deepcopy(item)
+        raise ValueError(f"Unknown config action: {action_id}")
+
+    def create_config_action(
         self,
         *,
         leader_name: str,
+        action_type: str = "update_leader_config",
         target_metric: str,
         goal_value: Any,
         note: str | None = None,
+        payload: dict[str, Any] | None = None,
+        source: str = "ceo_manual",
     ) -> dict[str, Any]:
         record = self._require_leader(leader_name)
-        command = {
-            "command_id": uuid4().hex,
+        normalized_payload = self._normalize_config_action_payload(action_type=action_type, payload=payload or {})
+        action = {
+            "action_id": uuid4().hex,
             "leader_name": record.name,
             "leader_display_name": record.display_name,
+            "action_type": action_type,
             "target_metric": target_metric,
             "goal_value": goal_value,
-            "status": "issued",
+            "status": "proposed",
             "note": note,
+            "payload": normalized_payload,
+            "source": source,
             "created_at": datetime.now(UTC),
+            "reviewed_at": None,
+            "reviewed_by": None,
+            "decision_note": None,
         }
-        leader_event = record.accept_command(command_type="optimize", payload=command)
-        command["leader_event"] = leader_event
-        self.optimize_commands.append(deepcopy(command))
-        return command
+        leader_event = record.accept_command(command_type="config_action", payload=action)
+        action["leader_event"] = leader_event
+        self.config_actions.append(deepcopy(action))
+        return action
+
+    def apply_config_action(
+        self,
+        *,
+        action_id: str,
+        reviewed_by: str = "ceo",
+        decision_note: str | None = None,
+    ) -> dict[str, Any]:
+        action = self._require_mutable_config_action(action_id)
+        if action.get("status") != "proposed":
+            raise ValueError(f"Config action {action_id} is already {action.get('status')}")
+
+        leader_snapshot = self._apply_config_action_payload(action)
+        action["status"] = "applied"
+        action["reviewed_at"] = datetime.now(UTC)
+        action["reviewed_by"] = reviewed_by
+        action["decision_note"] = decision_note
+        action["applied_snapshot"] = deepcopy(leader_snapshot)
+
+        record = self._require_leader(str(action.get("leader_name") or ""))
+        record.lifecycle_events.append(
+            self._event(
+                "config_action_applied",
+                {
+                    "action_id": action_id,
+                    "reviewed_by": reviewed_by,
+                    "decision_note": decision_note,
+                },
+            )
+        )
+        return deepcopy(action)
+
+    def reject_config_action(
+        self,
+        *,
+        action_id: str,
+        reviewed_by: str = "ceo",
+        decision_note: str | None = None,
+    ) -> dict[str, Any]:
+        action = self._require_mutable_config_action(action_id)
+        if action.get("status") != "proposed":
+            raise ValueError(f"Config action {action_id} is already {action.get('status')}")
+
+        action["status"] = "rejected"
+        action["reviewed_at"] = datetime.now(UTC)
+        action["reviewed_by"] = reviewed_by
+        action["decision_note"] = decision_note
+
+        record = self._require_leader(str(action.get("leader_name") or ""))
+        record.lifecycle_events.append(
+            self._event(
+                "config_action_rejected",
+                {
+                    "action_id": action_id,
+                    "reviewed_by": reviewed_by,
+                    "decision_note": decision_note,
+                },
+            )
+        )
+        return deepcopy(action)
 
     def request_leader_report(self, *, leader_name: str) -> dict[str, Any]:
         record = self._require_leader(leader_name)
@@ -266,46 +444,77 @@ class CEOControlPlane:
         snapshot = company_status or {}
         run_metrics = snapshot.get("run_metrics") or {}
         quality_metrics = snapshot.get("quality_metrics") or {}
-        issued_commands: list[dict[str, Any]] = []
+        issued_config_actions: list[dict[str, Any]] = []
 
         qa_pass_rate = float(quality_metrics.get("qa_pass_rate") or 0.0)
         if qa_pass_rate and qa_pass_rate < 0.95:
-            issued_commands.append(
-                self.issue_optimize_command(
+            issued_config_actions.append(
+                self.create_config_action(
                     leader_name="lead.qa",
+                    action_type="update_leader_config",
                     target_metric="qa_pass_rate",
                     goal_value=0.95,
-                    note="Raise QA pass rate and improve reroute precision.",
+                    note="Tighten QA gate and improve reroute precision through CEO-managed configuration.",
+                    payload={
+                        "config": {
+                            "resource_allocations": {"review_priority": "high", "reroute_precision_mode": "strict"},
+                        }
+                    },
+                    source="evolution_cycle",
                 )
             )
 
         success_rate = float(run_metrics.get("success_rate") or 0.0)
         if success_rate and success_rate < 0.9:
-            issued_commands.append(
-                self.issue_optimize_command(
+            issued_config_actions.append(
+                self.create_config_action(
                     leader_name="lead.production",
+                    action_type="update_leader_config",
                     target_metric="workflow_success_rate",
                     goal_value=0.9,
-                    note="Raise production stability and reduce delivery failures.",
+                    note="Increase production stability through CEO-managed production configuration.",
+                    payload={
+                        "config": {
+                            "resource_allocations": {"stability_mode": "high", "retry_budget": 2},
+                        }
+                    },
+                    source="evolution_cycle",
                 )
             )
 
         budget_ratio = float((snapshot.get("operations_summary") or {}).get("budget_usage_ratio") or 0.0)
         if budget_ratio > 1.0:
-            issued_commands.append(
-                self.issue_optimize_command(
+            issued_config_actions.append(
+                self.create_config_action(
                     leader_name="lead.cfo",
+                    action_type="update_leader_config",
                     target_metric="budget_guardrail",
                     goal_value=1.0,
-                    note="Tighten budget validation and charging guardrails.",
+                    note="Tighten budget validation and charging guardrails through CEO-managed finance configuration.",
+                    payload={
+                        "config": {
+                            "resource_allocations": {"guardrail_mode": "strict"},
+                        }
+                    },
+                    source="evolution_cycle",
                 )
             )
-            issued_commands.append(
-                self.issue_optimize_command(
+            issued_config_actions.append(
+                self.create_config_action(
                     leader_name="lead.research_development",
+                    action_type="update_leader_config",
                     target_metric="token_efficiency",
                     goal_value=0.85,
-                    note="Reduce ineffective prompt-token spend.",
+                    note="Reduce ineffective prompt-token spend through CEO-managed planning configuration.",
+                    payload={
+                        "config": {
+                            "resource_allocations": {
+                                "token_budget_mode": "tight",
+                                "prompt_validation_level": "strict",
+                            },
+                        }
+                    },
+                    source="evolution_cycle",
                 )
             )
 
@@ -313,11 +522,11 @@ class CEOControlPlane:
             "evolution_enabled": self.evolution_enabled,
             "observed_run_metrics": run_metrics,
             "observed_quality_metrics": quality_metrics,
-            "issued_commands": issued_commands,
+            "issued_config_actions": issued_config_actions,
             "message": (
-                "CEO completed an observe -> analyze -> command cycle."
-                if issued_commands
-                else "CEO completed an observe -> analyze -> command cycle with no new actions issued."
+                "CEO completed an observe -> analyze -> config cycle."
+                if issued_config_actions
+                else "CEO completed an observe -> analyze -> config cycle with no new configuration actions."
             ),
         }
 
@@ -367,6 +576,73 @@ class CEOControlPlane:
         merged.setdefault("max_attempts", 1)
         return merged
 
+    def get_runtime_controls(self) -> dict[str, Any]:
+        reroute_policy = self.get_qa_reroute_policy()
+        qa_rework_policy = self.get_qa_rework_policy()
+        return {
+            "evolution_enabled": self.evolution_enabled,
+            "dispatch_mode": str(self._workflow.get("dispatch_mode") or "graph"),
+            "dispatch_mode_options": list(self.DISPATCH_MODE_OPTIONS),
+            "qa_rework_max_attempts": int(qa_rework_policy.get("max_attempts") or 0),
+            "qa_reroute_strategy": str(reroute_policy.get("strategy") or "balanced"),
+            "qa_reroute_strategy_options": list(self.QA_REROUTE_STRATEGY_OPTIONS),
+            "qa_reroute_mapping": dict(reroute_policy.get("mapping") or {}),
+        }
+
+    def update_runtime_controls(
+        self,
+        *,
+        evolution_enabled: bool | None = None,
+        dispatch_mode: str | None = None,
+        qa_rework_max_attempts: int | None = None,
+        qa_reroute_strategy: str | None = None,
+    ) -> dict[str, Any]:
+        if evolution_enabled is not None:
+            self.evolution_enabled = bool(evolution_enabled)
+
+        if dispatch_mode is not None:
+            normalized_dispatch_mode = str(dispatch_mode).strip() or "graph"
+            if normalized_dispatch_mode not in self.DISPATCH_MODE_OPTIONS:
+                raise ValueError(f"Unsupported dispatch mode: {normalized_dispatch_mode}")
+            self._workflow["dispatch_mode"] = normalized_dispatch_mode
+
+        if qa_rework_max_attempts is not None:
+            if int(qa_rework_max_attempts) < 0:
+                raise ValueError("QA rework max attempts must be >= 0")
+            self._workflow["qa_rework"] = {
+                **dict(self._workflow.get("qa_rework") or {}),
+                "max_attempts": int(qa_rework_max_attempts),
+            }
+
+        if qa_reroute_strategy is not None:
+            normalized_strategy = str(qa_reroute_strategy).strip() or "balanced"
+            if normalized_strategy not in self.QA_REROUTE_STRATEGY_OPTIONS:
+                raise ValueError(f"Unsupported QA reroute strategy: {normalized_strategy}")
+
+            updated = False
+            for edge in self._workflow.get("conditional_edges", []):
+                if edge.get("from") == "lead.qa":
+                    edge["strategy"] = normalized_strategy
+                    updated = True
+                    break
+
+            if not updated:
+                default_mapping = self.get_qa_reroute_policy().get("mapping") or {
+                    "passed": "lead.publish",
+                    "retry_production": "lead.production",
+                    "retry_research_development": "lead.research_development",
+                }
+                self._workflow.setdefault("conditional_edges", []).append(
+                    {
+                        "from": "lead.qa",
+                        "router_func": "route",
+                        "strategy": normalized_strategy,
+                        "mapping": dict(default_mapping),
+                    }
+                )
+
+        return self.get_runtime_controls()
+
     def _build_leader_record(self, *, name: str, config: dict[str, Any]) -> ManagedLeader:
         return build_department_leader(name, config)
 
@@ -384,11 +660,11 @@ class CEOControlPlane:
         }
         payload["report_template"] = record.build_report()
         payload["periodic_report_template"] = record.build_periodic_report()
-        payload["pending_optimize_commands"] = len(
+        payload["pending_config_actions"] = len(
             [
                 item
-                for item in self.optimize_commands
-                if item.get("leader_name") == record.name and item.get("status") == "issued"
+                for item in self.config_actions
+                if item.get("leader_name") == record.name and item.get("status") == "proposed"
             ]
         )
         payload["pending_report_requests"] = len(
@@ -399,6 +675,63 @@ class CEOControlPlane:
             ]
         )
         return payload
+
+    def _normalize_config_action_payload(self, *, action_type: str, payload: dict[str, Any]) -> dict[str, Any]:
+        if action_type == "update_leader_config":
+            config = dict(payload.get("config") or {})
+            if not config:
+                raise ValueError("update_leader_config action requires payload.config")
+            return {"config": config}
+        if action_type == "set_budget":
+            if "token_limit" not in payload:
+                raise ValueError("set_budget action requires payload.token_limit")
+            return {"token_limit": int(payload.get("token_limit") or 0)}
+        if action_type == "adjust_resource_allocation":
+            resource_type = str(payload.get("resource_type") or "").strip()
+            if not resource_type:
+                raise ValueError("adjust_resource_allocation action requires payload.resource_type")
+            if "amount" not in payload:
+                raise ValueError("adjust_resource_allocation action requires payload.amount")
+            return {
+                "resource_type": resource_type,
+                "amount": payload.get("amount"),
+            }
+        raise ValueError(f"Unsupported config action type: {action_type}")
+
+    def _apply_config_action_payload(self, action: dict[str, Any]) -> dict[str, Any]:
+        leader_name = str(action.get("leader_name") or "")
+        action_type = str(action.get("action_type") or "")
+        payload = dict(action.get("payload") or {})
+        if action_type == "update_leader_config":
+            return self.update_leader_config(name=leader_name, config=dict(payload.get("config") or {}))
+        if action_type == "set_budget":
+            return self.set_leader_budget(leader_name=leader_name, token_limit=int(payload.get("token_limit") or 0))
+        if action_type == "adjust_resource_allocation":
+            return self.adjust_resource_allocation(
+                leader_name=leader_name,
+                resource_type=str(payload.get("resource_type") or ""),
+                amount=payload.get("amount"),
+            )
+        raise ValueError(f"Unsupported config action type: {action_type}")
+
+    def _require_mutable_config_action(self, action_id: str) -> dict[str, Any]:
+        for item in self.config_actions:
+            if item.get("action_id") == action_id:
+                return item
+        raise ValueError(f"Unknown config action: {action_id}")
+
+    def _summarize_config_actions(self) -> dict[str, int]:
+        summary = {
+            "proposed": 0,
+            "applied": 0,
+            "rejected": 0,
+            "total": len(self.config_actions),
+        }
+        for item in self.config_actions:
+            status = str(item.get("status") or "")
+            if status in summary:
+                summary[status] += 1
+        return summary
 
     def _normalize_new_leader_name(self, name: str) -> str:
         clean = str(name or "").strip()

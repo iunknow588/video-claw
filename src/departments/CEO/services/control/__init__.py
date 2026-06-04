@@ -97,25 +97,83 @@ class CEOControlService:
             },
         )
 
-    async def issue_optimize_command(
+    async def get_config_action_capabilities(self) -> dict[str, Any]:
+        return await self._invoke_skill("get_config_action_capabilities", {})
+
+    async def list_config_actions(
+        self,
+        *,
+        status: str | None = None,
+        leader_name: str | None = None,
+        limit: int = 50,
+    ) -> dict[str, Any]:
+        return await self._invoke_skill(
+            "list_config_actions",
+            {
+                "status": status,
+                "leader_name": leader_name,
+                "limit": limit,
+            },
+        )
+
+    async def get_config_action(self, action_id: str) -> dict[str, Any]:
+        return await self._invoke_skill("get_config_action", {"action_id": action_id})
+
+    async def create_config_action(
         self,
         *,
         leader_name: str,
+        action_type: str,
         target_metric: str,
         goal_value: Any,
         note: str | None = None,
+        payload: dict[str, Any] | None = None,
+        source: str = "ceo_manual",
     ) -> dict[str, Any]:
-        result = await self._invoke_skill(
-            "issue_optimize_command",
+        return await self._invoke_skill(
+            "create_config_action",
             {
                 "leader_name": leader_name,
+                "action_type": action_type,
                 "target_metric": target_metric,
                 "goal_value": goal_value,
                 "note": note,
+                "payload": payload or {},
+                "source": source,
             },
         )
-        result["leader"] = (await self.get_leader_status(leader_name))["leader"]
-        return result
+
+    async def apply_config_action(
+        self,
+        *,
+        action_id: str,
+        reviewed_by: str = "ceo",
+        decision_note: str | None = None,
+    ) -> dict[str, Any]:
+        return await self._invoke_skill(
+            "apply_config_action",
+            {
+                "action_id": action_id,
+                "reviewed_by": reviewed_by,
+                "decision_note": decision_note,
+            },
+        )
+
+    async def reject_config_action(
+        self,
+        *,
+        action_id: str,
+        reviewed_by: str = "ceo",
+        decision_note: str | None = None,
+    ) -> dict[str, Any]:
+        return await self._invoke_skill(
+            "reject_config_action",
+            {
+                "action_id": action_id,
+                "reviewed_by": reviewed_by,
+                "decision_note": decision_note,
+            },
+        )
 
     async def request_leader_report(self, leader_name: str) -> dict[str, Any]:
         result = await self._invoke_skill("request_leader_report", {"leader_name": leader_name})
@@ -267,9 +325,10 @@ class CEOControlService:
             "information_metrics": information_metrics,
             "leader_statuses": leader_statuses,
             "active_leader_count": len(leader_statuses),
-            "pending_optimize_commands": len(
-                [item for item in control_plane.optimize_commands if item.get("status") == "issued"]
+            "pending_config_actions": len(
+                [item for item in control_plane.config_actions if item.get("status") == "proposed"]
             ),
+            "config_action_summary": control_plane.list_config_actions(limit=1)["status_summary"],
             "pending_report_requests": len(
                 [item for item in control_plane.report_requests if item.get("status") == "requested"]
             ),

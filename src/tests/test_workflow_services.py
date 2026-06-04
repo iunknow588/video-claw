@@ -837,6 +837,27 @@ def test_control_plane_exposes_balanced_qa_reroute_policy():
     assert policy["mapping"]["retry_research_development"] == "lead.research_development"
 
 
+def test_control_plane_evolution_cycle_records_config_actions():
+    control_plane.reset_defaults()
+
+    result = control_plane.evolution_cycle(
+        company_status={
+            "run_metrics": {"success_rate": 0.82},
+            "quality_metrics": {"qa_pass_rate": 0.88},
+            "operations_summary": {"budget_usage_ratio": 1.05},
+        }
+    )
+
+    assert "issued_config_actions" in result
+    assert len(result["issued_config_actions"]) == 4
+    assert all(item["action_type"] == "update_leader_config" for item in result["issued_config_actions"])
+    assert all(item["source"] == "evolution_cycle" for item in result["issued_config_actions"])
+
+    qa_status = control_plane.get_leader_status(name="lead.qa")
+    assert qa_status["pending_config_actions"] >= 1
+    assert qa_status["last_config_action"]["target_metric"] == "qa_pass_rate"
+
+
 @pytest.mark.parametrize(
     ("strategy", "qa_report", "expected_target"),
     [

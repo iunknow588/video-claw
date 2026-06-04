@@ -152,7 +152,7 @@ class CAOConsoleService:
 
         return self._serialize_public_payload(
             {
-                "console_title": "龙虾宝宝视频制作平台",
+                "console_title": identity_settings.get("console_title") or "龙虾宝宝视频制作平台",
                 "console_subtitle": f"{names['ceo']} 正在默默关注视频制作流程。",
                 "console_frontdesk_name": names["cao"],
                 "identity_settings": identity_settings,
@@ -279,6 +279,24 @@ class CAOConsoleService:
 
     async def update_identity_settings(self, names: dict[str, Any]) -> dict[str, Any]:
         return await self.system_settings_service.update_identity_settings(names)
+
+    async def get_system_settings(self) -> dict[str, Any]:
+        return await self.system_settings_service.get_system_settings_bundle()
+
+    async def update_identity_profile(self, *, console_title: str | None, names: dict[str, Any]) -> dict[str, Any]:
+        return await self.system_settings_service.update_identity_settings(names, console_title=console_title)
+
+    async def get_ceo_runtime_settings(self) -> dict[str, Any]:
+        return await self.system_settings_service.get_ceo_runtime_settings()
+
+    async def update_ceo_runtime_settings(self, updates: dict[str, Any]) -> dict[str, Any]:
+        return await self.system_settings_service.update_ceo_runtime_settings(updates)
+
+    async def get_api_provider_settings(self) -> dict[str, Any]:
+        return await self.system_settings_service.get_api_provider_settings()
+
+    async def update_api_provider_settings(self, updates: dict[str, Any]) -> dict[str, Any]:
+        return await self.system_settings_service.update_api_provider_settings(updates)
 
     def _serialize_public_run(self, run: Any) -> dict[str, Any]:
         result_payload = run.result_payload if isinstance(run.result_payload, dict) else {}

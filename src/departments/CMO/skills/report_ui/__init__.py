@@ -21,7 +21,6 @@ class ReportUISkill(BaseSkill):
                     "format_company_status",
                     "format_workflow_snapshot",
                     "format_leader_status",
-                    "format_optimize_command",
                     "format_evolution_report",
                     "format_error",
                     "format_reply",
@@ -34,7 +33,6 @@ class ReportUISkill(BaseSkill):
             "status": {"type": "object"},
             "workflow": {"type": "object"},
             "leader": {"type": "object"},
-            "command": {"type": "object"},
             "evolution": {"type": "object"},
             "message": {"type": "string"},
         },
@@ -42,7 +40,7 @@ class ReportUISkill(BaseSkill):
     }
     tags = ["lead", "promotion", "ui", "report"]
     dependencies = ["lead.cfo.charge", "lead.cio.query_log", "lead.qa", "lead.publish"]
-    required_tokens = ["summary", "result", "runs", "status", "workflow", "leader", "command", "evolution"]
+    required_tokens = ["summary", "result", "runs", "status", "workflow", "leader", "evolution"]
 
     STAGE_LABELS = LEADER_STAGE_LABELS_EN
 
@@ -70,8 +68,6 @@ class ReportUISkill(BaseSkill):
             return {"event": self._format_workflow_snapshot(input_data.get("workflow") or {})}
         if action == "format_leader_status":
             return {"event": self._format_leader_status(input_data.get("leader") or {})}
-        if action == "format_optimize_command":
-            return {"event": self._format_optimize_command(input_data.get("command") or {})}
         if action == "format_evolution_report":
             return {"event": self._format_evolution_report(input_data.get("evolution") or {})}
         if action == "format_error":
@@ -152,7 +148,7 @@ class ReportUISkill(BaseSkill):
             f"Average duration: {round(float(run_metrics.get('avg_duration_ms', 0.0) or 0.0), 2)} ms\n"
             f"QA pass rate: {self._percent(quality_metrics.get('qa_pass_rate', 0.0))}\n"
             f"Active leaders: {status.get('active_leader_count', 0)}\n"
-            f"Pending optimize commands: {status.get('pending_optimize_commands', 0)}\n"
+            f"Pending config actions: {status.get('pending_config_actions', 0)}\n"
             f"Evolution: {'enabled' if status.get('evolution_enabled') else 'disabled'}"
         )
         if weakest:
@@ -219,7 +215,7 @@ class ReportUISkill(BaseSkill):
             f"Success rate: {self._percent(metrics.get('success_rate', 0.0))}\n"
             f"Average tokens: {metrics.get('avg_tokens', 0)}\n"
             f"Token budget: {leader.get('token_limit', 0)}\n"
-            f"Pending optimize commands: {leader.get('pending_optimize_commands', 0)}"
+            f"Pending config actions: {leader.get('pending_config_actions', 0)}"
         )
         if org_profile:
             message += (
@@ -241,29 +237,12 @@ class ReportUISkill(BaseSkill):
             "channel": "promotion_ui",
         }
 
-    def _format_optimize_command(self, command: dict[str, Any]) -> dict[str, Any]:
-        message = (
-            f"Governance optimize command issued to {command.get('leader_display_name', command.get('leader_name'))}:\n"
-            f"Target metric: {command.get('target_metric')}\n"
-            f"Goal value: {command.get('goal_value')}\n"
-            f"Status: {command.get('status')}"
-        )
-        if command.get("note"):
-            message += f"\nNote: {command.get('note')}"
-        return {
-            "type": "report",
-            "message": message,
-            "command": command,
-            "source": self.skill_name,
-            "channel": "promotion_ui",
-        }
-
     def _format_evolution_report(self, evolution: dict[str, Any]) -> dict[str, Any]:
-        commands = evolution.get("issued_commands") or evolution.get("company_status", {}).get("issued_commands") or []
+        actions = evolution.get("issued_config_actions") or evolution.get("company_status", {}).get("issued_config_actions") or []
         message = (
             "Governance evolution cycle completed:\n"
             f"Evolution: {'enabled' if evolution.get('evolution_enabled') else 'disabled'}\n"
-            f"New commands: {len(commands)}\n"
+            f"New config actions: {len(actions)}\n"
             f"Message: {evolution.get('message') or 'The observe-analyze-decide loop completed.'}"
         )
         return {

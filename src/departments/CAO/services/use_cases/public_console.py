@@ -40,3 +40,21 @@ class PublicConsoleUseCase:
 
     async def update_identity_settings(self, names: dict) -> dict:
         return await self.service.update_identity_settings(names)
+
+    async def get_system_settings(self) -> dict:
+        return await self.service.get_system_settings()
+
+    async def update_identity_profile(self, *, console_title: str | None, names: dict) -> dict:
+        return await self.service.update_identity_profile(console_title=console_title, names=names)
+
+    async def get_ceo_runtime_settings(self) -> dict:
+        return await self.service.get_ceo_runtime_settings()
+
+    async def update_ceo_runtime_settings(self, updates: dict) -> dict:
+        return await self.service.update_ceo_runtime_settings(updates)
+
+    async def get_api_provider_settings(self) -> dict:
+        return await self.service.get_api_provider_settings()
+
+    async def update_api_provider_settings(self, updates: dict) -> dict:
+        return await self.service.update_api_provider_settings(updates)
