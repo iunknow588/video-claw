@@ -1370,12 +1370,19 @@ class CAOConsoleService:
     def _build_research_log_entry(self, artifact: dict[str, Any], identity_names: dict[str, str], created_at: Any) -> dict[str, Any] | None:
         hotspots = artifact.get("selected_hotspots") if isinstance(artifact.get("selected_hotspots"), list) else []
         queries = artifact.get("expanded_queries") if isinstance(artifact.get("expanded_queries"), list) else []
-        if not hotspots and not queries:
+        hotspot_pool = artifact.get("hotspot_pool") if isinstance(artifact.get("hotspot_pool"), list) else []
+        if not hotspots and not queries and not hotspot_pool:
             return None
 
         details = []
         if queries:
             details.append(f"搜索词：{' / '.join(queries[:6])}")
+        for index, item in enumerate(hotspot_pool[:8], start=1):
+            title = self._normalize_public_text_with_limit(item.get("title"), limit=80) or "候选内容"
+            author = self._normalize_public_text_with_limit(item.get("author"), limit=40) or "-"
+            details.append(
+                f"候选{index}：{title} | 作者：{author} | 热度：{self._format_metric(item.get('heat_score'))} | 播放：{self._format_metric(item.get('view_count'))}"
+            )
         for item in hotspots[:6]:
             title = self._normalize_public_text_with_limit(item.get("title"), limit=80) or "热点内容"
             author = self._normalize_public_text_with_limit(item.get("author"), limit=40) or "-"
@@ -1385,7 +1392,7 @@ class CAOConsoleService:
         return self._build_artifact_log_entry(
             stage="lead.research",
             title="已找到热门视频",
-            summary=f"共整理 {len(hotspots)} 条热点候选。",
+            summary=f"共整理 {len(hotspots)} 条入选热点，候选池 {len(hotspot_pool)} 条。",
             details=details,
             identity_names=identity_names,
             created_at=created_at,

@@ -49,21 +49,6 @@ class GovernanceGatewayUseCase:
     async def rollback_leader(self, leader_name: str, version: int) -> dict:
         return await self.service.rollback_leader(leader_name, version)
 
-    async def issue_optimize_command(
-        self,
-        *,
-        leader_name: str,
-        target_metric: str,
-        goal_value: float | int | None,
-        note: str | None = None,
-    ) -> dict:
-        return await self.service.issue_optimize_command(
-            leader_name=leader_name,
-            target_metric=target_metric,
-            goal_value=goal_value,
-            note=note,
-        )
-
     async def request_leader_report(self, leader_name: str) -> dict:
         return await self.service.request_leader_report(leader_name)
 

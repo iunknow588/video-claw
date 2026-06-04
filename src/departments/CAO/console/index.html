@@ -124,6 +124,13 @@
       border-color: #eadfcf;
     }
 
+    .message.artifact {
+      align-self: flex-start;
+      background: #f7f8ff;
+      border-color: #d6dbff;
+      color: #1f2a44;
+    }
+
     .message.status {
       align-self: flex-start;
       background: #f0faf8;
@@ -927,6 +934,9 @@
     let currentDisplayedTrace = null;
     let liveTraceRunId = null;
     let liveTraceRefreshTimer = null;
+    const mirroredRunIds = new Set();
+    const mirroredLogKeysByRun = new Map();
+    const streamedArtifactRunIds = new Set();
 
     const escapeHtml = (value) =>
       String(value ?? "")
@@ -1084,6 +1094,71 @@
       return "流程状态已更新。";
     }
 
+    function buildMirroredLogKey(runId, item) {
+      return [
+        runId || "trace",
+        item?.type || "log",
+        item?.stage || "workflow",
+        item?.title || "untitled",
+        item?.created_at || "no-time",
+        item?.summary || "",
+      ].join("::");
+    }
+
+    function shouldMirrorLogToMessages(item) {
+      return String(item?.type || "").toLowerCase() === "artifact" && !isSkillDiagnosticLog(item);
+    }
+
+    function formatMirroredLogMessage(item) {
+      const lines = [];
+      const title = typeof item?.title === "string" ? item.title.trim() : "";
+      const summary = typeof item?.summary === "string" ? item.summary.trim() : "";
+      const details = Array.isArray(item?.details) ? item.details.filter((entry) => typeof entry === "string" && entry.trim()) : [];
+
+      if (title && summary) {
+        lines.push(`${title}：${summary}`);
+      } else if (title || summary) {
+        lines.push(title || summary);
+      }
+
+      lines.push(...details);
+      return lines.join("\n");
+    }
+
+    function syncTraceMessages(trace) {
+      const runId = trace?.run?.uuid;
+      if (!runId || !mirroredRunIds.has(runId) || streamedArtifactRunIds.has(runId)) {
+        return;
+      }
+
+      const logs = Array.isArray(trace?.public_logs) ? trace.public_logs : [];
+      if (!logs.length) {
+        return;
+      }
+
+      let seenKeys = mirroredLogKeysByRun.get(runId);
+      if (!seenKeys) {
+        seenKeys = new Set();
+        mirroredLogKeysByRun.set(runId, seenKeys);
+      }
+
+      logs.forEach((item) => {
+        if (!shouldMirrorLogToMessages(item)) {
+          return;
+        }
+        const logKey = buildMirroredLogKey(runId, item);
+        if (seenKeys.has(logKey)) {
+          return;
+        }
+        const message = formatMirroredLogMessage(item);
+        if (!message) {
+          return;
+        }
+        seenKeys.add(logKey);
+        appendMessage("artifact", resolveLogActorName(item), message);
+      });
+    }
+
     function renderIdentitySettings(settings) {
       const profiles = Array.isArray(settings?.profiles) ? settings.profiles : [];
       if (!profiles.length) {
@@ -1186,7 +1261,11 @@
         const targetRunId = liveTraceRunId;
         liveTraceRefreshTimer = null;
         if (!targetRunId) return;
-        await loadTrace(targetRunId, { persistDisplayState: false });
+        await loadTrace(targetRunId, {
+          persistDisplayState: false,
+          suppressErrorUI: true,
+          allowFallback: false,
+        });
       }, 700);
     }
 
@@ -1670,7 +1749,13 @@
 
     async function loadTrace(
       workflowRunId,
-      { updateMetaFromCache = false, persistDisplayState = true, suppressErrorUI = false, allowRetry = true } = {},
+      {
+        updateMetaFromCache = false,
+        persistDisplayState = true,
+        suppressErrorUI = false,
+        allowRetry = true,
+        allowFallback = true,
+      } = {},
     ) {
       if (!workflowRunId) return;
       const response = await fetch(`/api/cao/workflows/runs/${encodeURIComponent(workflowRunId)}/trace`);
@@ -1697,12 +1782,14 @@
           return cached.trace;
         }
 
-        const fallback = await loadLatestAvailableTrace(workflowRunId);
-        if (fallback) {
-          if (!suppressErrorUI) {
-            appendMessage("status", "展示", "当前任务日志暂时不可用，已切换到最近可用任务。");
+        if (allowFallback) {
+          const fallback = await loadLatestAvailableTrace(workflowRunId);
+          if (fallback) {
+            if (!suppressErrorUI) {
+              appendMessage("status", "展示", "当前任务日志暂时不可用，已切换到最近可用任务。");
+            }
+            return fallback;
           }
-          return fallback;
         }
 
         if (!suppressErrorUI) {
@@ -1718,6 +1805,7 @@
       renderDisplayMeta(trace.run, { fromCache: updateMetaFromCache });
       updateIdentityState(trace.identity_settings?.names || {});
       renderLogs(trace);
+      syncTraceMessages(trace);
       if (persistDisplayState && isDisplayableTrace(trace)) {
         writeDisplayState({
           runId: workflowRunId,
@@ -1804,6 +1892,8 @@
       if (!message) return;
       sendButton.disabled = true;
       liveTraceRunId = null;
+      mirroredRunIds.clear();
+      streamedArtifactRunIds.clear();
       appendMessage("user", "你", message);
       messageInput.value = defaultWorkflowPromptExample;
 
@@ -1838,14 +1928,22 @@
                 appendMessage("status", resolveStatusActorName(event), resolveStatusMessage(event));
                 if (event.workflow_run_id) {
                   currentDisplayedRunId = event.workflow_run_id;
+                  mirroredRunIds.add(event.workflow_run_id);
                   queueLiveTraceRefresh(event.workflow_run_id);
                 }
               } else if (event.type === "report") {
                 appendMessage("report", "报告", event.message || "收到报告。");
+              } else if (event.type === "artifact") {
+                if (event.workflow_run_id) {
+                  mirroredRunIds.add(event.workflow_run_id);
+                  streamedArtifactRunIds.add(event.workflow_run_id);
+                }
+                appendMessage("artifact", resolveStatusActorName(event), formatMirroredLogMessage(event));
               } else if (event.type === "result") {
                 appendMessage("result", "结果", event.message || "收到结果。");
                 if (event.result?.workflow_run_id) {
                   liveTraceRunId = event.result.workflow_run_id;
+                  mirroredRunIds.add(event.result.workflow_run_id);
                 }
               } else if (event.type === "error") {
                 appendMessage("error", "错误", event.message || "发生错误。");

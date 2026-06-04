@@ -514,12 +514,16 @@ async def test_cmo_chat_request_streams_status_and_result(api_client):
 
     assert "reply" in event_types
     assert "status" in event_types
+    assert "artifact" in event_types
     assert "result" in event_types
 
     cfo_status_event = next(event for event in events if event["type"] == "status" and event["stage"] == "lead.cfo")
+    research_artifact_event = next(event for event in events if event["type"] == "artifact" and event["stage"] == "lead.research")
     result_event = next(event for event in events if event["type"] == "result")
     result = result_event["result"]
     assert cfo_status_event["status"] in {"running", "success"}
+    assert research_artifact_event["title"] == "已找到热门视频"
+    assert any("搜索词" in detail for detail in research_artifact_event["details"])
     assert result_event["summary"]["total_tokens"] > 0
     assert result["platform"] == "douyin"
     assert result["workflow_run_id"] is not None
@@ -542,12 +546,16 @@ async def test_cmo_chat_streams_status_and_result(api_client):
 
     assert "reply" in event_types
     assert "status" in event_types
+    assert "artifact" in event_types
     assert "result" in event_types
 
     reply_event = next(event for event in events if event["type"] == "reply")
     cfo_status_event = next(event for event in events if event["type"] == "status" and event["stage"] == "lead.cfo")
     status_event = next(event for event in events if event["type"] == "status")
     qa_status_event = next(event for event in events if event["type"] == "status" and event["stage"] == "lead.qa")
+    planning_artifact_event = next(
+        event for event in events if event["type"] == "artifact" and event["stage"] == "lead.research_development"
+    )
     result_event = next(event for event in events if event["type"] == "result")
 
     assert reply_event["source"] == "lead.promotion.report_ui"
@@ -559,6 +567,10 @@ async def test_cmo_chat_streams_status_and_result(api_client):
     assert cfo_status_event["stage_label"] == "财务闸门"
     assert "预算校验" in cfo_status_event["message"]
     assert "lead.cfo" not in cfo_status_event["message"]
+    assert planning_artifact_event["actor_key"] == "cto"
+    assert planning_artifact_event["stage_label"] == "技术策划"
+    assert planning_artifact_event["title"] == "新提示词已生成"
+    assert any("主提示词" in detail for detail in planning_artifact_event["details"])
     assert result_event["summary"]["total_tokens"] > 0
     assert result_event["result"]["finance_bundle"]["finance_check"]["passed"] is True
     assert result_event["result"]["qa_status"] == "passed"
@@ -661,7 +673,7 @@ async def test_cao_governance_status_and_progress_endpoints(api_client):
 
 
 @pytest.mark.asyncio
-async def test_cao_governance_can_issue_optimize_command_and_manage_evolution(api_client):
+async def test_cao_governance_blocks_external_optimize_command_and_manage_evolution(api_client):
     disable_resp = await api_client.post("/api/cao/governance/evolution/disable")
     assert disable_resp.status_code == 200
     assert disable_resp.json()["evolution_enabled"] is False
@@ -670,11 +682,7 @@ async def test_cao_governance_can_issue_optimize_command_and_manage_evolution(ap
         "/api/cao/governance/leaders/lead.qa/optimize",
         json={"target_metric": "qa_pass_rate", "goal_value": 0.95},
     )
-    assert optimize_resp.status_code == 200
-    optimize_data = optimize_resp.json()
-    assert optimize_data["command"]["leader_name"] == "lead.qa"
-    assert optimize_data["command"]["target_metric"] == "qa_pass_rate"
-    assert "leader_event" in optimize_data["command"]
+    assert optimize_resp.status_code == 404
 
     enable_resp = await api_client.post("/api/cao/governance/evolution/enable")
     assert enable_resp.status_code == 200

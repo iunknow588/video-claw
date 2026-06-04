@@ -4,6 +4,7 @@ param(
     [switch]$SkipMigrate,
     [switch]$UseProjectDatabase,
     [switch]$UseMainEntry,
+    [switch]$Reload,
     [switch]$NoReload,
     [switch]$StrictPort,
     [string]$BindHost = "127.0.0.1",
@@ -13,6 +14,9 @@ param(
 
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
+[Console]::InputEncoding = [System.Text.UTF8Encoding]::new($false)
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+$OutputEncoding = [System.Text.UTF8Encoding]::new($false)
 
 function Resolve-RepoRoot {
     $candidate = Split-Path -Parent $PSScriptRoot
@@ -170,6 +174,20 @@ function New-LocalVenv {
     return (Join-Path $venvPath "Scripts\python.exe")
 }
 
+function Invoke-PipInstall {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$PythonExe,
+        [Parameter(Mandatory = $true)]
+        [string[]]$Arguments
+    )
+
+    & $PythonExe -m pip --disable-pip-version-check @Arguments
+    if ($LASTEXITCODE -ne 0) {
+        throw "pip command failed: $($Arguments -join ' ')"
+    }
+}
+
 $repoRoot = Resolve-RepoRoot
 Set-Location $repoRoot
 
@@ -192,8 +210,9 @@ if (-not (Test-Path $pythonExe)) {
 
 if (-not $SkipInstall) {
     Write-Host "Installing Python dependencies..." -ForegroundColor Cyan
-    & $pythonExe -m pip install --upgrade pip
-    & $pythonExe -m pip install -e ".[dev]"
+    Write-Host "Local package path: $repoRoot" -ForegroundColor DarkCyan
+    Invoke-PipInstall -PythonExe $pythonExe -Arguments @("install", "--upgrade", "pip")
+    Invoke-PipInstall -PythonExe $pythonExe -Arguments @("install", "--quiet", "-e", ".[dev]")
 }
 
 if (-not $UseProjectDatabase) {
@@ -207,6 +226,7 @@ if (-not $SkipMigrate) {
 }
 
 $resolvedPort = Resolve-AvailablePort -RequestedPort $Port -SearchLimit $PortSearchLimit -FailIfBusy:$StrictPort
+$enableReload = $Reload -and -not $NoReload
 
 if ($PrepareOnly) {
     Write-Host "Preparation complete." -ForegroundColor Green
@@ -224,6 +244,9 @@ if ($UseMainEntry) {
         $env:SERVER_PORT = "$resolvedPort"
     }
     Write-Host "Mode: python src\\main.py" -ForegroundColor Cyan
+    if (-not $enableReload) {
+        $env:DEBUG = "false"
+    }
     & $pythonExe src\main.py
     exit $LASTEXITCODE
 }
@@ -236,10 +259,19 @@ $uvicornArgs = @(
     "--port", "$resolvedPort"
 )
 
-if (-not $NoReload) {
-    $uvicornArgs += "--reload"
+if ($enableReload) {
+    $uvicornArgs += @(
+        "--reload",
+        "--reload-dir", "src",
+        "--reload-exclude", "src/tests/*"
+    )
 }
 
 Write-Host "Mode: uvicorn main:app --app-dir src" -ForegroundColor Cyan
+if ($enableReload) {
+    Write-Host "Reload watch scope: src (excluding src/tests/*)." -ForegroundColor DarkCyan
+} else {
+    Write-Host "Reload disabled. Pass -Reload to enable hot reload." -ForegroundColor DarkCyan
+}
 & $pythonExe @uvicornArgs
 exit $LASTEXITCODE

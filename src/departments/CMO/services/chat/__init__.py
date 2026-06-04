@@ -165,17 +165,8 @@ class CMOService:
             await self._emit(event_callback, await self._format_report("format_reply", message=message))
             return
 
-        if intent == "optimize_request":
+        if intent == "ceo_config_only":
             await self._emit_formatted_reply(parsed.get("reply_message", ""), event_callback)
-            command = await self.ceo_control_service.issue_optimize_command(
-                leader_name=parsed.get("leader_name") or "",
-                target_metric=parsed.get("target_metric") or "",
-                goal_value=parsed.get("goal_value"),
-            )
-            await self._emit(
-                event_callback,
-                await self._format_report("format_optimize_command", command=command["command"]),
-            )
             return
 
         if intent == "enable_evolution":

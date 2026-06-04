@@ -97,7 +97,7 @@ class ChatUISkill(BaseSkill):
                 "intent": "empty",
                 "reply_message": (
                     "宣传部在岗。除了直接派视频任务，你也可以问我："
-                    "查看生产状态、查看工作流，或者要求质检组优化合格率。"
+                    "查看生产状态、查看工作流。节点优化由 CEO 配置通道统一管理，聊天窗口不接收优化指令。"
                     f"{self.DEFAULT_WORKFLOW_PROMPT_GUIDE}{self.DEFAULT_WORKFLOW_PROMPT_EXAMPLE}"
                 ),
             }
@@ -105,6 +105,7 @@ class ChatUISkill(BaseSkill):
         lowered = message.lower()
         run_id = self._extract_run_id(lowered)
         leader_name = self._extract_leader_name(message)
+        workflow_like = self._looks_like_workflow_command(message) or self._has_structured_workflow_intent(workflow_params)
 
         if self._is_recent_runs_query(lowered):
             return {
@@ -119,15 +120,25 @@ class ChatUISkill(BaseSkill):
                 "reply_message": f"收到，我来整理任务 {run_id} 的执行链路。",
             }
 
-        if leader_name and self._looks_like_optimize_command(message):
-            target_metric = self._parse_target_metric(message)
-            goal_value = self._parse_goal_value(message, target_metric)
+        if workflow_like:
+            workflow_request = self._build_workflow_request(message, workflow_params=workflow_params)
             return {
-                "intent": "optimize_request",
-                "leader_name": leader_name,
-                "target_metric": target_metric,
-                "goal_value": goal_value,
-                "reply_message": f"收到，我会把 {target_metric} 的优化目标发给 {self._leader_label(leader_name)}。",
+                "intent": "workflow_request",
+                "workflow_request": workflow_request,
+                "reply_message": (
+                    f"收到，我会先代表宣传部接单，再把“{workflow_request['domain']}”"
+                    f"送入当前生产系统，按 {self._platform_label(workflow_request['platform'])} 平台推进，"
+                    f"视频类型按 {self._content_type_label(workflow_request['content_type'])} 处理。"
+                ),
+            }
+
+        if leader_name and self._looks_like_optimize_command(message):
+            return {
+                "intent": "ceo_config_only",
+                "reply_message": (
+                    f"收到，但 {self._leader_label(leader_name)} 的优化不再通过聊天命令下发。"
+                    "请改为由 CEO 在配置通道中统一调整节点配置、预算或资源。"
+                ),
             }
 
         if leader_name and self._looks_like_leader_report_request(lowered):
@@ -180,18 +191,6 @@ class ChatUISkill(BaseSkill):
                 "reply_message": "收到，我来手动触发一轮治理演进闭环。",
             }
 
-        if self._looks_like_workflow_command(message) or self._has_structured_workflow_intent(workflow_params):
-            workflow_request = self._build_workflow_request(message, workflow_params=workflow_params)
-            return {
-                "intent": "workflow_request",
-                "workflow_request": workflow_request,
-                "reply_message": (
-                    f"收到，我会先代表宣传部接单，再把“{workflow_request['domain']}”"
-                    f"送入当前生产系统，按 {self._platform_label(workflow_request['platform'])} 平台推进，"
-                    f"视频类型按 {self._content_type_label(workflow_request['content_type'])} 处理。"
-                ),
-            }
-
         return {
             "intent": "help",
             "reply_message": (
@@ -200,7 +199,7 @@ class ChatUISkill(BaseSkill):
                 f"例如“{self.DEFAULT_WORKFLOW_PROMPT_EXAMPLE[:-1]}”。\n"
                 "2. 查记录，例如“查看最近任务”或“查看任务 <run_id> 进度”。\n"
                 "3. 查管理面，例如“查看生产状态”“查看工作流”“列出一级 Leader”。\n"
-                "4. 下优化命令，例如“让质检组把合格率提高到95%”。"
+                "4. 节点优化由 CEO 配置通道统一管理，聊天窗口不接收优化指令。"
             ),
         }
 

@@ -67,7 +67,14 @@ class WorkflowExecutionEngine:
                 input_bundle={},
                 event_callback=event_callback,
             )
-            await self._record_artifact(trace_id, "lead.cfo", "finance_bundle", cfo_result)
+            await self._record_artifact(
+                trace_id,
+                "lead.cfo",
+                "finance_bundle",
+                cfo_result,
+                workflow_run_id=context.workflow_run_id,
+                event_callback=event_callback,
+            )
 
             failed_stage = "Research"
             research_result = await self._run_stage(
@@ -76,7 +83,14 @@ class WorkflowExecutionEngine:
                 input_bundle={},
                 event_callback=event_callback,
             )
-            await self._record_artifact(trace_id, "lead.research", "research_bundle", research_result)
+            await self._record_artifact(
+                trace_id,
+                "lead.research",
+                "research_bundle",
+                research_result,
+                workflow_run_id=context.workflow_run_id,
+                event_callback=event_callback,
+            )
 
             failed_stage = "Analysis"
             analysis_result = await self._run_stage(
@@ -85,7 +99,14 @@ class WorkflowExecutionEngine:
                 input_bundle={"hotspots": research_result.get("selected_hotspots", [])},
                 event_callback=event_callback,
             )
-            await self._record_artifact(trace_id, "lead.analysis", "analysis_bundle", analysis_result)
+            await self._record_artifact(
+                trace_id,
+                "lead.analysis",
+                "analysis_bundle",
+                analysis_result,
+                workflow_run_id=context.workflow_run_id,
+                event_callback=event_callback,
+            )
 
             failed_stage = "Planning"
             planning_result = await self._run_stage(
@@ -97,7 +118,14 @@ class WorkflowExecutionEngine:
                 },
                 event_callback=event_callback,
             )
-            await self._record_artifact(trace_id, "lead.research_development", "planning_bundle", planning_result)
+            await self._record_artifact(
+                trace_id,
+                "lead.research_development",
+                "planning_bundle",
+                planning_result,
+                workflow_run_id=context.workflow_run_id,
+                event_callback=event_callback,
+            )
 
             failed_stage = "Production"
             production_result = await self._run_stage(
@@ -110,7 +138,14 @@ class WorkflowExecutionEngine:
                 },
                 event_callback=event_callback,
             )
-            await self._record_artifact(trace_id, "lead.production", "production_bundle", production_result)
+            await self._record_artifact(
+                trace_id,
+                "lead.production",
+                "production_bundle",
+                production_result,
+                workflow_run_id=context.workflow_run_id,
+                event_callback=event_callback,
+            )
 
             failed_stage = "QA"
             planning_result, production_result, qa_result = await self._run_qa_stage(
@@ -133,7 +168,14 @@ class WorkflowExecutionEngine:
                 },
                 event_callback=event_callback,
             )
-            await self._record_artifact(trace_id, "lead.publish", "publish_bundle", publish_result)
+            await self._record_artifact(
+                trace_id,
+                "lead.publish",
+                "publish_bundle",
+                publish_result,
+                workflow_run_id=context.workflow_run_id,
+                event_callback=event_callback,
+            )
 
             result_payload = self._build_result_payload(
                 workflow_run_id=workflow_run_id,
@@ -281,7 +323,14 @@ class WorkflowExecutionEngine:
                 event_callback=event_callback,
             )
 
-            await self._record_artifact(trace_id, "lead.qa", "qa_bundle", qa_result)
+            await self._record_artifact(
+                trace_id,
+                "lead.qa",
+                "qa_bundle",
+                qa_result,
+                workflow_run_id=context.workflow_run_id,
+                event_callback=event_callback,
+            )
 
             if qa_result.get("status") != "rework":
                 break
@@ -322,6 +371,8 @@ class WorkflowExecutionEngine:
                     "lead.research_development",
                     "planning_bundle",
                     planning_result,
+                    workflow_run_id=context.workflow_run_id,
+                    event_callback=event_callback,
                 )
 
             production_result = await self._run_stage(
@@ -339,6 +390,8 @@ class WorkflowExecutionEngine:
                 "lead.production",
                 "production_bundle",
                 production_result,
+                workflow_run_id=context.workflow_run_id,
+                event_callback=event_callback,
             )
 
         if qa_result is None:
@@ -511,6 +564,8 @@ class WorkflowExecutionEngine:
         source: str,
         artifact_type: str,
         payload: Dict[str, Any],
+        workflow_run_id: str | None = None,
+        event_callback: WorkflowEventCallback | None = None,
     ) -> None:
         if not self.recorder or not hasattr(self.recorder, "record_artifact"):
             return
@@ -519,6 +574,8 @@ class WorkflowExecutionEngine:
             source=source,
             artifact_type=artifact_type,
             payload=payload,
+            workflow_run_id=workflow_run_id,
+            event_callback=event_callback,
         )
 
     async def _record_log(

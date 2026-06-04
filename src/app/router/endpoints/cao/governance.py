@@ -11,7 +11,6 @@ from departments.CIO.schemas.video import (
     GovernanceLeaderCreateRequest,
     GovernanceLeaderProposalRequest,
     GovernanceLeaderUpdateRequest,
-    GovernanceOptimizeCommandRequest,
     GovernanceReportCollectRequest,
     GovernanceResourceAdjustRequest,
     GovernanceRollbackRequest,
@@ -133,23 +132,6 @@ async def rollback_leader(
 ):
     try:
         return await GovernanceGatewayUseCase(db).rollback_leader(leader_name, data.version)
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-
-
-@router.post("/leaders/{leader_name}/optimize")
-async def issue_leader_optimize_command(
-    leader_name: str,
-    data: GovernanceOptimizeCommandRequest,
-    db: AsyncSession = Depends(get_db),
-):
-    try:
-        return await GovernanceGatewayUseCase(db).issue_optimize_command(
-            leader_name=leader_name,
-            target_metric=data.target_metric,
-            goal_value=data.goal_value,
-            note=data.note,
-        )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 

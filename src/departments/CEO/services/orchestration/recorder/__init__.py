@@ -6,6 +6,7 @@ from fastapi.encoders import jsonable_encoder
 
 from departments.CEO.skills.runtime import SkillInvocationResult
 from departments.CIO.services.event_bus import WorkflowEvent, WorkflowEventCallback
+from departments.CMO.services.public_progress import build_public_artifact_payload
 
 
 class WorkflowRecorder:
@@ -88,6 +89,8 @@ class WorkflowRecorder:
         source: str,
         artifact_type: str,
         payload: dict[str, Any],
+        workflow_run_id: str | None = None,
+        event_callback: WorkflowEventCallback | None = None,
     ) -> dict[str, Any]:
         event = WorkflowEvent(
             trace_id=trace_id,
@@ -98,9 +101,17 @@ class WorkflowRecorder:
             message=f"{artifact_type} stored",
             artifact_type=artifact_type,
             artifact_payload=dict(payload),
+            workflow_run_id=workflow_run_id,
+            public_payload=build_public_artifact_payload(
+                stage=source,
+                artifact_type=artifact_type,
+                payload=payload,
+                trace_id=trace_id,
+                workflow_run_id=workflow_run_id,
+            ),
             metadata_json={"artifact_type": artifact_type},
         )
-        return await self.record(event)
+        return await self.record(event, event_callback=event_callback)
 
     async def call_skill(
         self,
