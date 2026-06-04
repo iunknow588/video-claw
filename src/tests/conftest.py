@@ -22,6 +22,7 @@ def isolate_external_ai_providers(monkeypatch):
     """
     Keep tests deterministic by disabling live provider credentials from .env.
     """
+    monkeypatch.setenv("HOTSPOT_PROVIDER_MODE", "mock")
     monkeypatch.setattr(settings.ai_providers.runtime, "use_placeholder_when_unconfigured", True)
     monkeypatch.setattr(settings.ai_providers.xfyun_maas, "api_key", "")
     monkeypatch.setattr(settings.ai_providers.seedance, "api_key", "")
